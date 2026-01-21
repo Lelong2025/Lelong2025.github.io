@@ -135,10 +135,10 @@
 
 
   <div id="iframes">
-    <!-- <div class="iframe-block">
-      <p>SJR</p>
-      <iframe id="sjrFrame" src=""></iframe>
-    </div> -->
+    <div class="iframe-block">
+      <p>Non-APC</p>
+      <iframe id="noapcFrame" src=""></iframe>
+    </div>
 
     <div class="iframe-block">
       <p>Resurchify</p>
@@ -177,7 +177,6 @@
       document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
 
       // Thêm link vào iframe https://www.scimagojr.com/journalsearch.php?q=2590-1230
-      //document.getElementById('sjrFrame').src = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
       document.getElementById('resurchifyFrame').src = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
       document.getElementById('wosFrame').src = `https://wos-journal.info/?jsearch=${encoded}`;
       //Cú pháp: tên id như cái id trong phần thêm phần web. Vào web gõ search thử vd: "https://lhu.edu.vn/search/?q=timdayne" thì timdayne là chỗ cần nhét encode
@@ -210,6 +209,7 @@
             <li><b>Hệ số chất lượng Q:</b> ${found["JIF Quartile"]}</li>
           </ul>
         `;
+        document.getElementById('noapcFrame').src = `https://noapc.com/journal.php?q=${found["journal_name"]}`;
       } else {
         excelInfoDiv.innerHTML = `<p style="color:red;">Không tìm thấy thông tin</p>`;
       }
