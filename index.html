@@ -1,187 +1,405 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <title>Tra cứu thông tin tạp chí</title>
   <style>
-    body {
-      background-color: #1e1e1e;
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 20px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg-color: #f4f7f6;
+      --text-color: #333333;
+      --primary-color: #0d6efd;
+      --primary-hover: #0b5ed7;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.1);
+      --input-bg: rgba(255, 255, 255, 0.8);
+      --input-border: #ccc;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --header-bg: rgba(255, 255, 255, 0.7);
     }
 
-    h1 {
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --text-color: #e2e8f0;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(15, 23, 42, 0.8);
+      --input-border: #475569;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --header-bg: rgba(15, 23, 42, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-container {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--header-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
       text-align: center;
+      flex: 1;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(128, 128, 128, 0.2);
+    }
+
+    .main-content {
+      padding: 40px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
     }
 
     #searchBox {
       display: flex;
       justify-content: center;
-      gap: 10px;
+      gap: 15px;
+      margin-bottom: 40px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #searchInput {
+      flex: 1;
+      padding: 16px 24px;
+      border-radius: 50px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 16px;
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+
+    #searchInput:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    #searchBox button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    #searchBox button:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    #excelInfo {
+      display: none;
+    }
+
+    #excelInfo h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+      font-size: 26px;
+      border-bottom: 2px solid var(--card-border);
+      padding-bottom: 15px;
       margin-bottom: 20px;
     }
 
-    input {
-      width: 60%;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
+    #excelInfo ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
     }
 
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    #excelInfo li {
+      padding: 16px 20px;
+      background: rgba(128, 128, 128, 0.1);
+      border-radius: 12px;
+      font-size: 18px;
+    }
+
+    #excelInfo b {
+      color: var(--primary-color);
+      margin-right: 5px;
     }
 
     #externalLinks {
-      background-color: #2e2e2e;
-      padding: 10px 20px;
-      margin: 20px 0;
       display: none;
-      border-radius: 10px;
+      text-align: center;
+    }
+
+    #externalLinks strong {
+      display: block;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .links-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
     }
 
     #externalLinks a {
-      color: #4fc3f7;
-      display: block;
-      margin-bottom: 5px;
+      color: white;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 18px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    #externalLinks a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+      text-decoration: none;
     }
 
     #iframes {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 20px;
       justify-content: space-between;
     }
 
-    iframe {
-      flex: 1 1 calc(25% - 10px); /* 4 cái trên 1 dòng */
-      min-width: 300px; /* phòng khi màn hình nhỏ */
-      height: 650px;
-      border: 1px solid #444;
-      border-radius: 10px;
+    .iframe-block {
+      flex: 1 1 calc(33.333% - 20px);
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
     }
 
-
-    #excelInfo {
-      background-color: #333;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-      font-size: 16px;
-      line-height: 1.6;
+    .iframe-block p {
+      margin: 0;
+      padding: 18px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid var(--card-border);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-color);
     }
 
-    #excelInfo h3 {
-      color: #4fc3f7;
-      margin-top: 0;
-    }#iframes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: space-between;
-}
+    .iframe-block iframe {
+      width: 100%;
+      height: 900px;
+      border: none;
+      background: white;
+      /* Keep iframe background white for external content readability */
+    }
 
-.iframe-block {
-  flex: 1 1 calc(25% - 10px); /* 4 khối 1 dòng */
-  min-width: 300px;
-}
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+        padding: 15px;
+      }
 
-.iframe-block p {
-  margin: 10px 0 5px;
-  text-align: center;
-  color: #4fc3f7;
-  font-weight: bold;
-}
+      .header-title {
+        margin: 15px 0;
+      }
 
-.iframe-block iframe {
-  width: 100%;
-  height: 650px;
-  border: 1px solid #444;
-  border-radius: 10px;
-}
+      #searchBox {
+        flex-direction: column;
+      }
 
+      #searchBox button {
+        width: 100%;
+      }
+
+      .iframe-block {
+        flex: 1 1 100%;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <div style="display: flex; align-items: center; justify-content: space-between;">
-    <img src="LHU&ASU-ENG 2@.png" alt="Logo" style="height: 100px;">
-    <h1 style="flex: 1; text-align: center; margin-right: 100px;">Tra cứu thông tin tạp chí</h1>
+
+  <!-- Khối header -->
+  <div class="header-container">
+    <img src="LHU&ASU-ENG 2@.png" alt="Logo" style="height: 60px;">
+    <h1 class="header-title">Tra cứu thông tin tạp chí</h1>
+    <button class="theme-toggle" id="themeToggleBtn" title="Chuyển đổi giao diện Sáng/Tối">
+      <i class="fas fa-moon"></i>
+    </button>
   </div>
 
-  <div id="searchBox">
-    <input id="searchInput" placeholder="Nhập ISSN hoặc tên tạp chí" />
-    <button onclick="search()">Tìm kiếm</button>
-  </div>
-
-  <div id="excelInfo" style="margin-bottom: 20px;display: none;"></div>
-
-  <div id="externalLinks">
-    <strong>Các link khác:</strong>
-    <a id="clarivateLink" href="#" target="_blank">Xem trên Clarivate Master Journal List</a>
-    <a id="Non-APC" href="https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/" target="_blank">Xem danh sách tạp chí trên Non-APC</a>
-    <a id="scopusLink" href="#" target="_blank">Xem trên Scopus Preview</a>
-    <a id="scimagoLink" href="#" target="_blank">Xem trên SCImago Journal & Country Rank</a>
-  </div>
-
-
-  <div id="iframes">
-    <div class="iframe-block">
-      <p>Non-APC</p>
-      <iframe id="noapcFrame" src=""></iframe>
+  <div class="main-content">
+    <div id="searchBox">
+      <input id="searchInput" placeholder="Nhập ISSN hoặc tên tạp chí..." />
+      <button onclick="search()"><i class="fas fa-search"></i> Tìm kiếm</button>
     </div>
 
-    <div class="iframe-block">
-      <p>Resurchify</p>
-      <iframe id="resurchifyFrame" src=""></iframe>
+    <div id="excelInfo" class="info-card"></div>
+
+    <div id="externalLinks" class="info-card">
+      <strong><i class="fas fa-link"></i> Liên kết hệ thống ngoài:</strong>
+      <div class="links-grid">
+        <a id="clarivateLink" href="#" target="_blank">Clarivate Master Journal List</a>
+        <a id="Non-APC" href="https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/"
+          target="_blank">Danh sách Non-APC</a>
+        <a id="scopusLink" href="#" target="_blank">Scopus Preview</a>
+        <a id="scimagoLink" href="#" target="_blank">SCImago Journal & Country Rank</a>
+      </div>
     </div>
 
-    <div class="iframe-block">
-      <p>Web Of Science</p>
-      <iframe id="wosFrame" src=""></iframe>
+    <div id="iframes">
+      <div class="iframe-block">
+        <p><i class="fas fa-file-invoice-dollar"></i> Non-APC</p>
+        <iframe id="noapcFrame" src=""></iframe>
+      </div>
+
+      <div class="iframe-block">
+        <p><i class="fas fa-chart-line"></i> Resurchify</p>
+        <iframe id="resurchifyFrame" src=""></iframe>
+      </div>
+
+      <div class="iframe-block">
+        <p><i class="fas fa-globe"></i> Web Of Science</p>
+        <iframe id="wosFrame" src=""></iframe>
+      </div>
     </div>
   </div>
-
 
   <script>
+    // Logic đổi Sáng/Tối
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+
+    // Xem system pref hoặc localStorage
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    htmlEl.setAttribute('data-theme', savedTheme);
+    updateToggleIcon(savedTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = htmlEl.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      htmlEl.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateToggleIcon(newTheme);
+    });
+
+    function updateToggleIcon(theme) {
+      if (theme === 'dark') {
+        themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+      } else {
+        themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+      }
+    }
+
     let excelData = [];
 
     async function loadExcel() {
-      const res = await fetch("2019-2023JCRImpactFactor.xlsx");
-      const buffer = await res.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      excelData = XLSX.utils.sheet_to_json(sheet);
+      try {
+        const res = await fetch("2019-2023JCRImpactFactor.xlsx");
+        const buffer = await res.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        excelData = XLSX.utils.sheet_to_json(sheet);
+      } catch (e) {
+        console.error("Không thể tải file excel:", e);
+      }
     }
 
     async function search() {
-      document.getElementById("excelInfo").style.display="block";
       const input = document.getElementById("searchInput");
       const query = input.value.trim().toLowerCase();
       if (!query) return;
 
+      document.getElementById("excelInfo").style.display = "block";
       const encoded = encodeURIComponent(query);
+
       document.getElementById('externalLinks').style.display = 'block';
 
       document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
       document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
       document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
 
-      // Thêm link vào iframe https://www.scimagojr.com/journalsearch.php?q=2590-1230
+      // Thêm link vào iframe
       document.getElementById('resurchifyFrame').src = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
       document.getElementById('wosFrame').src = `https://wos-journal.info/?jsearch=${encoded}`;
-      //Cú pháp: tên id như cái id trong phần thêm phần web. Vào web gõ search thử vd: "https://lhu.edu.vn/search/?q=timdayne" thì timdayne là chỗ cần nhét encode
-      // document.getElementById('tên id').src = `https://lhu.edu.vn/search/?q=${encoded}`;
 
       // Excel search
       const found = excelData.find(row => {
@@ -193,26 +411,22 @@
 
       const excelInfoDiv = document.getElementById("excelInfo");
       if (found) {
-        //Khi thêm cột trong excel
-        //Thêm 1 dòng  
-        // <li><b>Impact Factor 2022:</b> ${found["2023_JCR"]}</li>
-        //trong đó Impact Factor 2022 là tên tiêu đề
-        //2023_JCR là tên cột
         excelInfoDiv.innerHTML = `
-          <h3>Thông tin tạp chí</h3>
+          <h3><i class="fas fa-info-circle"></i> Thông tin tạp chí</h3>
           <ul>
             <li><b>Tên tạp chí:</b> ${found["journal_name"]}</li>
             <li><b>ISSN:</b> ${found["issn"]}</li>
             <li><b>eISSN:</b> ${found["eissn"]}</li>
             <li><b>Ngành:</b> ${found["category"]}</li>
-            <li><b>Impact Factor 2023:</b> ${found["2024_JCR"]}</li>
-            <li><b>Impact Factor 2024:</b> ${found["2025_JCR"]}</li>
-            <li><b>Hệ số chất lượng Q:</b> ${found["JIF Quartile"]}</li>
+            <li><b>Impact Factor 2023:</b> ${found["2024_JCR"] || 'N/A'}</li>
+            <li><b>Impact Factor 2024:</b> ${found["2025_JCR"] || 'N/A'}</li>
+            <li><b>Hệ số chất lượng Q:</b> ${found["JIF Quartile"] || 'N/A'}</li>
           </ul>
         `;
         document.getElementById('noapcFrame').src = `https://noapc.com/journal.php?q=${found["journal_name"]}`;
       } else {
-        excelInfoDiv.innerHTML = `<p style="color:red;">Không tìm thấy thông tin</p>`;
+        excelInfoDiv.innerHTML = `<p style="color: #ef4444; font-weight: bold;"><i class="fas fa-exclamation-triangle"></i> Không tìm thấy thông tin trong cơ sở dữ liệu.</p>`;
+        document.getElementById('noapcFrame').src = `https://noapc.com/journal.php?q=${query}`;
       }
     }
 
@@ -223,6 +437,5 @@
     window.onload = loadExcel;
   </script>
 </body>
+
 </html>
-
-
