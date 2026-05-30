@@ -1096,14 +1096,24 @@
       }
 
       // 3. HĐGSNN / QĐ26
-      if (/hdgsnn|hoi dong giao su|quyet dinh 26|qs 26|hdgs|gs nha nuoc/.test(q)) {
-        return `📜 <strong>Hội đồng Giáo sư Nhà nước (HĐGSNN)</strong><br><br>` +
-          `Quyết định <strong>26/QĐ-HĐGSNN</strong> (11/7/2025):<br>` +
-          `• Phê duyệt <strong>Danh mục tạp chí được tính điểm 2025</strong><br>` +
-          `• Gồm <strong>28 ngành/liên ngành</strong><br>` +
-          `• Dùng để xét công nhận <strong>Giáo sư, Phó Giáo sư</strong><br><br>` +
-          `🔗 <a href="http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf" target="_blank" style="color:#10a37f;">📄 Xem PDF QĐ gốc</a> | ` +
-          `<a href="http://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/" target="_blank" style="color:#10a37f;">🌐 Trang HĐGSNN</a>`;
+      if (/hdgsnn|hoi dong giao su|quyet dinh 26|qd 26|qs 26|hdgs|gs nha nuoc|quyet dinh|26\/qd|danh muc tap chi 2025|dmtc 2025/.test(q)) {
+        const qdLink = (pdfData[0] && (pdfData[0]["Bản gốc chi tiết (Tải về/Xem)"] || pdfData[0]["Link PDF"])) ||
+          "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf";
+        return `📜 <strong>Quyết định 26/QĐ-HĐGSNN</strong><br><br>` +
+          `<strong>📋 Nội dung chính:</strong><br>` +
+          `• Ban hành: <strong>11/07/2025</strong><br>` +
+          `• Cơ quan ban hành: <strong>Hội đồng Giáo sư Nhà nước (HĐGSNN)</strong><br>` +
+          `• Nội dung: Phê duyệt <strong>Danh mục tạp chí khoa học được tính điểm năm 2025</strong><br>` +
+          `• Phạm vi: <strong>28 ngành / liên ngành</strong><br>` +
+          `• Mục đích: Dùng để xét công nhận <strong>chức danh Giáo sư, Phó Giáo sư</strong><br><br>` +
+          `<strong>📌 Điểm nổi bật:</strong><br>` +
+          `• Tạp chí ISI (IF ≥ 2): tối đa <strong>3,0 điểm</strong><br>` +
+          `• Tạp chí ISI (IF &lt; 2): tối đa <strong>2,0 điểm</strong><br>` +
+          `• Tạp chí Scopus/PubMed: tối đa <strong>1,5 điểm</strong><br>` +
+          `• Hội nghị quốc tế có phản biện: tối đa <strong>1,0 điểm</strong><br><br>` +
+          `🔗 <a href="${qdLink}" target="_blank" style="color:#10a37f;font-weight:700;">📄 Tải toàn văn Quyết định 26 (PDF)</a><br>` +
+          `🌐 <a href="http://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/" target="_blank" style="color:#10a37f;">Trang tin HĐGSNN</a><br><br>` +
+          `<em>💡 Gõ tên ngành (vd: "dược học", "y học") để xem danh mục tạp chí từng ngành.</em>`;
       }
 
       // 4. Chào / cảm ơn
