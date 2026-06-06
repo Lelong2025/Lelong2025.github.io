@@ -1409,7 +1409,7 @@
         scopusHTML += `<ul class="result-list">`;
         scopusMatches.forEach(item => {
           const isDiscontinued = !!item["Titles Discontinued by Scopus"];
-          const isActive = String(item["Active or Inactive"] || "").toLowerCase().includes("active") && !isDiscontinued;
+          const isActive = String(item["Active or Inactive"] || "").trim().toLowerCase() === "active" && !isDiscontinued;
           const activeBadge = isActive
             ? `<span class="badge badge-active">Active</span>`
             : `<span class="badge badge-inactive">Inactive</span>`;
