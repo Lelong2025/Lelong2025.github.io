@@ -1369,7 +1369,6 @@
               <div class="result-item-title">${item["Tên Tạp chí"] || "N/A"}</div>
               <div class="result-item-detail"><b>ISSN:</b> <span>${item["ISSN"] || "N/A"}</span></div>
               <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${item["Điểm HDDGSNN"] !== undefined ? item["Điểm HDDGSNN"] : "N/A"}</span></div>
-              <div class="result-item-detail"><b>STT:</b> <span>${item["STT"] || "N/A"}</span></div>
             </li>
           `;
         });
@@ -1409,7 +1408,8 @@
       } else {
         scopusHTML += `<ul class="result-list">`;
         scopusMatches.forEach(item => {
-          const isActive = String(item["Active or Inactive"] || "").toLowerCase().includes("active");
+          const isDiscontinued = !!item["Titles Discontinued by Scopus"];
+          const isActive = String(item["Active or Inactive"] || "").toLowerCase().includes("active") && !isDiscontinued;
           const activeBadge = isActive
             ? `<span class="badge badge-active">Active</span>`
             : `<span class="badge badge-inactive">Inactive</span>`;
