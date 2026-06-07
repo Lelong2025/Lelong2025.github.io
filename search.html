@@ -1083,7 +1083,7 @@
   </div>
 
   <!-- ===== AI CHATBOX ===== -->
-  <button id="ai-chat-btn" title="Hỏi về tạp chí 2025" onclick="toggleChat()">
+  <button id="ai-chat-btn" title="Hỏi về tạp chí" onclick="toggleChat()">
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z"
@@ -1099,13 +1099,13 @@
     <!-- Intro Modal -->
     <div id="ai-settings-modal">
       <div class="settings-box">
-        <h4><i class="fas fa-robot"></i> Trợ lý Tạp chí 2025</h4>
+        <h4><i class="fas fa-robot"></i> Trợ lý Tạp chí</h4>
         <p style="font-size:13px;color:#94a3b8;line-height:1.7;margin:0 0 16px;">
           Tôi có thể trả lời câu hỏi về:<br>
-          📋 <strong style="color:#10a37f;">Danh mục tạp chí 2025</strong> (QĐ 26/HĐGSNN)<br>
-          📊 <strong style="color:#10a37f;">Impact Factor, Quartile</strong> từ dữ liệu Excel<br>
-          🔗 <strong style="color:#10a37f;">Link PDF</strong> từng ngành khoa học<br>
-          💡 <strong style="color:#10a37f;">Hướng dẫn</strong> tra cứu tạp chí
+          📋 <strong style="color:#10a37f;">Danh mục tạp chí</strong> (trong và ngoài nước)<br>
+          📊 <strong style="color:#10a37f;">Impact Factor, Quartile, Scopus</strong> từ dữ liệu Excel<br>
+          🎖️ <strong style="color:#10a37f;">Khung điểm HĐGSNN 2025</strong> cho từng ngành<br>
+          💡 <strong style="color:#10a37f;">Tư vấn</strong> xuất bản khoa học
         </p>
         <div class="settings-btn-row">
           <button class="btn-save-settings" onclick="closeSettings();showWelcomeMsg();">🚀 Bắt đầu hỏi!</button>
@@ -1126,8 +1126,8 @@
         </svg>
       </div>
       <div class="ai-info">
-        <p class="ai-name">Trợ lý Tạp chí 2025</p>
-        <span class="ai-status"><span class="status-dot"></span> Miễn phí · Không cần API</span>
+        <p class="ai-name">Trợ lý Tạp chí</p>
+        <span class="ai-status"><span class="status-dot"></span> AI Chuyên gia Tạp chí</span>
       </div>
       <button class="btn-settings" title="Giới thiệu" onclick="openSettings()"><i
           class="fas fa-info-circle"></i></button>
@@ -1514,8 +1514,8 @@
     ];
 
     const QUICK_QUESTIONS = [
-      '📋 Danh sách 28 ngành', '🎓 Ngành Kinh tế',
-      '🎓 Ngành Y học', '📜 Quyết định 26 là gì?'
+      '📋 Danh sách 28 ngành', '🎓 Tìm tạp chí ISSN 2525-2186',
+      '🎓 Tra cứu tạp chí Nature', '📜 Quyết định 26 là gì?'
     ];
 
     // Normalize Vietnamese text
@@ -1534,12 +1534,13 @@
     function showWelcomeMsg() {
       if (chatHistory.length > 0) return;
       addMessage('ai',
-        `Xin chào! 👋 Tôi là <strong>Trợ lý HĐGSNN 2025</strong>.<br><br>` +
-        `Tôi chuyên hỗ trợ tìm kiếm:<br>` +
-        `• 📋 <strong>28 ngành/liên ngành</strong> trong Danh mục tạp chí 2025<br>` +
-        `• 🔗 Link đọc trực tiếp PDF của từng ngành<br>` +
-        `• 📜 Thông tin Quyết định 26/QĐ-HĐGSNN<br><br>` +
-        `Bạn cần xem danh mục của ngành nào?`, true
+        `Xin chào! 👋 Tôi là <strong>Trợ lý Tạp chí</strong>, chuyên gia giải đáp các câu hỏi liên quan đến tạp chí khoa học trong và ngoài nước.<br><br>` +
+        `Tôi hỗ trợ bạn tra cứu:<br>` +
+        `• 🇻🇳 Điểm số tạp chí trong danh mục <strong>HĐGSNN 2025</strong><br>` +
+        `• 🌍 Chỉ số <strong>JCR Impact Factor, Phân hạng Q</strong><br>` +
+        `• 📊 Trạng thái <strong>Scopus, Open Access, Nhà xuất bản</strong><br>` +
+        `• 📄 Link đọc trực tiếp PDF của từng ngành<br><br>` +
+        `Bạn có thể gõ câu hỏi hoặc nhập ISSN (ví dụ: <em>"Tạp chí khoa học lạc hồng issn 2525-2186"</em> hoặc <em>"Tạp chí Nature"</em>).`, true
       );
       addQuickReplies();
     }
@@ -1564,153 +1565,143 @@
     function openSettings() { document.getElementById('ai-settings-modal').classList.add('open'); }
     function closeSettings() { document.getElementById('ai-settings-modal').classList.remove('open'); }
 
-    // ---- Rule-based engine ----
-    function getBotReply(userText) {
-      const q = norm(userText);
-      const raw = userText.toLowerCase();
-
-      // 1. Danh sách ngành (từ Excel hoặc DMTC_2025)
-      if (/danh sach|28 nganh|tat ca nganh|liet ke|danh muc|qd 26|quyet dinh 26|tinh diem/.test(q)) {
-        const sourceData = pdfData.length > 0 ? pdfData : DMTC_2025.map(d => ({ STT: d.id, "Ngành": d.nganh, "Link PDF": d.pdf }));
-        const list = sourceData.map((d, i) =>
-          `${d.STT || d["STT"] || (i + 1)}. <strong>${d["Ngành"] || d["Hội đồng Giáo sư ngành / Liên ngành"] || d.nganh}</strong> — <a href="${d["Link PDF"] || d["Bản gốc chi tiết (Tải về/Xem)"] || d.pdf}" target="_blank" style="color:#10a37f;">📄 Xem PDF</a>`
-        ).join('<br>');
-        return `📋 <strong>Danh mục tạp chí khoa học được tính điểm năm 2025</strong>:<br><br>${list}<br><br>🔗 <a href="http://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/" target="_blank" style="color:#10a37f;">Trang chính thức HĐGSNN</a>`;
-      }
-
-      // 2. Tìm ngành cụ thể → link PDF + Các tạp chí
-      let responseHTML = '';
-      let foundNganh = null;
-      if (pdfData.length > 0) {
-        foundNganh = pdfData.find(d => {
-          const name = norm(d["Ngành"] || d["Hội đồng Giáo sư ngành / Liên ngành"] || "");
-          // Only match if query is close in length to the ngành name (max 5 extra chars)
-          const extra = q.replace(name, '').trim().length;
-          return name && q.includes(name) && extra <= 5;
-        });
-      }
-      if (!foundNganh) {
-        foundNganh = DMTC_2025.find(d => d.key.some(k => {
-          const extra = q.replace(norm(k), '').trim().length;
-          return q.includes(norm(k)) && extra <= 5;
-        }));
-      }
-
-      if (foundNganh) {
-        const nName = foundNganh["Ngành"] || foundNganh["Hội đồng Giáo sư ngành / Liên ngành"] || foundNganh.nganh;
-        const nLink = foundNganh["Link PDF"] || foundNganh["Bản gốc chi tiết (Tải về/Xem)"] || foundNganh.pdf;
-        responseHTML += `🎓 Ngành <strong>${nName}</strong> — năm 2025:<br><br>` +
-          `<a href="${nLink}" target="_blank" style="color:#10a37f;font-weight:700;font-size:15px;">🔗 Xem PDF Danh mục tạp chí</a><br><br>`;
-      }
-
-      // 2.5 Tra cứu điểm tạp chí từ Sheet Điểm
-      const cleanQ = q.replace(/tim|tra cuu|tap chi|cho toi|cho biet|thong tin|xem|issn|eissn|diem/g, '').trim();
-
-      const getVal = (row, ...keywords) => {
-        for (let key of Object.keys(row)) {
-          if (keywords.some(kw => key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').includes(kw))) return String(row[key]);
-        }
-        return '';
+    // ---- Search local database to provide context for AI ----
+    function searchLocalDatabase(queryText) {
+      const cleanISSN = (issn) => issn ? String(issn).replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "";
+      const normalizeStr = (str) => {
+        if (!str) return "";
+        return str.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .trim();
       };
 
-      if (hdgsnnData.length > 0 && cleanQ.length > 1) {
-        const ck = cleanQ.replace(/-/g, '');
+      const issnMatch = queryText.match(/\b\d{4}-\d{3}[\dX]\b/i) || queryText.match(/\b\d{8}\b/);
+      let cleanedQuery = "";
+      if (issnMatch) {
+        cleanedQuery = cleanISSN(issnMatch[0]);
+      }
 
-        const hits = hdgsnnData.filter(r => {
-          const name = norm(getVal(r, 'ten', 'tap chi', 'journal'));
-          const issn = getVal(r, 'issn').toLowerCase().replace(/-/g, '');
-          const nganh = norm(getVal(r, 'nganh', 'lien nganh'));
+      let nameQuery = queryText.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+        .replace(/tim|tra cuu|xem|cho toi|biet|ve|thong tin|tap chi|issn|eissn|diem|cua/g, "")
+        .trim();
 
-          let matchNganh = false;
-          if (foundNganh) {
-            const nName = norm(foundNganh["Ngành"] || foundNganh["Hội đồng Giáo sư ngành / Liên ngành"] || foundNganh.nganh || '');
-            matchNganh = nganh.includes(nName) || name.includes(nName);
+      const normQuery = normalizeStr(nameQuery);
+
+      let hdgsnnMatches = [];
+      let jcrMatches = [];
+      let scopusMatches = [];
+
+      // 1. Tìm trong HDGSNN list chính
+      if (typeof hdgsnnListData !== "undefined" && hdgsnnListData.length > 0) {
+        hdgsnnMatches = hdgsnnListData.filter(row => {
+          const name = normalizeStr(row["Tên Tạp chí"] || "");
+          const issn = cleanISSN(row["ISSN"] || "");
+          if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
+          return normQuery.length > 3 && name.includes(normQuery);
+        }).slice(0, 10);
+      }
+
+      // 2. Tìm trong dữ liệu phụ điểm chatbox
+      if (typeof hdgsnnData !== "undefined" && hdgsnnData.length > 0) {
+        const chatDbMatches = hdgsnnData.filter(row => {
+          const name = normalizeStr(row["Tên tạp chí"] || "");
+          const issn = cleanISSN(row["Chỉ số ISSN"] || "");
+          if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
+          return normQuery.length > 3 && name.includes(normQuery);
+        });
+
+        // Hợp nhất vào hdgsnnMatches
+        chatDbMatches.forEach(item => {
+          const exists = hdgsnnMatches.some(m => cleanISSN(m["ISSN"]) === cleanISSN(item["Chỉ số ISSN"]));
+          if (!exists) {
+            hdgsnnMatches.push({
+              "Tên Tạp chí": item["Tên tạp chí"],
+              "ISSN": item["Chỉ số ISSN"] || "N/A",
+              "Điểm HDDGSNN": item["Khung điểm quy định"] || "N/A",
+              "Cơ quan xuất bản": item["Cơ quan xuất bản"] || "N/A"
+            });
           }
-
-          // When no ngành matched, search journal by full cleanQ (more specific)
-          const searchTerm = cleanQ;
-          return (name && name.includes(searchTerm)) || (issn && issn.includes(ck)) || (nganh && nganh.includes(searchTerm)) || matchNganh;
-        }).slice(0, 8);
-
-        if (hits.length > 0) {
-          if (hits.length === 1 && !foundNganh) {
-            const r = hits[0];
-            const diem = getVal(r, 'khung', 'diem', 'point');
-            responseHTML += `📰 <strong>${getVal(r, 'ten', 'tap chi', 'journal')}</strong><br><br>` +
-              `• ISSN: ${getVal(r, 'issn') || 'N/A'}<br>` +
-              `• Cơ quan: ${getVal(r, 'co quan', 'xuat ban', 'publisher') || 'N/A'}<br>` +
-              `🎖️ Khung điểm HĐGSNN 2025: <strong style="color:#eab308;">${diem || 'N/A'}</strong>`;
-          } else {
-            responseHTML += (foundNganh ? `<br>📊 Tạp chí liên quan trong Sheet Điểm:<br>` : `🔍 Tìm thấy <strong>${hits.length}</strong> tạp chí:<br><br>`) +
-              hits.map(r => {
-                const diem = getVal(r, 'khung', 'diem', 'point');
-                return `• <strong>${getVal(r, 'ten', 'tap chi', 'journal')}</strong><br>&nbsp;&nbsp;&nbsp;ISSN: ${getVal(r, 'issn') || 'N/A'} | 🎖️ ${diem || 'N/A'}`;
-              }).join('<br>') +
-              (hits.length === 8 ? `<br><br><em>(Gõ cụ thể tên tạp chí để xem đầy đủ)</em>` : ``);
-          }
-        } else if (foundNganh) {
-          responseHTML += `<br><em>⚠️ Chưa có dữ liệu điểm cho ngành này trong Sheet Điểm của file Excel.</em>`;
-        }
-      } else if (foundNganh && hdgsnnData.length === 0) {
-        responseHTML += `<br><em>⚠️ File Excel chưa tải được (thử mở bằng HTTP server thay vì file://)</em>`;
+        });
       }
 
-      if (responseHTML !== '') {
-        return responseHTML;
+      // 3. Tìm trong JCR
+      if (typeof excelData !== "undefined" && excelData.length > 0) {
+        jcrMatches = excelData.filter(row => {
+          const name = normalizeStr(row["journal_name"] || "");
+          const issn = cleanISSN(row["issn"] || "");
+          const eissn = cleanISSN(row["eissn"] || "");
+          if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) return true;
+          return normQuery.length > 3 && name.includes(normQuery);
+        }).slice(0, 10);
       }
 
-      // 3. HĐGSNN / QĐ26
-      if (/hdgsnn|hoi dong giao su|quyet dinh 26|qd 26|qs 26|hdgs|gs nha nuoc|quyet dinh|26\/qd|danh muc tap chi 2025|dmtc 2025/.test(q)) {
-        const qdLink = (pdfData[0] && (pdfData[0]["Bản gốc chi tiết (Tải về/Xem)"] || pdfData[0]["Link PDF"])) ||
-          "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf";
-        return `📜 <strong>Quyết định 26/QĐ-HĐGSNN</strong><br><br>` +
-          `<strong>📋 Nội dung chính:</strong><br>` +
-          `• Ban hành: <strong>11/07/2025</strong><br>` +
-          `• Cơ quan ban hành: <strong>Hội đồng Giáo sư Nhà nước (HĐGSNN)</strong><br>` +
-          `• Nội dung: Phê duyệt <strong>Danh mục tạp chí khoa học được tính điểm năm 2025</strong><br>` +
-          `• Phạm vi: <strong>28 ngành / liên ngành</strong><br>` +
-          `• Mục đích: Dùng để xét công nhận <strong>chức danh Giáo sư, Phó Giáo sư</strong><br><br>` +
-          `<strong>📌 Điểm nổi bật:</strong><br>` +
-          `• Tạp chí ISI (IF ≥ 2): tối đa <strong>3,0 điểm</strong><br>` +
-          `• Tạp chí ISI (IF &lt; 2): tối đa <strong>2,0 điểm</strong><br>` +
-          `• Tạp chí Scopus/PubMed: tối đa <strong>1,5 điểm</strong><br>` +
-          `• Hội nghị quốc tế có phản biện: tối đa <strong>1,0 điểm</strong><br><br>` +
-          `🔗 <a href="${qdLink}" target="_blank" style="color:#10a37f;font-weight:700;">📄 Tải toàn văn Quyết định 26 (PDF)</a><br>` +
-          `🌐 <a href="http://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/" target="_blank" style="color:#10a37f;">Trang tin HĐGSNN</a><br><br>` +
-          `<em>💡 Gõ tên ngành (vd: "dược học", "y học") để xem danh mục tạp chí từng ngành.</em>`;
+      // 4. Tìm trong Scopus
+      if (typeof scopusListData !== "undefined" && scopusListData.length > 0) {
+        scopusMatches = scopusListData.filter(row => {
+          const title = normalizeStr(row["Source Title"] || "");
+          const issn = cleanISSN(row["ISSN"] || "");
+          const eissn = cleanISSN(row["EISSN"] || "");
+          if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) return true;
+          return normQuery.length > 3 && title.includes(normQuery);
+        }).slice(0, 10);
       }
 
-      // 4. Chào / cảm ơn
-      if (/^(xin chao|hello|hi |chao|hey|alo)/.test(q)) {
-        return `Xin chào! 😊 Tôi là Trợ lý HĐGSNN 2025.<br>Tôi có thể giúp bạn tìm <strong>PDF danh mục tạp chí 2025</strong> của các ngành.<br>Bạn cần tìm ngành nào?`;
-      }
-      if (/cam on|thanks|thank you|cam ta/.test(q)) {
-        return `Không có chi! 😊 Chúc bạn xem danh mục vui vẻ. Hỏi thêm bất kỳ lúc nào nhé! 🎓`;
-      }
-
-      return `Xin lỗi, tôi chỉ tập trung hỗ trợ tra cứu <strong>Danh mục tạp chí HĐGSNN 2025</strong>. 🤔<br><br>Hãy thử hỏi:<br>` +
-        `• <em>"PDF ngành Kinh tế"</em><br>` +
-        `• <em>"Danh sách 28 ngành"</em><br>` +
-        `• <em>"Quyết định 26 là gì?"</em>`;
+      return { hdgsnnMatches, jcrMatches, scopusMatches };
     }
 
-    function sendChatMessage() {
+    async function sendChatMessage() {
       const input = document.getElementById('ai-chat-input');
       const userText = input.value.trim();
       if (!userText) return;
+
       document.getElementById('quick-replies-container')?.remove();
       addMessage('user', userText, false);
-      chatHistory.push({ role: 'user', text: userText });
-      input.value = ''; input.style.height = 'auto';
+      
+      // Đưa lịch sử trò chuyện theo định dạng OpenAI
+      chatHistory.push({ role: 'user', content: userText });
+      input.value = ''; 
+      input.style.height = 'auto';
+
       const tid = showTyping();
       document.getElementById('ai-send-btn').disabled = true;
-      setTimeout(() => {
+
+      try {
+        // Tra cứu dữ liệu cục bộ làm ngữ cảnh hỗ trợ
+        const contextData = searchLocalDatabase(userText);
+
+        // Gọi Cloudflare Worker
+        const response = await fetch("https://old-band-adb5.vonhacphuoc.workers.dev", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            messages: chatHistory,
+            contextData: contextData
+          })
+        });
+
         removeTyping(tid);
-        const reply = getBotReply(userText);
-        addMessage('ai', reply, true);
-        chatHistory.push({ role: 'ai', text: reply });
+
+        if (!response.ok) {
+          throw new Error("Không thể kết nối đến máy chủ Trợ lý AI.");
+        }
+
+        const data = await response.json();
+        const replyText = data.result || "Không có phản hồi từ Trợ lý AI.";
+
+        addMessage('ai', replyText, false);
+        chatHistory.push({ role: 'assistant', content: replyText });
+
+      } catch (err) {
+        removeTyping(tid);
+        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${err.message}. Vui lòng thử lại sau.`, true);
+      } finally {
         document.getElementById('ai-send-btn').disabled = false;
-      }, 350 + Math.random() * 350);
+      }
     }
 
     function addMessage(role, text, isHTML) {
@@ -1726,11 +1717,32 @@
     }
 
     function formatMessage(text) {
-      return text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/\n/g, '<br>');
+      // Escape HTML
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      
+      // Bold **text**
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      // Italic *text*
+      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+      // Inline code `code`
+      html = html.replace(/`(.+?)`/g, '<code style="background:rgba(128,128,128,0.2);padding:2px 4px;border-radius:4px;font-family:monospace;">$1</code>');
+      
+      // Convert list items: start of line with "- " or "* " or "• "
+      html = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+          return `<li style="margin-left: 20px; list-style-type: disc;">${trimmed.substring(2)}</li>`;
+        }
+        return line;
+      }).join('\n');
+
+      // Replace newlines with <br>
+      html = html.replace(/\n/g, '<br>');
+      
+      return html;
     }
 
     function showTyping() {
