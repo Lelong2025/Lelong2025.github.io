@@ -99,12 +99,13 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
         ...messages
       ];
 
-      // Gọi OpenAI API
-      const openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      // Gọi OpenAI API qua Cloudflare AI Gateway để tránh bị chặn địa lý (Hồng Kông/Việt Nam)
+      const openAiResponse = await fetch("https://gateway.ai.cloudflare.com/v1/0b2220df0295474315b4b6940a0785e8/tapchi-gateway/openai/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+          "cf-aig-authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
