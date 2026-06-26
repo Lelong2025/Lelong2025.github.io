@@ -1099,6 +1099,140 @@
       transform: translateY(-1px);
     }
 
+    /* ===== LOADING SPLASH SCREEN ===== */
+    #loading-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      gap: 28px;
+      padding: 30px 20px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    #loading-splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      animation: splashPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes splashPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(59,130,246,0.5)); }
+      50% { transform: scale(1.06); filter: drop-shadow(0 0 24px rgba(139,92,246,0.7)); }
+    }
+
+    .splash-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-align: center;
+      margin: 0;
+    }
+
+    .splash-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      margin: -16px 0 0;
+    }
+
+    .splash-progress-wrap {
+      width: min(380px, 90vw);
+    }
+
+    .splash-progress-bar-bg {
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .splash-progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10a37f);
+      background-size: 200% 100%;
+      width: 5%;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      animation: shimmer 2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    .splash-status {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 20px;
+      transition: color 0.3s;
+    }
+
+    .splash-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(380px, 90vw);
+    }
+
+    .splash-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #475569;
+      transition: color 0.3s;
+    }
+
+    .splash-step.active {
+      color: #94a3b8;
+    }
+
+    .splash-step.done {
+      color: #10b981;
+    }
+
+    .step-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .splash-step.active .step-icon {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    .splash-step.done .step-icon {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
     /* Nút liên kết xem trực quan */
     .iframe-buttons-grid {
       display: flex;
@@ -1269,6 +1403,35 @@
 </head>
 
 <body>
+
+  <!-- ===== LOADING SPLASH SCREEN ===== -->
+  <div id="loading-splash">
+    <img src="logo_dung_vi.png" alt="Logo" class="splash-logo">
+    <h1 class="splash-title">Tra cứu Thông tin Tạp chí</h1>
+    <p class="splash-subtitle">Hệ thống &mdash; Lelong 2025</p>
+
+    <div class="splash-progress-wrap">
+      <div class="splash-progress-bar-bg">
+        <div id="splashProgressFill" class="splash-progress-bar-fill"></div>
+      </div>
+      <div id="splashStatus" class="splash-status">Khởi động hệ thống...</div>
+    </div>
+
+    <div class="splash-steps">
+      <div id="step-jcr" class="splash-step">
+        <div class="step-icon"><i class="fas fa-chart-line"></i></div>
+        <span>Dữ liệu JCR Impact Factor</span>
+      </div>
+      <div id="step-hdgsnn" class="splash-step">
+        <div class="step-icon"><i class="fas fa-university"></i></div>
+        <span>Danh mục HĐGSNN 2025</span>
+      </div>
+      <div id="step-scopus" class="splash-step">
+        <div class="step-icon"><i class="fas fa-globe"></i></div>
+        <span>Scopus May 2026 (22.8MB)</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Khối header -->
   <div class="header-container">
@@ -1511,22 +1674,58 @@
     }
 
     function updateLoadingStatus(msg, success = false, error = false) {
+      // Cập nhật cả splash screen lẫn status bar nhỏ phía dưới
       const el = document.getElementById("dbLoadingStatus");
+      const splashStatus = document.getElementById("splashStatus");
       if (!el) return;
       let icon = '<i class="fas fa-circle-notch fa-spin"></i> ';
       el.className = "loading-status-msg";
       if (success) {
         icon = '<i class="fas fa-check-circle"></i> ';
         el.className = "loading-status-msg success";
+        if (splashStatus) { splashStatus.style.color = '#10b981'; }
       } else if (error) {
         icon = '<i class="fas fa-exclamation-circle"></i> ';
         el.className = "loading-status-msg error";
+        if (splashStatus) { splashStatus.style.color = '#ef4444'; }
+      } else {
+        if (splashStatus) { splashStatus.style.color = ''; }
       }
       el.innerHTML = icon + msg;
+      if (splashStatus) splashStatus.textContent = msg;
+    }
+
+    function setSplashStep(stepId, state) {
+      // state: 'active' | 'done'
+      const el = document.getElementById(stepId);
+      if (!el) return;
+      el.classList.remove('active', 'done');
+      el.classList.add(state);
+      if (state === 'done') {
+        el.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+      } else if (state === 'active') {
+        el.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+      }
+    }
+
+    function setSplashProgress(pct) {
+      const fill = document.getElementById('splashProgressFill');
+      if (fill) fill.style.width = pct + '%';
+    }
+
+    function hideSplash() {
+      const splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.classList.add('hidden');
+        // Xóa khỏi DOM sau khi transition kết thúc
+        setTimeout(() => splash.remove(), 700);
+      }
     }
 
     async function loadExcel() {
       // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
+      setSplashStep('step-jcr', 'active');
+      setSplashProgress(10);
       try {
         updateLoadingStatus("Đang tải dữ liệu JCR Impact Factor...");
         const buffer = await readXlsxFile("2019-2023JCRImpactFactor.xlsx");
@@ -1534,28 +1733,39 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         excelData = XLSX.utils.sheet_to_json(sheet);
         isJcrLoaded = true;
+        setSplashStep('step-jcr', 'done');
+        setSplashProgress(35);
         console.log(`✅ Đã tải ${excelData.length} tạp chí từ Excel JCR.`);
       } catch (e) {
+        setSplashStep('step-jcr', 'done');
+        setSplashProgress(35);
         console.warn("Không thể tải file excel JCR:", e.message);
       }
 
       // 2. Tải danh sách tạp chí HDGSNN.xlsx (file trong nước tính điểm)
+      setSplashStep('step-hdgsnn', 'active');
       try {
-        updateLoadingStatus("Đang tải danh mục HDGSNN...");
+        updateLoadingStatus("Đang tải danh mục HĐGSNN...");
         const buffer = await readXlsxFile("danh sách tạp chí HDGSNN.xlsx");
         const workbook = XLSX.read(buffer, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         hdgsnnListData = XLSX.utils.sheet_to_json(sheet);
         isHdgsnnLoaded = true;
+        setSplashStep('step-hdgsnn', 'done');
+        setSplashProgress(50);
         console.log(`✅ Đã tải ${hdgsnnListData.length} tạp chí từ danh sách HDGSNN.`);
       } catch (e) {
+        setSplashStep('step-hdgsnn', 'done');
+        setSplashProgress(50);
         console.warn("Không thể tải danh sách tạp chí HDGSNN.xlsx:", e.message);
       }
 
       // 3. Tải ext_list_May_2026.xlsx (file Scopus quốc tế - 22.8MB)
+      setSplashStep('step-scopus', 'active');
       try {
         updateLoadingStatus("Đang tải danh mục Scopus May 2026 (22.8MB), vui lòng đợi...");
         const buffer = await readXlsxFile("ext_list_May_2026.xlsx");
+        setSplashProgress(82);
         updateLoadingStatus("Đang xử lý dữ liệu Scopus (48k+ dòng)...");
         // Cho phép UI hiển thị trạng thái đang xử lý
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -1563,8 +1773,12 @@
         const sheet = workbook.Sheets["Scopus Sources May 2026"] || workbook.Sheets[workbook.SheetNames[0]];
         scopusListData = XLSX.utils.sheet_to_json(sheet);
         isScopusLoaded = true;
+        setSplashStep('step-scopus', 'done');
+        setSplashProgress(95);
         console.log(`✅ Đã tải ${scopusListData.length} tạp chí từ ext_list_May_2026.xlsx.`);
       } catch (e) {
+        setSplashStep('step-scopus', 'done');
+        setSplashProgress(95);
         console.warn("Không thể tải ext_list_May_2026.xlsx:", e.message);
       }
 
@@ -1577,6 +1791,11 @@
       } else {
         updateLoadingStatus("Lỗi tải cơ sở dữ liệu tạp chí!", false, true);
       }
+
+      // Hoàn thành — tắt Splash Screen
+      setSplashProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      hideSplash();
 
       // 4. Tải HDGSNN2025.xlsx cho Chatbot (nếu có)
       try {
