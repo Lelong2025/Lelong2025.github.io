@@ -13,6 +13,7 @@
   </script>
 
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
@@ -190,7 +191,7 @@
       padding: 0;
       margin: 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
     }
 
@@ -282,24 +283,57 @@
 
     @media (max-width: 768px) {
       .header-container {
-        flex-direction: column;
-        padding: 15px;
+        flex-direction: row !important;
+        padding: 10px 15px;
+        gap: 10px;
+      }
+
+      .header-container img {
+        height: 40px !important;
       }
 
       .header-title {
-        margin: 15px 0;
+        font-size: 18px;
+        margin: 0;
+        text-align: center;
       }
 
       #searchBox {
         flex-direction: column;
+        gap: 10px;
+        margin-bottom: 25px;
       }
 
       #searchBox button {
         width: 100%;
+        padding: 14px 24px;
       }
 
-      .iframe-block {
-        flex: 1 1 100%;
+      #searchInput {
+        padding: 14px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-title {
+        font-size: 15px;
+      }
+      
+      .header-container img {
+        height: 35px !important;
+      }
+
+      .theme-toggle {
+        font-size: 20px;
+        width: 36px;
+        height: 36px;
+      }
+      
+      /* Tối ưu chữ trên nút thông báo khi xuống dòng */
+      .info-card a {
+        font-size: 15px !important;
+        padding: 12px 20px !important;
+        width: 100%;
       }
     }
 
@@ -326,7 +360,7 @@
 
     .search-results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 25px;
       margin-top: 15px;
     }
@@ -1017,6 +1051,173 @@
       background: rgba(16, 163, 127, 0.22);
       transform: translateY(-1px);
     }
+
+    /* Nút liên kết xem trực quan */
+    .iframe-buttons-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .iframe-btn {
+      color: white;
+      background: linear-gradient(135deg, #10a37f, #059669);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(16, 163, 127, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .iframe-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 163, 127, 0.5);
+    }
+    
+    .iframe-btn.noapc-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    .iframe-btn.noapc-btn:hover {
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+
+    .iframe-btn.resurchify-btn {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    .iframe-btn.resurchify-btn:hover {
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+    }
+
+    .iframe-btn.wos-btn {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+    }
+    .iframe-btn.wos-btn:hover {
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+    }
+
+    /* Modal Iframe Popup */
+    .iframe-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .iframe-modal.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .iframe-modal-content {
+      background: var(--bg-color);
+      border: 1px solid var(--card-border);
+      width: 90%;
+      height: 85%;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .iframe-modal.open .iframe-modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .iframe-modal-header {
+      padding: 15px 24px;
+      background: rgba(128, 128, 128, 0.05);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .iframe-modal-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .iframe-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .iframe-modal-close:hover {
+      color: #ef4444;
+    }
+
+    .iframe-modal-body {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: white;
+    }
+
+    .iframe-modal-body iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+    }
+
+    @media (max-width: 768px) {
+      .iframe-modal-content {
+        width: 95%;
+        height: 90%;
+        border-radius: 16px;
+      }
+      .iframe-modal-header {
+        padding: 12px 18px;
+      }
+      .iframe-modal-title {
+        font-size: 16px;
+      }
+      .iframe-buttons-grid {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .iframe-btn {
+        justify-content: center;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 
@@ -1066,20 +1267,34 @@
       </div>
     </div>
 
-    <div id="iframes">
-      <div class="iframe-block">
-        <p><i class="fas fa-file-invoice-dollar"></i> Non-APC</p>
-        <iframe id="noapcFrame" src=""></iframe>
+    <!-- Khối nút mở popup hệ thống ngoài -->
+    <div id="iframeLinksSection" class="info-card" style="display: none; text-align: center; margin-top: 30px;">
+      <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color);">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div class="iframe-buttons-grid">
+        <button onclick="openIframeInModal('noapc')" class="iframe-btn noapc-btn">
+          <i class="fas fa-file-invoice-dollar"></i> Xem Non-APC
+        </button>
+        <button onclick="openIframeInModal('resurchify')" class="iframe-btn resurchify-btn">
+          <i class="fas fa-chart-line"></i> Xem Resurchify
+        </button>
+        <button onclick="openIframeInModal('wos')" class="iframe-btn wos-btn">
+          <i class="fas fa-globe"></i> Xem Web Of Science
+        </button>
       </div>
+    </div>
 
-      <div class="iframe-block">
-        <p><i class="fas fa-chart-line"></i> Resurchify</p>
-        <iframe id="resurchifyFrame" src=""></iframe>
-      </div>
-
-      <div class="iframe-block">
-        <p><i class="fas fa-globe"></i> Web Of Science</p>
-        <iframe id="wosFrame" src=""></iframe>
+    <!-- Modal Iframe Popup -->
+    <div id="iframeModal" class="iframe-modal" onclick="if(event.target === this) closeIframeModal()">
+      <div class="iframe-modal-content">
+        <div class="iframe-modal-header">
+          <span id="modalTitle" class="iframe-modal-title">Hệ thống tích hợp</span>
+          <button class="iframe-modal-close" onclick="closeIframeModal()">&times;</button>
+        </div>
+        <div class="iframe-modal-body">
+          <iframe id="modalIframe" src=""></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -1174,6 +1389,55 @@
       } else {
         themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
       }
+    }
+
+    // Lưu trữ URL của iframe được tạo từ lượt tìm kiếm
+    let currentIframeUrls = {
+      noapc: "",
+      resurchify: "",
+      wos: ""
+    };
+
+    function openIframeInModal(type) {
+      const modal = document.getElementById("iframeModal");
+      const iframe = document.getElementById("modalIframe");
+      const title = document.getElementById("modalTitle");
+      
+      let url = currentIframeUrls[type];
+      let displayTitle = "";
+      
+      switch(type) {
+        case 'noapc':
+          displayTitle = '<i class="fas fa-file-invoice-dollar"></i> Non-APC';
+          break;
+        case 'resurchify':
+          displayTitle = '<i class="fas fa-chart-line"></i> Resurchify';
+          break;
+        case 'wos':
+          displayTitle = '<i class="fas fa-globe"></i> Web Of Science';
+          break;
+      }
+      
+      if (!url) return;
+      
+      title.innerHTML = displayTitle;
+      iframe.src = url;
+      modal.classList.add("open");
+      
+      // GA Event tracking
+      if (typeof gtag === 'function') {
+        gtag('event', 'integration_click', {
+          integration_type: type,
+          url: url
+        });
+      }
+    }
+
+    function closeIframeModal() {
+      const modal = document.getElementById("iframeModal");
+      const iframe = document.getElementById("modalIframe");
+      modal.classList.remove("open");
+      iframe.src = ""; // Xoá src để giải phóng tài nguyên trình duyệt và tắt các video/nhạc nền nếu có
     }
 
     // ---- Dữ liệu nhúng sẵn từ HDGSNN2025.xlsx ----
@@ -1362,9 +1626,20 @@
         document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
         document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
         document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
-        document.getElementById('noapcFrame').src = `https://noapc.com/journal.php?q=${query}`;
-        document.getElementById('resurchifyFrame').src = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
-        document.getElementById('wosFrame').src = `https://wos-journal.info/?jsearch=${encoded}`;
+        
+        // Cập nhật URL iframe & Hiển thị khối nút bấm
+        currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
+        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
+        currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
+        document.getElementById('iframeLinksSection').style.display = 'block';
+
+        // Google Analytics Search Event (no results)
+        if (typeof gtag === 'function') {
+          gtag('event', 'search', {
+            search_term: query,
+            results_count: 0
+          });
+        }
         return;
       }
 
@@ -1467,10 +1742,19 @@
       document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
       document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
 
-      // Cập nhật iframe
-      document.getElementById('noapcFrame').src = `https://noapc.com/journal.php?q=${encodedName}`;
-      document.getElementById('resurchifyFrame').src = `https://www.resurchify.com/find/?query=${firstMatchIssn.replace(/-/g, '')}#search_results`;
-      document.getElementById('wosFrame').src = `https://wos-journal.info/?jsearch=${encodedIssn}`;
+      // Cập nhật URL iframe & Hiển thị khối nút bấm
+      currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
+      currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${firstMatchIssn.replace(/-/g, '')}#search_results`;
+      currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
+      document.getElementById('iframeLinksSection').style.display = 'block';
+
+      // Google Analytics Search Event
+      if (typeof gtag === 'function') {
+        gtag('event', 'search', {
+          search_term: query,
+          results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length
+        });
+      }
     }
 
     document.getElementById("searchInput").addEventListener("keydown", e => {
@@ -1531,6 +1815,13 @@
       document.getElementById('ai-chat-badge').style.display = 'none';
       if (isChatOpen && chatHistory.length === 0) setTimeout(openSettings, 300);
       if (isChatOpen) setTimeout(() => document.getElementById('ai-chat-input').focus(), 400);
+
+      // Google Analytics Chat Toggle Event
+      if (typeof gtag === 'function') {
+        gtag('event', 'chat_toggle', {
+          status: isChatOpen ? 'open' : 'close'
+        });
+      }
     }
 
     function showWelcomeMsg() {
@@ -1666,6 +1957,13 @@
       chatHistory.push({ role: 'user', content: userText });
       input.value = ''; 
       input.style.height = 'auto';
+
+      // Google Analytics Chat Message Sent Event
+      if (typeof gtag === 'function') {
+        gtag('event', 'chat_message_sent', {
+          message_length: userText.length
+        });
+      }
 
       const tid = showTyping();
       document.getElementById('ai-send-btn').disabled = true;
