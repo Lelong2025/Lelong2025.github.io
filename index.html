@@ -1797,6 +1797,14 @@
       await new Promise(resolve => setTimeout(resolve, 400));
       hideSplash();
 
+      // Nếu đang trên PC (≥1024px), tự động hiện khối nút iframe với URL mặc định
+      if (window.innerWidth >= 1024) {
+        currentIframeUrls.noapc = 'https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/';
+        currentIframeUrls.resurchify = 'https://www.resurchify.com/';
+        currentIframeUrls.wos = 'https://wos-journal.info/';
+        document.getElementById('iframeLinksSection').style.display = 'block';
+      }
+
       // 4. Tải HDGSNN2025.xlsx cho Chatbot (nếu có)
       try {
         const buffer2 = await readXlsxFile("HDGSNN2025.xlsx");
