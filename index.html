@@ -1173,6 +1173,28 @@
       </div>
     </div>
 
+    <!-- Khối nhúng trực tiếp iframes trên PC -->
+    <div id="iframeInlineSection" class="info-card" style="display: none; margin-top: 30px;">
+      <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color); text-align: center;">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div id="iframes">
+        <div class="iframe-block">
+          <p><i class="fas fa-file-invoice-dollar"></i> Non-APC</p>
+          <iframe id="noapcFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-chart-line"></i> Resurchify</p>
+          <iframe id="resurchifyFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-globe"></i> Web Of Science</p>
+          <iframe id="wosFrame" src=""></iframe>
+        </div>
+      </div>
+    </div>
+
+
     <!-- Modal Iframe Popup -->
     <div id="iframeModal" class="iframe-modal" onclick="if(event.target === this) closeIframeModal()">
       <div class="iframe-modal-content">
@@ -1399,7 +1421,27 @@
       }
     }
 
+    function updateIframeSources() {
+      if (window.innerWidth >= 1024) {
+        document.getElementById('noapcFrame').src = currentIframeUrls.noapc;
+        document.getElementById('resurchifyFrame').src = currentIframeUrls.resurchify;
+        document.getElementById('wosFrame').src = currentIframeUrls.wos;
+        document.getElementById('iframeInlineSection').style.display = 'block';
+        document.getElementById('iframeLinksSection').style.display = 'none';
+      } else {
+        document.getElementById('iframeInlineSection').style.display = 'none';
+        document.getElementById('iframeLinksSection').style.display = 'block';
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (!document.getElementById("iframeModal").classList.contains("open")) {
+        updateIframeSources();
+      }
+    });
+
     async function initApp() {
+
       // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
       setSplashStep('step-jcr', 'active');
       setSplashStep('step-hdgsnn', 'active');
@@ -1424,13 +1466,12 @@
       await new Promise(resolve => setTimeout(resolve, 400));
       hideSplash();
 
-      // Nếu đang trên PC (≥1024px), tự động hiện khối nút iframe với URL mặc định
-      if (window.innerWidth >= 1024) {
-        currentIframeUrls.noapc = 'https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/';
-        currentIframeUrls.resurchify = 'https://www.resurchify.com/';
-        currentIframeUrls.wos = 'https://wos-journal.info/';
-        document.getElementById('iframeLinksSection').style.display = 'block';
-      }
+      // Mặc định nạp URL ban đầu cho các iframe
+      currentIframeUrls.noapc = 'https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/';
+      currentIframeUrls.resurchify = 'https://www.resurchify.com/';
+      currentIframeUrls.wos = 'https://wos-journal.info/';
+      updateIframeSources();
+
 
       // Hỗ trợ tự động tìm kiếm từ tham số URL (?q=...)
       const urlParams = new URLSearchParams(window.location.search);
@@ -1501,7 +1542,8 @@
           currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
           currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
           currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
-          document.getElementById('iframeLinksSection').style.display = 'block';
+          updateIframeSources();
+
           if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: 0 });
           return;
         }
@@ -1602,7 +1644,8 @@
         currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
         currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${firstMatchIssnRaw}#search_results`;
         currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
-        document.getElementById('iframeLinksSection').style.display = 'block';
+        updateIframeSources();
+
         if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length });
 
       } catch (err) {
