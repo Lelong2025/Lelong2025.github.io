@@ -16,7 +16,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="canonical" href="https://lelong2025.github.io/" />
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <title>Tra cứu thông tin tạp chí</title>
@@ -1429,7 +1429,7 @@
       </div>
       <div id="step-scopus" class="splash-step">
         <div class="step-icon"><i class="fas fa-globe"></i></div>
-        <span>Scopus May 2026 (22.8MB)</span>
+        <span>Scopus May 2026 (48k tạp chí)</span>
       </div>
     </div>
   </div>
@@ -1656,22 +1656,17 @@
 
     let pdfData = [{ "STT": 0, "Hội đồng Giáo sư ngành / Liên ngành": "Toàn văn Quyết định số 26/QĐ-HĐGSNN", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf" }, { "STT": 1, "Hội đồng Giáo sư ngành / Liên ngành": "Chăn nuôi - Thú y - Thuỷ sản", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/1-HD%20CN-TY-TS-DMTC%202025_0001.pdf" }, { "STT": 2, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/2-HD%20Co%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 3, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ khí - Động lực", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/3-HD%20CK-DL-DMTC%202025_0001.pdf" }, { "STT": 4, "Hội đồng Giáo sư ngành / Liên ngành": "Công nghệ thông tin", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/4-HD%20CNTT-DMTC%202025_0001.pdf" }, { "STT": 5, "Hội đồng Giáo sư ngành / Liên ngành": "Dược học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/5-HD%20Duoc%20hoc-DMTC%202025_0001.pdf" }, { "STT": 6, "Hội đồng Giáo sư ngành / Liên ngành": "Điện - Điện tử - Tự động hoá", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/6-HD%20Dien-DT-TDH-DMTC%202025_0001.pdf" }, { "STT": 7, "Hội đồng Giáo sư ngành / Liên ngành": "Giao thông vận tải", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/7-HD%20GTVT-DMTC%202025_0001.pdf" }, { "STT": 8, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Giáo dục", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/8-HD%20KH%20Giao%20duc-DMTC%202025_0001(1).pdf" }, { "STT": 9, "Hội đồng Giáo sư ngành / Liên ngành": "Hoá học - Công nghệ thực phẩm", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/9-HD%20Hoa%20hoc-CNTP-DMTC%202025_0001(2).pdf" }, { "STT": 10, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học An ninh", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/10-HD%20KH%20An%20ninh-DMTC%202025_0001(1).pdf" }, { "STT": 11, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Quân sự", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/11-HD%20KH%20Quan%20su-DMTC%202025_0001.pdf" }, { "STT": 12, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Trái đất - Mỏ", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/12-HD%20KHTD-Mo-DMTC%202025_0001.pdf" }, { "STT": 13, "Hội đồng Giáo sư ngành / Liên ngành": "Kinh tế", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/13-HD%20Kinh%20te-DMTC%202025_0001(4).pdf" }, { "STT": 14, "Hội đồng Giáo sư ngành / Liên ngành": "Luật học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/14-HD%20Luat%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 15, "Hội đồng Giáo sư ngành / Liên ngành": "Luyện kim", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/15-HD%20Luyen%20kim-DMTC%202025_0001(1).pdf" }, { "STT": 16, "Hội đồng Giáo sư ngành / Liên ngành": "Ngôn ngữ học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/16-HD%20Ngon%20ngu%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 17, "Hội đồng Giáo sư ngành / Liên ngành": "Nông nghiệp - Lâm nghiệp", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/17-HD%20Nong%20nghiep-LN-DMTC%202025_0001(1).pdf" }, { "STT": 18, "Hội đồng Giáo sư ngành / Liên ngành": "Sinh học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/18-HD%20Sinh%20hoc-DMTC%202025_0001.pdf" }, { "STT": 19, "Hội đồng Giáo sư ngành / Liên ngành": "Sử học - Khảo cổ học - Dân tộc học / Nhân học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/19-HD%20Su%20hoc-KCH-DTH-NH-DMTC%202025_0001(1).pdf" }, { "STT": 20, "Hội đồng Giáo sư ngành / Liên ngành": "Tâm lý học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/20-HD%20Tam%20ly%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 21, "Hội đồng Giáo sư ngành / Liên ngành": "Thuỷ lợi", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/21-HD%20Thuy%20loi-DMTC%202025_0001.pdf" }, { "STT": 22, "Hội đồng Giáo sư ngành / Liên ngành": "Toán học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/22-HD%20Toan%20hoc-DMTC%202025_0001.pdf" }, { "STT": 23, "Hội đồng Giáo sư ngành / Liên ngành": "Triết học - Xã hội học - Chính trị học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/23-HD%20Triet%20hoc-CTH-XHH-DMTC%202025_0001(3).pdf" }, { "STT": 24, "Hội đồng Giáo sư ngành / Liên ngành": "Văn hoá - Nghệ thuật - Thể dục thể thao", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/24-HD%20VH-NT-TDTT-DMTC%202025_0001(1).pdf" }, { "STT": 25, "Hội đồng Giáo sư ngành / Liên ngành": "Văn học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/25-HD%20Van%20hoc-DMTC%202025_0001.pdf" }, { "STT": 26, "Hội đồng Giáo sư ngành / Liên ngành": "Vật lý", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/26-HD%20Vat%20ly-DMTC%202025_0001.pdf" }, { "STT": 27, "Hội đồng Giáo sư ngành / Liên ngành": "Xây dựng - Kiến trúc", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/27-HD%20XD-KT-DMTC%202025_0001.pdf" }, { "STT": 28, "Hội đồng Giáo sư ngành / Liên ngành": "Y học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/28-HD%20Y%20hoc-DMTC%202025_0001(2).pdf" }];
 
-    let excelData = [];
-    let hdgsnnListData = [];
-    let scopusListData = [];
-    let isJcrLoaded = false;
-    let isHdgsnnLoaded = false;
-    let isScopusLoaded = false;
+    // ─── SUPABASE CLIENT ────────────────────────────────────────────
+    const { createClient: _sbCreate } = window.supabase;
+    const db = _sbCreate(
+      'https://duycstnptwojisioeosk.supabase.co',
+      'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW'
+    );
 
-    function readXlsxFile(filename) {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', filename, true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = () => resolve(xhr.response);
-        xhr.onerror = () => reject(new Error('XHR failed: ' + filename));
-        xhr.send();
-      });
+    function formatISSN(issn) {
+      if (!issn) return 'N/A';
+      const s = String(issn).replace(/[^0-9xX]/gi, '');
+      return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4)}` : (issn || 'N/A');
     }
 
     function updateLoadingStatus(msg, success = false, error = false) {
@@ -1723,74 +1718,24 @@
       }
     }
 
-    async function loadExcel() {
+    async function initApp() {
       // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
       setSplashStep('step-jcr', 'active');
-      setSplashProgress(10);
-      try {
-        updateLoadingStatus("Đang tải dữ liệu JCR Impact Factor...");
-        const buffer = await readXlsxFile("2019-2023JCRImpactFactor.xlsx");
-        const workbook = XLSX.read(buffer, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        excelData = XLSX.utils.sheet_to_json(sheet);
-        isJcrLoaded = true;
-        setSplashStep('step-jcr', 'done');
-        setSplashProgress(35);
-        console.log(`✅ Đã tải ${excelData.length} tạp chí từ Excel JCR.`);
-      } catch (e) {
-        setSplashStep('step-jcr', 'done');
-        setSplashProgress(35);
-        console.warn("Không thể tải file excel JCR:", e.message);
-      }
-
-      // 2. Tải danh sách tạp chí HDGSNN.xlsx (file trong nước tính điểm)
       setSplashStep('step-hdgsnn', 'active');
-      try {
-        updateLoadingStatus("Đang tải danh mục HĐGSNN...");
-        const buffer = await readXlsxFile("danh sách tạp chí HDGSNN.xlsx");
-        const workbook = XLSX.read(buffer, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        hdgsnnListData = XLSX.utils.sheet_to_json(sheet);
-        isHdgsnnLoaded = true;
-        setSplashStep('step-hdgsnn', 'done');
-        setSplashProgress(50);
-        console.log(`✅ Đã tải ${hdgsnnListData.length} tạp chí từ danh sách HDGSNN.`);
-      } catch (e) {
-        setSplashStep('step-hdgsnn', 'done');
-        setSplashProgress(50);
-        console.warn("Không thể tải danh sách tạp chí HDGSNN.xlsx:", e.message);
-      }
-
-      // 3. Tải ext_list_May_2026.xlsx (file Scopus quốc tế - 22.8MB)
       setSplashStep('step-scopus', 'active');
+      setSplashProgress(30);
       try {
-        updateLoadingStatus("Đang tải danh mục Scopus May 2026 (22.8MB), vui lòng đợi...");
-        const buffer = await readXlsxFile("ext_list_May_2026.xlsx");
-        setSplashProgress(82);
-        updateLoadingStatus("Đang xử lý dữ liệu Scopus (48k+ dòng)...");
-        // Cho phép UI hiển thị trạng thái đang xử lý
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const workbook = XLSX.read(buffer, { type: "array" });
-        const sheet = workbook.Sheets["Scopus Sources May 2026"] || workbook.Sheets[workbook.SheetNames[0]];
-        scopusListData = XLSX.utils.sheet_to_json(sheet);
-        isScopusLoaded = true;
+        updateLoadingStatus('Đang kết nối cơ sở dữ liệu Supabase...');
+        // Ping kiểm tra kết nối Supabase
+        const { error } = await db.from('jcr_data').select('id').limit(1);
+        if (error) throw error;
+        setSplashStep('step-jcr', 'done');
+        setSplashStep('step-hdgsnn', 'done');
         setSplashStep('step-scopus', 'done');
-        setSplashProgress(95);
-        console.log(`✅ Đã tải ${scopusListData.length} tạp chí từ ext_list_May_2026.xlsx.`);
+        setSplashProgress(100);
+        updateLoadingStatus('Đã kết nối! 22k JCR · 25 HĐGSNN · 48k Scopus sẵn sàng.', true);
       } catch (e) {
-        setSplashStep('step-scopus', 'done');
-        setSplashProgress(95);
-        console.warn("Không thể tải ext_list_May_2026.xlsx:", e.message);
-      }
-
-      // Hiển thị trạng thái tải cuối cùng
-      const loadedCount = (isJcrLoaded ? 1 : 0) + (isHdgsnnLoaded ? 1 : 0) + (isScopusLoaded ? 1 : 0);
-      if (loadedCount === 3) {
-        updateLoadingStatus(`Dữ liệu sẵn sàng! (JCR: ${excelData.length}, HDGSNN: ${hdgsnnListData.length}, Scopus: ${scopusListData.length})`, true);
-      } else if (loadedCount > 0) {
-        updateLoadingStatus(`Đang hoạt động (Đã tải ${loadedCount}/3 nguồn dữ liệu).`, false, true);
-      } else {
-        updateLoadingStatus("Lỗi tải cơ sở dữ liệu tạp chí!", false, true);
+        updateLoadingStatus('Lỗi kết nối cơ sở dữ liệu!', false, true);
       }
 
       // Hoàn thành — tắt Splash Screen
@@ -1806,28 +1751,6 @@
         document.getElementById('iframeLinksSection').style.display = 'block';
       }
 
-      // 4. Tải HDGSNN2025.xlsx cho Chatbot (nếu có)
-      try {
-        const buffer2 = await readXlsxFile("HDGSNN2025.xlsx");
-        const workbook2 = XLSX.read(buffer2, { type: "array" });
-        let tempDiem = [], tempPDF = [];
-        workbook2.SheetNames.forEach(sheetName => {
-          const data = XLSX.utils.sheet_to_json(workbook2.Sheets[sheetName]);
-          if (data.length > 0) {
-            const keys = Object.keys(data[0]).map(k => k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd'));
-            if (keys.some(k => k.includes('ban goc') || k.includes('link') || k.includes('pdf'))) {
-              tempPDF = data;
-            } else {
-              tempDiem = data;
-            }
-          }
-        });
-        if (tempDiem.length > 0) { hdgsnnData = tempDiem; }
-        if (tempPDF.length > 0) { pdfData = tempPDF; }
-        console.log(`✅ Đã tải HDGSNN2025.xlsx từ file — Điểm: ${hdgsnnData.length}, PDF: ${pdfData.length}`);
-      } catch (e) {
-        console.log(`ℹ️ Dùng dữ liệu nhúng sẵn cho chatbot — Điểm: ${hdgsnnData.length}, PDF: ${pdfData.length}`);
-      }
     }
 
     function cleanISSN(issn) {
@@ -1851,184 +1774,147 @@
 
       const normQuery = normalizeStr(query);
       const cleanedQuery = cleanISSN(query);
-
-      // 1. Tìm kiếm trong danh mục JCR (excelData)
-      const jcrMatches = excelData.filter(row => {
-        const name = normalizeStr(row["journal_name"] || "");
-        const issn = cleanISSN(row["issn"] || "");
-        const eissn = cleanISSN(row["eissn"] || "");
-
-        if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) {
-          return true;
-        }
-        return name.includes(normQuery);
-      }).slice(0, 50);
-
-      // 2. Tìm kiếm trong danh mục HDGSNN.xlsx
-      const hdgsnnMatches = hdgsnnListData.filter(row => {
-        const name = normalizeStr(row["Tên Tạp chí"] || "");
-        const issn = cleanISSN(row["ISSN"] || "");
-
-        if (cleanedQuery.length >= 7 && issn === cleanedQuery) {
-          return true;
-        }
-        return name.includes(normQuery);
-      });
-
-      // 3. Tìm kiếm trong danh mục Scopus May 2026
-      const scopusMatches = scopusListData.filter(row => {
-        const title = normalizeStr(row["Source Title"] || "");
-        const issn = cleanISSN(row["ISSN"] || "");
-        const eissn = cleanISSN(row["EISSN"] || "");
-
-        if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) {
-          return true;
-        }
-        return title.includes(normQuery);
-      }).slice(0, 50); // Giới hạn 50 kết quả Scopus tránh đơ trình duyệt khi vẽ DOM
+      const isIssnSearch = cleanedQuery.length >= 7;
 
       const excelInfoDiv = document.getElementById("excelInfo");
       excelInfoDiv.style.display = "block";
+      excelInfoDiv.innerHTML = `<p style="text-align:center;color:#94a3b8;padding:30px;font-size:16px;"><i class="fas fa-circle-notch fa-spin"></i> Đang tìm kiếm...</p>`;
 
-      if (hdgsnnMatches.length === 0 && scopusMatches.length === 0 && jcrMatches.length === 0) {
-        excelInfoDiv.innerHTML = `<p style="color: #ef4444; font-weight: bold; text-align: center; font-size: 18px; padding: 20px;">
-          <i class="fas fa-exclamation-triangle"></i> Không tìm thấy kết quả phù hợp trong danh mục HDGSNN, JCR và Scopus.
-        </p>`;
+      try {
+        const [jcrRes, hdgsnnRes, scopusRes] = await Promise.all([
+          isIssnSearch
+            ? db.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : db.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(50),
+          isIssnSearch
+            ? db.from('hdgsnn_list').select('*').eq('issn', cleanedQuery)
+            : db.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`),
+          isIssnSearch
+            ? db.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : db.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(50),
+        ]);
 
-        // Hỗ trợ cập nhật link ngoài theo query nhập vào
-        const encoded = encodeURIComponent(query);
-        document.getElementById('externalLinks').style.display = 'block';
-        document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
-        document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
-        document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
-        
-        // Cập nhật URL iframe & Hiển thị khối nút bấm
-        currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
-        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
-        currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
-        document.getElementById('iframeLinksSection').style.display = 'block';
+        const jcrMatches = jcrRes.data || [];
+        const hdgsnnMatches = hdgsnnRes.data || [];
+        const scopusMatches = scopusRes.data || [];
 
-        // Google Analytics Search Event (no results)
-        if (typeof gtag === 'function') {
-          gtag('event', 'search', {
-            search_term: query,
-            results_count: 0
-          });
+        if (hdgsnnMatches.length === 0 && scopusMatches.length === 0 && jcrMatches.length === 0) {
+          excelInfoDiv.innerHTML = `<p style="color: #ef4444; font-weight: bold; text-align: center; font-size: 18px; padding: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> Không tìm thấy kết quả phù hợp trong danh mục HDGSNN, JCR và Scopus.
+          </p>`;
+          const encoded = encodeURIComponent(query);
+          document.getElementById('externalLinks').style.display = 'block';
+          document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
+          document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
+          document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
+          currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
+          currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
+          currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
+          document.getElementById('iframeLinksSection').style.display = 'block';
+          if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: 0 });
+          return;
         }
-        return;
-      }
 
-      // Tạo HTML kết quả HDGSNN
-      let hdgsnnHTML = `<div class="result-section">
-        <h4><i class="fas fa-university"></i> Danh mục HDGSNN (${hdgsnnMatches.length})</h4>`;
-      if (hdgsnnMatches.length === 0) {
-        hdgsnnHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục HĐGSNN.</p>`;
-      } else {
-        hdgsnnHTML += `<ul class="result-list">`;
-        hdgsnnMatches.forEach(item => {
-          hdgsnnHTML += `
-            <li class="result-item">
-              <div class="result-item-title">${item["Tên Tạp chí"] || "N/A"}</div>
-              <div class="result-item-detail"><b>ISSN:</b> <span>${item["ISSN"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${item["Điểm HDDGSNN"] !== undefined ? item["Điểm HDDGSNN"] : "N/A"}</span></div>
-            </li>
-          `;
-        });
-        hdgsnnHTML += `</ul>`;
-      }
-      hdgsnnHTML += `</div>`;
+        // HTML HDGSNN
+        let hdgsnnHTML = `<div class="result-section">
+          <h4><i class="fas fa-university"></i> Danh mục HDGSNN (${hdgsnnMatches.length})</h4>`;
+        if (hdgsnnMatches.length === 0) {
+          hdgsnnHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục HĐGSNN.</p>`;
+        } else {
+          hdgsnnHTML += `<ul class="result-list">`;
+          hdgsnnMatches.forEach(item => {
+            hdgsnnHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${item.ten_tap_chi || "N/A"}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
+                <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${item.diem_hdgsnn !== null ? item.diem_hdgsnn : "N/A"}</span></div>
+              </li>`;
+          });
+          hdgsnnHTML += `</ul>`;
+        }
+        hdgsnnHTML += `</div>`;
 
-      // Tạo HTML kết quả JCR
-      let jcrHTML = `<div class="result-section">
-        <h4><i class="fas fa-chart-line"></i> Chỉ số JCR (Impact Factor) (${jcrMatches.length})</h4>`;
-      if (jcrMatches.length === 0) {
-        jcrHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong dữ liệu JCR.</p>`;
-      } else {
-        jcrHTML += `<ul class="result-list">`;
-        jcrMatches.forEach(item => {
-          jcrHTML += `
-            <li class="result-item">
-              <div class="result-item-title">${item["journal_name"] || "N/A"}</div>
-              <div class="result-item-detail"><b>ISSN:</b> <span>${item["issn"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>eISSN:</b> <span>${item["eissn"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Ngành:</b> <span>${item["category"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Impact Factor 2023:</b> <span class="badge badge-points">${item["2024_JCR"] || 'N/A'}</span></div>
-              <div class="result-item-detail"><b>Impact Factor 2024:</b> <span class="badge badge-points">${item["2025_JCR"] || 'N/A'}</span></div>
-              <div class="result-item-detail"><b>Phân hạng Q:</b> <span class="badge badge-oa">${item["JIF Quartile"] || 'N/A'}</span></div>
-            </li>
-          `;
-        });
-        jcrHTML += `</ul>`;
-      }
-      jcrHTML += `</div>`;
+        // HTML JCR
+        let jcrHTML = `<div class="result-section">
+          <h4><i class="fas fa-chart-line"></i> Chỉ số JCR (Impact Factor) (${jcrMatches.length})</h4>`;
+        if (jcrMatches.length === 0) {
+          jcrHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong dữ liệu JCR.</p>`;
+        } else {
+          jcrHTML += `<ul class="result-list">`;
+          jcrMatches.forEach(item => {
+            jcrHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${item.journal_name || "N/A"}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
+                <div class="result-item-detail"><b>eISSN:</b> <span>${formatISSN(item.eissn)}</span></div>
+                <div class="result-item-detail"><b>Ngành:</b> <span>${item.category || "N/A"}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2023:</b> <span class="badge badge-points">${item.jcr_2024 || 'N/A'}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2024:</b> <span class="badge badge-points">${item.jcr_2025 || 'N/A'}</span></div>
+                <div class="result-item-detail"><b>Phân hạng Q:</b> <span class="badge badge-oa">${item.jif_quartile || 'N/A'}</span></div>
+              </li>`;
+          });
+          jcrHTML += `</ul>`;
+        }
+        jcrHTML += `</div>`;
 
-      // Tạo HTML kết quả Scopus
-      let scopusHTML = `<div class="result-section">
-        <h4><i class="fas fa-globe"></i> Danh mục Scopus (May 2026) (${scopusMatches.length})</h4>`;
-      if (scopusMatches.length === 0) {
-        scopusHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục Scopus.</p>`;
-      } else {
-        scopusHTML += `<ul class="result-list">`;
-        scopusMatches.forEach(item => {
-          const isDiscontinued = !!item["Titles Discontinued by Scopus"];
-          const isActive = String(item["Active or Inactive"] || "").trim().toLowerCase() === "active" && !isDiscontinued;
-          const activeBadge = isActive
-            ? `<span class="badge badge-active">Active</span>`
-            : `<span class="badge badge-inactive">Inactive</span>`;
+        // HTML Scopus
+        let scopusHTML = `<div class="result-section">
+          <h4><i class="fas fa-globe"></i> Danh mục Scopus (May 2026) (${scopusMatches.length})</h4>`;
+        if (scopusMatches.length === 0) {
+          scopusHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục Scopus.</p>`;
+        } else {
+          scopusHTML += `<ul class="result-list">`;
+          scopusMatches.forEach(item => {
+            const isDiscontinued = !!item.discontinued;
+            const isActive = String(item.active_or_inactive || "").trim().toLowerCase() === "active" && !isDiscontinued;
+            const activeBadge = isActive
+              ? `<span class="badge badge-active">Active</span>`
+              : `<span class="badge badge-inactive">Inactive</span>`;
+            const oaStatus = item.open_access_status ? `<span class="badge badge-oa">${item.open_access_status}</span>` : "";
+            const discontinued = item.discontinued ? `<span class="badge badge-discontinued">Discontinued</span>` : "";
 
-          const oaStatus = item["Open Access Status"] ? `<span class="badge badge-oa">${item["Open Access Status"]}</span>` : "";
-          const discontinued = item["Titles Discontinued by Scopus"] ? `<span class="badge badge-discontinued">Discontinued</span>` : "";
+            scopusHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${item.source_title || "N/A"}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
+                <div class="result-item-detail"><b>EISSN:</b> <span>${formatISSN(item.eissn)}</span></div>
+                <div class="result-item-detail"><b>Publisher:</b> <span>${item.publisher || "N/A"}</span></div>
+                <div class="result-item-detail"><b>Coverage:</b> <span>${item.coverage || "N/A"}</span></div>
+                <div class="result-item-detail"><b>Source Type:</b> <span>${item.source_type || "N/A"}</span></div>
+                <div class="result-item-detail"><b>Trạng thái:</b> <span>${activeBadge} ${discontinued} ${oaStatus}</span></div>
+              </li>`;
+          });
+          scopusHTML += `</ul>`;
+        }
+        scopusHTML += `</div>`;
 
-          scopusHTML += `
-            <li class="result-item">
-              <div class="result-item-title">${item["Source Title"] || "N/A"}</div>
-              <div class="result-item-detail"><b>ISSN:</b> <span>${item["ISSN"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>EISSN:</b> <span>${item["EISSN"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Publisher:</b> <span>${item["Publisher"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Coverage:</b> <span>${item["Coverage"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Source Type:</b> <span>${item["Source Type"] || "N/A"}</span></div>
-              <div class="result-item-detail"><b>Trạng thái:</b> <span>${activeBadge} ${discontinued} ${oaStatus}</span></div>
-            </li>
-          `;
-        });
-        scopusHTML += `</ul>`;
-      }
-      scopusHTML += `</div>`;
+        // Đưa HTML vào giao diện
+        excelInfoDiv.innerHTML = `
+          <h3><i class="fas fa-info-circle"></i> Kết quả tìm kiếm cho: "${query}"</h3>
+          <div class="search-results-grid">
+            ${hdgsnnHTML}
+            ${jcrHTML}
+            ${scopusHTML}
+          </div>`;
 
-      // Đưa HTML vào giao diện
-      excelInfoDiv.innerHTML = `
-        <h3><i class="fas fa-info-circle"></i> Kết quả tìm kiếm cho: "${query}"</h3>
-        <div class="search-results-grid">
-          ${hdgsnnHTML}
-          ${jcrHTML}
-          ${scopusHTML}
-        </div>
-      `;
+        const firstMatch = scopusMatches[0] || jcrMatches[0] || hdgsnnMatches[0];
+        const firstMatchName = firstMatch ? (firstMatch.source_title || firstMatch.journal_name || firstMatch.ten_tap_chi || query) : query;
+        const firstMatchIssnRaw = firstMatch ? (firstMatch.issn || '') : '';
+        const firstMatchIssn = formatISSN(firstMatchIssnRaw) !== 'N/A' ? formatISSN(firstMatchIssnRaw) : query;
+        const encodedName = encodeURIComponent(firstMatchName);
+        const encodedIssn = encodeURIComponent(firstMatchIssn);
 
-      // Cập nhật các liên kết ngoài và iframe
-      const firstMatchName = scopusMatches.length > 0 ? scopusMatches[0]["Source Title"] : (jcrMatches.length > 0 ? jcrMatches[0]["journal_name"] : (hdgsnnMatches.length > 0 ? hdgsnnMatches[0]["Tên Tạp chí"] : query));
-      const firstMatchIssn = scopusMatches.length > 0 ? scopusMatches[0]["ISSN"] : (jcrMatches.length > 0 ? jcrMatches[0]["issn"] : (hdgsnnMatches.length > 0 ? hdgsnnMatches[0]["ISSN"] : query));
+        document.getElementById('externalLinks').style.display = 'block';
+        document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encodedIssn}`;
+        document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
+        document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
+        currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
+        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${firstMatchIssnRaw}#search_results`;
+        currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
+        document.getElementById('iframeLinksSection').style.display = 'block';
+        if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length });
 
-      const encodedName = encodeURIComponent(firstMatchName);
-      const encodedIssn = encodeURIComponent(firstMatchIssn);
-
-      document.getElementById('externalLinks').style.display = 'block';
-      document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encodedIssn}`;
-      document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
-      document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
-
-      // Cập nhật URL iframe & Hiển thị khối nút bấm
-      currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
-      currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${firstMatchIssn.replace(/-/g, '')}#search_results`;
-      currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
-      document.getElementById('iframeLinksSection').style.display = 'block';
-
-      // Google Analytics Search Event
-      if (typeof gtag === 'function') {
-        gtag('event', 'search', {
-          search_term: query,
-          results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length
-        });
+      } catch (err) {
+        excelInfoDiv.innerHTML = `<p style="color: #ef4444; text-align: center; font-size: 16px; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ${err.message}</p>`;
       }
     }
 
@@ -2036,7 +1922,7 @@
       if (e.key === "Enter") search();
     });
 
-    window.onload = loadExcel;
+    window.onload = initApp;
 
     // ========== RULE-BASED CHATBOT (MIỄN PHÍ - KHÔNG CẦN API) ==========
     let chatHistory = [];
@@ -2133,8 +2019,8 @@
     function openSettings() { document.getElementById('ai-settings-modal').classList.add('open'); }
     function closeSettings() { document.getElementById('ai-settings-modal').classList.remove('open'); }
 
-    // ---- Search local database to provide context for AI ----
-    function searchLocalDatabase(queryText) {
+    // ---- Search Supabase database to provide context for AI ----
+    async function searchLocalDatabase(queryText) {
       const cleanISSN = (issn) => issn ? String(issn).replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "";
       const normalizeStr = (str) => {
         if (!str) return "";
@@ -2158,66 +2044,55 @@
 
       const normQuery = normalizeStr(nameQuery);
 
-      let hdgsnnMatches = [];
-      let jcrMatches = [];
-      let scopusMatches = [];
+      try {
+        const isIssnSearch = cleanedQuery.length >= 7;
+        const [hdgsnnRes, jcrRes, scopusRes] = await Promise.all([
+          isIssnSearch
+            ? db.from('hdgsnn_list').select('*').eq('issn', cleanedQuery).limit(10)
+            : (normQuery.length > 3 ? db.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+          isIssnSearch
+            ? db.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? db.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+          isIssnSearch
+            ? db.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? db.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+        ]);
 
-      // 1. Tìm trong HDGSNN list chính
-      if (typeof hdgsnnListData !== "undefined" && hdgsnnListData.length > 0) {
-        hdgsnnMatches = hdgsnnListData.filter(row => {
-          const name = normalizeStr(row["Tên Tạp chí"] || "");
-          const issn = cleanISSN(row["ISSN"] || "");
-          if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
-          return normQuery.length > 3 && name.includes(normQuery);
-        }).slice(0, 10);
-      }
+        // Map Supabase fields → format cho chatbot Worker
+        const hdgsnnMatches = (hdgsnnRes.data || []).map(r => ({
+          "Tên Tạp chí": r.ten_tap_chi, "ISSN": formatISSN(r.issn), "Điểm HDDGSNN": r.diem_hdgsnn
+        }));
+        const jcrMatches = (jcrRes.data || []).map(r => ({
+          "journal_name": r.journal_name, "issn": formatISSN(r.issn), "eissn": formatISSN(r.eissn),
+          "category": r.category, "2024_JCR": r.jcr_2024, "2025_JCR": r.jcr_2025, "JIF Quartile": r.jif_quartile
+        }));
+        const scopusMatches = (scopusRes.data || []).map(r => ({
+          "Source Title": r.source_title, "ISSN": formatISSN(r.issn), "EISSN": formatISSN(r.eissn),
+          "Publisher": r.publisher, "Coverage": r.coverage, "Source Type": r.source_type,
+          "Active or Inactive": r.active_or_inactive,
+          "Titles Discontinued by Scopus": r.discontinued, "Open Access Status": r.open_access_status
+        }));
 
-      // 2. Tìm trong dữ liệu phụ điểm chatbox
-      if (typeof hdgsnnData !== "undefined" && hdgsnnData.length > 0) {
-        const chatDbMatches = hdgsnnData.filter(row => {
-          const name = normalizeStr(row["Tên tạp chí"] || "");
-          const issn = cleanISSN(row["Chỉ số ISSN"] || "");
-          if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
-          return normQuery.length > 3 && name.includes(normQuery);
-        });
-
-        // Hợp nhất vào hdgsnnMatches
-        chatDbMatches.forEach(item => {
-          const exists = hdgsnnMatches.some(m => cleanISSN(m["ISSN"]) === cleanISSN(item["Chỉ số ISSN"]));
-          if (!exists) {
-            hdgsnnMatches.push({
-              "Tên Tạp chí": item["Tên tạp chí"],
-              "ISSN": item["Chỉ số ISSN"] || "N/A",
-              "Điểm HDDGSNN": item["Khung điểm quy định"] || "N/A",
-              "Cơ quan xuất bản": item["Cơ quan xuất bản"] || "N/A"
+        // Bổ sung inline hdgsnnData (điểm khung quy định) cho chatbot
+        if (typeof hdgsnnData !== "undefined" && hdgsnnData.length > 0) {
+          hdgsnnData.filter(row => {
+            const name = normalizeStr(row["Tên tạp chí"] || "");
+            const issn = cleanISSN(row["Chỉ số ISSN"] || "");
+            if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
+            return normQuery.length > 3 && name.includes(normQuery);
+          }).forEach(item => {
+            const exists = hdgsnnMatches.some(m => cleanISSN(m["ISSN"]) === cleanISSN(item["Chỉ số ISSN"]));
+            if (!exists) hdgsnnMatches.push({
+              "Tên Tạp chí": item["Tên tạp chí"], "ISSN": item["Chỉ số ISSN"] || "N/A",
+              "Điểm HDDGSNN": item["Khung điểm quy định"] || "N/A"
             });
-          }
-        });
+          });
+        }
+        return { hdgsnnMatches, jcrMatches, scopusMatches };
+      } catch (e) {
+        console.warn('searchLocalDatabase error:', e.message);
+        return { hdgsnnMatches: [], jcrMatches: [], scopusMatches: [] };
       }
-
-      // 3. Tìm trong JCR
-      if (typeof excelData !== "undefined" && excelData.length > 0) {
-        jcrMatches = excelData.filter(row => {
-          const name = normalizeStr(row["journal_name"] || "");
-          const issn = cleanISSN(row["issn"] || "");
-          const eissn = cleanISSN(row["eissn"] || "");
-          if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) return true;
-          return normQuery.length > 3 && name.includes(normQuery);
-        }).slice(0, 10);
-      }
-
-      // 4. Tìm trong Scopus
-      if (typeof scopusListData !== "undefined" && scopusListData.length > 0) {
-        scopusMatches = scopusListData.filter(row => {
-          const title = normalizeStr(row["Source Title"] || "");
-          const issn = cleanISSN(row["ISSN"] || "");
-          const eissn = cleanISSN(row["EISSN"] || "");
-          if (cleanedQuery.length >= 7 && (issn === cleanedQuery || eissn === cleanedQuery)) return true;
-          return normQuery.length > 3 && title.includes(normQuery);
-        }).slice(0, 10);
-      }
-
-      return { hdgsnnMatches, jcrMatches, scopusMatches };
     }
 
     async function sendChatMessage() {
@@ -2245,7 +2120,7 @@
 
       try {
         // Tra cứu dữ liệu cục bộ làm ngữ cảnh hỗ trợ
-        const contextData = searchLocalDatabase(userText);
+        const contextData = await searchLocalDatabase(userText);
 
         // Gọi Cloudflare Worker
         const response = await fetch("https://old-band-adb5.vonhacphuoc.workers.dev", {
