@@ -1,0 +1,21 @@
+# Môi trường và bảo mật
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+
+# Upload script (không cần deploy lên GitHub Pages)
+upload-to-supabase.mjs
+supabase-setup.sql
+supabase-fix-rls.sql
+
+# Các file dữ liệu nặng (không cần thiết trên git nếu dùng Supabase)
+# ext_list_May_2026.xlsx
+# 2019-2023JCRImpactFactor.xlsx
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
