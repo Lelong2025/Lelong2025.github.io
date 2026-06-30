@@ -246,7 +246,6 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
       });
     }
   }
-}
 
 function buildCorsHeaders(request, env) {
   const allowedOrigins = new Set(
