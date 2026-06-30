@@ -492,6 +492,31 @@ async function verifySepaySignature(rawBody, request, secret) {
   return safeEqual(signature, expected);
 }
 
+async function verifySepayRequest(rawBody, request, env) {
+  const signature = request.headers.get("X-SePay-Signature");
+  const timestamp = request.headers.get("X-SePay-Timestamp");
+  if (signature || timestamp) {
+    return Boolean(env.SEPAY_WEBHOOK_SECRET)
+      && await verifySepaySignature(rawBody, request, env.SEPAY_WEBHOOK_SECRET);
+  }
+
+  const authorization = request.headers.get("Authorization") || "";
+  const apiKeyMatch = authorization.match(/^Apikey\s+(.+)$/i);
+  const expectedApiKey = env.SEPAY_WEBHOOK_API_KEY || env.SEPAY_WEBHOOK_SECRET;
+  return Boolean(apiKeyMatch && expectedApiKey)
+    && safeEqual(apiKeyMatch[1].trim(), expectedApiKey);
+}
+
+function extractSepayPaymentCode(payload) {
+  const directCode = String(payload.code || "").trim().toUpperCase();
+  if (/^CHAT[A-Z0-9]{6,26}$/.test(directCode)) return directCode;
+
+  // `code` can be null until the CHAT prefix is configured in SePay. The bank
+  // transfer content still contains the exact code generated for the order.
+  const transferText = `${payload.content || ""} ${payload.description || ""}`.toUpperCase();
+  return transferText.match(/\bCHAT[A-Z0-9]{6,26}\b/)?.[0] || "";
+}
+
 async function handleSepayWebhook(request, env) {
   const secureHeaders = {
     "Content-Type": "application/json; charset=utf-8",
@@ -501,7 +526,7 @@ async function handleSepayWebhook(request, env) {
   if (request.method !== "POST") return jsonResponse({ success: false }, 405, secureHeaders);
 
   const serviceKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!env.SEPAY_WEBHOOK_SECRET || !env.SUPABASE_URL || !serviceKey) {
+  if ((!env.SEPAY_WEBHOOK_SECRET && !env.SEPAY_WEBHOOK_API_KEY) || !env.SUPABASE_URL || !serviceKey) {
     console.error("SePay webhook configuration is missing");
     return jsonResponse({ success: false }, 503, secureHeaders);
   }
@@ -511,12 +536,12 @@ async function handleSepayWebhook(request, env) {
     if (!rawBody || new TextEncoder().encode(rawBody).length > 65536) {
       return jsonResponse({ success: false }, 413, secureHeaders);
     }
-    if (!await verifySepaySignature(rawBody, request, env.SEPAY_WEBHOOK_SECRET)) {
-      return jsonResponse({ success: false }, 401, secureHeaders);
+    if (!await verifySepayRequest(rawBody, request, env)) {
+      return jsonResponse({ success: false, error: "Webhook authentication failed" }, 401, secureHeaders);
     }
     const payload = JSON.parse(rawBody);
     const transactionId = String(payload.id || "");
-    const paymentCode = String(payload.code || "").trim().toUpperCase();
+    const paymentCode = extractSepayPaymentCode(payload);
     const amount = Number(payload.transferAmount);
     const incoming = String(payload.transferType || "").toLowerCase() === "in";
     const expectedAccount = String(env.SEPAY_ACCOUNT_NUMBER || "").replace(/\s/g, "");
@@ -524,7 +549,11 @@ async function handleSepayWebhook(request, env) {
 
     if (!transactionId || !paymentCode || !Number.isSafeInteger(amount) || amount <= 0
       || !incoming || (expectedAccount && actualAccount !== expectedAccount)) {
-      return jsonResponse({ success: true, processed: false }, 200, secureHeaders);
+      console.warn("SePay webhook payload rejected", {
+        transactionId: Boolean(transactionId), paymentCode: Boolean(paymentCode),
+        amount, incoming, accountMatches: !expectedAccount || actualAccount === expectedAccount
+      });
+      return jsonResponse({ success: false, processed: false, error: "Invalid payment data" }, 422, secureHeaders);
     }
 
     // Dùng admin client trực tiếp (bypass RLS) để gọi RPC
@@ -537,7 +566,11 @@ async function handleSepayWebhook(request, env) {
     });
     if (error) throw error;
 
-    return jsonResponse({ success: true, processed: Boolean(result?.ok) }, 200, secureHeaders);
+    if (!result?.ok) {
+      console.warn("SePay payment was not processed", result?.reason || "unknown_reason");
+      return jsonResponse({ success: false, processed: false, error: result?.reason || "Payment not processed" }, 422, secureHeaders);
+    }
+    return jsonResponse({ success: true, processed: true }, 200, secureHeaders);
   } catch (error) {
     console.error("SePay webhook error", error.message);
     return jsonResponse({ success: false }, 500, secureHeaders);

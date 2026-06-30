@@ -1492,7 +1492,15 @@
     const { createClient: _sbCreate } = window.supabase;
     const db = _sbCreate(
       'https://duycstnptwojisioeosk.supabase.co',
-      'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW'
+      'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW',
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage
+        }
+      }
     );
     const API_BASE = 'https://old-band-adb5.vonhacphuoc.workers.dev';
     let currentSession = null;
@@ -2095,6 +2103,16 @@
     }
 
     async function toggleChat() {
+      // Luôn cho phép đóng ngay, kể cả khi phiên đăng nhập vừa hết hạn.
+      if (isChatOpen) {
+        isChatOpen = false;
+        document.getElementById('ai-chat-panel').classList.remove('open');
+        if (typeof gtag === 'function') {
+          gtag('event', 'chat_toggle', { status: 'close' });
+        }
+        return;
+      }
+
       if (!currentSession) {
         setAuthMode('login');
         openUserModal();
@@ -2107,8 +2125,8 @@
         setUserMessage('Tài khoản chưa có VIP. Bạn có thể thanh toán 25.000đ để dùng AI trong 30 ngày.');
         return;
       }
-      isChatOpen = !isChatOpen;
-      document.getElementById('ai-chat-panel').classList.toggle('open', isChatOpen);
+      isChatOpen = true;
+      document.getElementById('ai-chat-panel').classList.add('open');
       document.getElementById('ai-chat-badge').style.display = 'none';
       if (isChatOpen && chatHistory.length === 0) setTimeout(openSettings, 300);
       if (isChatOpen) setTimeout(() => document.getElementById('ai-chat-input').focus(), 400);
