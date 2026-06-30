@@ -33,6 +33,10 @@ export default {
     if (orderMatch && request.method === "GET") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleOrderStatus(req, env, ctx, apiCors, orderMatch[1]));
     }
+    const cancelOrderMatch = path.match(/^\/api\/orders\/([A-Z0-9]+)$/);
+    if (cancelOrderMatch && request.method === "DELETE") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleCancelOrder(req, env, ctx, apiCors, cancelOrderMatch[1]));
+    }
 
     if (path === "/" && request.method === "GET") {
       return new Response("Journal VIP API is running", {
@@ -297,7 +301,7 @@ function buildCorsHeaders(request, env) {
     originAllowed,
     headers: {
       ...(originAllowed ? { "Access-Control-Allow-Origin": origin } : {}),
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Max-Age": "86400",
       "Vary": "Origin",
@@ -409,6 +413,13 @@ async function handleCreateOrder(request, env, ctx, cors) {
     if (!plan) return jsonResponse({ error: "VIP plan is unavailable" }, 503, cors.headers);
 
     const now = new Date().toISOString();
+    const { error: cleanupError } = await ctx.supabaseAdmin.from("payments")
+      .delete()
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .lte("expires_at", now);
+    if (cleanupError) throw cleanupError;
+
     const { data: pending, error: pendingError } = await ctx.supabase.from("payments")
       .select("id, payment_code, amount_vnd, status, expires_at")
       .eq("user_id", userId)
@@ -461,6 +472,27 @@ async function handleOrderStatus(request, env, ctx, cors, code) {
   } catch (error) {
     console.error("Order status error", error.message);
     return jsonResponse({ error: "Unable to load order" }, 500, cors.headers);
+  }
+}
+
+async function handleCancelOrder(request, env, ctx, cors, code) {
+  if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
+  try {
+    const userId = ctx.userClaims?.id;
+    if (!userId) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
+
+    // Never remove a completed transaction, including when webhook and close
+    // requests reach the Worker at nearly the same time.
+    const { error } = await ctx.supabaseAdmin.from("payments")
+      .delete()
+      .eq("user_id", userId)
+      .eq("payment_code", code)
+      .eq("status", "pending");
+    if (error) throw error;
+    return jsonResponse({ cancelled: true }, 200, cors.headers);
+  } catch (error) {
+    console.error("Cancel order error", error.message);
+    return jsonResponse({ error: "Unable to cancel payment order" }, 500, cors.headers);
   }
 }
 

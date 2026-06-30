@@ -810,11 +810,38 @@
     .vip-close { width:38px; height:38px; display:grid; place-items:center; border:1px solid #e2e8f0; border-radius:50%; background:#f8fafc; color:#475569; font-size:25px; line-height:1; cursor:pointer; transition:.2s; }
     [data-theme="dark"] .vip-close { background:#1e293b; border-color:#334155; color:#cbd5e1; }
     .vip-close:hover { color:#ef4444; border-color:rgba(239,68,68,.25); background:rgba(239,68,68,.08); transform:rotate(5deg); }
-    .vip-tabs { display:flex; gap:8px; margin-bottom:16px; }
-    .vip-tabs button { flex:1; border:1px solid var(--card-border); border-radius:10px; padding:10px; cursor:pointer; background:transparent; color:inherit; font-weight:700; }
-    .vip-tabs button.active { background:#10a37f; color:#fff; border-color:#10a37f; }
-    .vip-form { display:grid; gap:12px; }
-    .vip-form input { width:100%; box-sizing:border-box; border:1px solid var(--card-border); border-radius:11px; padding:12px; background:var(--input-bg); color:var(--text-color); font:inherit; }
+    .auth-welcome { text-align:center; margin:-4px 0 20px; }
+    .auth-welcome-icon { width:52px; height:52px; display:grid; place-items:center; margin:0 auto 10px; border-radius:16px; background:linear-gradient(135deg,#d1fae5,#ccfbf1); color:#059669; font-size:21px; box-shadow:0 10px 26px rgba(16,163,127,.15); }
+    [data-theme="dark"] .auth-welcome-icon { background:linear-gradient(135deg,#164e3f,#134e4a); color:#5eead4; }
+    .auth-welcome h3 { margin:0 0 5px; font-size:21px; letter-spacing:-.02em; }
+    .auth-welcome p { margin:0; color:#64748b; font-size:13px; line-height:1.5; }
+    [data-theme="dark"] .auth-welcome p { color:#94a3b8; }
+    .vip-tabs { display:flex; gap:5px; margin-bottom:18px; padding:5px; border-radius:14px; background:#f1f5f9; }
+    [data-theme="dark"] .vip-tabs { background:#0f172a; }
+    .vip-tabs button { flex:1; border:0; border-radius:10px; padding:10px; cursor:pointer; background:transparent; color:#64748b; font-weight:750; transition:.2s; }
+    [data-theme="dark"] .vip-tabs button { color:#94a3b8; }
+    .vip-tabs button.active { background:#fff; color:#059669; box-shadow:0 3px 12px rgba(15,23,42,.09); }
+    [data-theme="dark"] .vip-tabs button.active { background:#1e293b; color:#5eead4; box-shadow:0 3px 12px rgba(0,0,0,.28); }
+    .vip-form { display:grid; gap:14px; }
+    .auth-field { display:grid; gap:7px; }
+    .auth-field label { color:#475569; font-size:12px; font-weight:750; }
+    [data-theme="dark"] .auth-field label { color:#cbd5e1; }
+    .auth-input-wrap { position:relative; display:flex; align-items:center; }
+    .auth-input-wrap > i { position:absolute; left:14px; color:#94a3b8; font-size:14px; pointer-events:none; transition:.2s; }
+    .auth-input-wrap input { width:100%; box-sizing:border-box; border:1.5px solid #dbe3ec; border-radius:13px; padding:13px 43px 13px 40px; background:#f8fafc; color:#1e293b; font:inherit; outline:none; transition:border-color .2s, box-shadow .2s, background .2s; }
+    [data-theme="dark"] .auth-input-wrap input { border-color:#334155; background:#0f172a; color:#f1f5f9; }
+    .auth-input-wrap input::placeholder { color:#94a3b8; }
+    .auth-input-wrap:focus-within input { border-color:#10a37f; background:#fff; box-shadow:0 0 0 4px rgba(16,163,127,.12); }
+    [data-theme="dark"] .auth-input-wrap:focus-within input { background:#111827; }
+    .auth-input-wrap:focus-within > i { color:#10a37f; }
+    .vip-form > input { width:100%; box-sizing:border-box; border:1.5px solid #dbe3ec; border-radius:13px; padding:13px 14px; background:#f8fafc; color:#1e293b; font:inherit; outline:none; }
+    [data-theme="dark"] .vip-form > input { border-color:#334155; background:#0f172a; color:#f1f5f9; }
+    .vip-form > input:focus { border-color:#10a37f; box-shadow:0 0 0 4px rgba(16,163,127,.12); }
+    .password-toggle { position:absolute; right:8px; width:34px; height:34px; display:grid; place-items:center; border:0; border-radius:9px; background:transparent; color:#94a3b8; cursor:pointer; }
+    .password-toggle:hover { color:#10a37f; background:rgba(16,163,127,.08); }
+    .auth-submit { width:100%; margin-top:2px; min-height:48px; font-size:15px; }
+    .auth-submit:disabled { opacity:.65; cursor:wait; transform:none; }
+    .auth-form-footer { display:flex; justify-content:center; margin-top:-2px; }
     .vip-primary, .vip-secondary { border:0; border-radius:13px; padding:13px 16px; font-weight:800; cursor:pointer; transition:transform .2s, box-shadow .2s, background .2s; }
     .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; box-shadow:0 8px 22px rgba(16,163,127,.22); }
     .vip-primary:hover { transform:translateY(-1px); box-shadow:0 11px 28px rgba(16,163,127,.32); }
@@ -1233,16 +1260,34 @@
       </div>
 
       <div id="authView">
+        <div class="auth-welcome">
+          <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
+          <h3 id="authHeading">Chào mừng trở lại</h3>
+          <p id="authLead">Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.</p>
+        </div>
         <div class="vip-tabs">
-          <button id="loginTab" class="active" onclick="setAuthMode('login')">Đăng nhập</button>
-          <button id="registerTab" onclick="setAuthMode('register')">Đăng ký</button>
+          <button id="loginTab" class="active" type="button" onclick="setAuthMode('login')"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
+          <button id="registerTab" type="button" onclick="setAuthMode('register')"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
         </div>
         <form id="authForm" class="vip-form" onsubmit="submitAuth(event)">
-          <input id="authName" type="text" maxlength="80" autocomplete="name" placeholder="Tên hiển thị" style="display:none">
-          <input id="authEmail" type="email" required autocomplete="email" placeholder="Email">
-          <input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="Mật khẩu (ít nhất 8 ký tự)">
-          <button id="authSubmit" class="vip-primary" type="submit">Đăng nhập</button>
-          <button class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button>
+          <div id="authNameField" class="auth-field" style="display:none">
+            <label for="authName">Tên hiển thị</label>
+            <div class="auth-input-wrap"><i class="fas fa-user"></i><input id="authName" type="text" maxlength="80" autocomplete="name" placeholder="Tên của bạn"></div>
+          </div>
+          <div class="auth-field">
+            <label for="authEmail">Địa chỉ email</label>
+            <div class="auth-input-wrap"><i class="fas fa-envelope"></i><input id="authEmail" type="email" required autocomplete="email" placeholder="name@example.com"></div>
+          </div>
+          <div class="auth-field">
+            <label for="authPassword">Mật khẩu</label>
+            <div class="auth-input-wrap">
+              <i class="fas fa-lock"></i>
+              <input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="Ít nhất 8 ký tự">
+              <button class="password-toggle" type="button" onclick="togglePasswordVisibility('authPassword', this)" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <button id="authSubmit" class="vip-primary auth-submit" type="submit"><i class="fas fa-arrow-right"></i>&nbsp; <span id="authSubmitLabel">Đăng nhập</span></button>
+          <div class="auth-form-footer"><button class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button></div>
         </form>
         <form id="resetView" class="vip-form" style="display:none" onsubmit="saveNewPassword(event)">
           <p>Nhập mật khẩu mới cho tài khoản của bạn.</p>
@@ -1536,6 +1581,7 @@
     let currentAccount = null;
     let currentAuthMode = 'login';
     let paymentPollTimer = null;
+    let activePaymentCode = null;
 
     function setUserMessage(message = '', type = '') {
       const element = document.getElementById('authMessage');
@@ -1548,13 +1594,25 @@
       const registering = mode === 'register';
       document.getElementById('loginTab').classList.toggle('active', !registering);
       document.getElementById('registerTab').classList.toggle('active', registering);
-      document.getElementById('authName').style.display = registering ? 'block' : 'none';
+      document.getElementById('authNameField').style.display = registering ? 'grid' : 'none';
       document.getElementById('authName').required = registering;
       document.getElementById('authPassword').autocomplete = registering ? 'new-password' : 'current-password';
-      document.getElementById('authSubmit').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
+      document.getElementById('authHeading').textContent = registering ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
+      document.getElementById('authLead').textContent = registering
+        ? 'Đăng ký để kích hoạt VIP và bắt đầu trò chuyện cùng AI.'
+        : 'Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.';
+      document.getElementById('authSubmitLabel').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
       document.getElementById('authForm').style.display = 'grid';
       document.getElementById('resetView').style.display = 'none';
       setUserMessage();
+    }
+
+    function togglePasswordVisibility(inputId, button) {
+      const input = document.getElementById(inputId);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      button.innerHTML = `<i class="fas fa-${showing ? 'eye' : 'eye-slash'}"></i>`;
+      button.setAttribute('aria-label', showing ? 'Hiện mật khẩu' : 'Ẩn mật khẩu');
     }
 
     function openUserModal() {
@@ -1566,6 +1624,7 @@
 
     function closeUserModal() {
       document.getElementById('userModal').classList.remove('open');
+      void cancelPendingPayment();
     }
 
     async function submitAuth(event) {
@@ -1628,6 +1687,7 @@
     }
 
     async function signOutUser() {
+      await cancelPendingPayment();
       await db.auth.signOut();
       currentAccount = null;
       closeUserModal();
@@ -1657,6 +1717,21 @@
         throw error;
       }
       return data;
+    }
+
+    async function cancelPendingPayment() {
+      const code = activePaymentCode;
+      if (!code) return;
+
+      activePaymentCode = null;
+      stopPaymentPolling();
+      document.getElementById('paymentBox').classList.remove('open');
+      document.getElementById('paymentQr').removeAttribute('src');
+      try {
+        await apiFetch(`/api/orders/${encodeURIComponent(code)}`, { method: 'DELETE' });
+      } catch (error) {
+        console.warn('Không thể hủy đơn thanh toán đang chờ:', error.message);
+      }
     }
 
     function renderAccount(account) {
@@ -1744,6 +1819,7 @@
         try {
           const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`);
           if (order.status === 'paid') {
+            activePaymentCode = null;
             stopPaymentPolling();
             document.getElementById('paymentBox').classList.remove('open');
             document.getElementById('paymentQr').removeAttribute('src');
@@ -1761,6 +1837,7 @@
       setUserMessage('Đang tạo mã thanh toán...');
       try {
         const order = await apiFetch('/api/orders', { method: 'POST', body: '{}' });
+        activePaymentCode = order.code;
         document.getElementById('paymentQr').src = order.qr_url;
         document.getElementById('paymentCode').textContent = order.code;
         document.getElementById('paymentAmount').textContent = new Intl.NumberFormat('vi-VN', {
