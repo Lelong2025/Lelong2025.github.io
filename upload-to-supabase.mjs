@@ -107,55 +107,73 @@ async function main() {
   console.log('   ✅ Đã xoá xong.');
 
   // ─── 2. JCR IMPACT FACTOR ────────────────────────────────
-  const jcrRaw = readExcel('2019-2023JCRImpactFactor.xlsx');
-  const jcrRows = jcrRaw.map(row => ({
-    journal_name:  String(row['journal_name'] || '').trim() || null,
-    journal_norm:  normalizeName(row['journal_name']),
-    issn:          cleanISSN(row['issn']),
-    eissn:         cleanISSN(row['eissn']),
-    category:      String(row['category'] || '').trim() || null,
-    jcr_2024:      row['2024_JCR'] != null ? String(row['2024_JCR']) : null,
-    jcr_2025:      row['2025_JCR'] != null ? String(row['2025_JCR']) : null,
-    jif_quartile:  String(row['JIF Quartile'] || '').trim() || null,
-  })).filter(r => r.journal_name || r.issn);
+  let jcrCount = 0;
+  try {
+    const jcrRaw = readExcel('2019-2023JCRImpactFactor.xlsx');
+    const jcrRows = jcrRaw.map(row => ({
+      journal_name:  String(row['journal_name'] || '').trim() || null,
+      journal_norm:  normalizeName(row['journal_name']),
+      issn:          cleanISSN(row['issn']),
+      eissn:         cleanISSN(row['eissn']),
+      category:      String(row['category'] || '').trim() || null,
+      jcr_2024:      row['2024_JCR'] != null ? String(row['2024_JCR']) : null,
+      jcr_2025:      row['2025_JCR'] != null ? String(row['2025_JCR']) : null,
+      jif_quartile:  String(row['JIF Quartile'] || '').trim() || null,
+    })).filter(r => r.journal_name || r.issn);
 
-  await uploadTable('jcr_data', jcrRows);
+    await uploadTable('jcr_data', jcrRows);
+    jcrCount = jcrRows.length;
+  } catch (err) {
+    console.warn('\n⚠️  Bỏ qua JCR Impact Factor vì không tìm thấy file hoặc lỗi:', err.message);
+  }
 
   // ─── 3. HDGSNN LIST ──────────────────────────────────────
-  const hdgsnnRaw = readExcel('danh sách tạp chí HDGSNN.xlsx');
-  const hdgsnnRows = hdgsnnRaw.map(row => ({
-    ten_tap_chi:  String(row['Tên Tạp chí'] || '').trim() || null,
-    ten_norm:     normalizeName(row['Tên Tạp chí']),
-    issn:         cleanISSN(row['ISSN']),
-    diem_hdgsnn:  row['Điểm HDDGSNN'] != null ? String(row['Điểm HDDGSNN']) : null,
-  })).filter(r => r.ten_tap_chi || r.issn);
+  let hdgsnnCount = 0;
+  try {
+    const hdgsnnRaw = readExcel('danh sách tạp chí HDGSNN.xlsx');
+    const hdgsnnRows = hdgsnnRaw.map(row => ({
+      ten_tap_chi:  String(row['Tên Tạp chí'] || '').trim() || null,
+      ten_norm:     normalizeName(row['Tên Tạp chí']),
+      issn:         cleanISSN(row['ISSN']),
+      diem_hdgsnn:  row['Điểm HDDGSNN'] != null ? String(row['Điểm HDDGSNN']) : null,
+    })).filter(r => r.ten_tap_chi || r.issn);
 
-  await uploadTable('hdgsnn_list', hdgsnnRows);
+    await uploadTable('hdgsnn_list', hdgsnnRows);
+    hdgsnnCount = hdgsnnRows.length;
+  } catch (err) {
+    console.warn('\n⚠️  Bỏ qua HDGSNN list vì không tìm thấy file hoặc lỗi:', err.message);
+  }
 
   // ─── 4. SCOPUS MAY 2026 (file lớn 22.8MB) ────────────────
-  console.log('\n⚠️  Scopus 22.8MB — quá trình có thể mất 2-5 phút, vui lòng đợi...');
-  const scopusRaw = readExcel('ext_list_May_2026.xlsx', 'Scopus Sources May 2026');
-  const scopusRows = scopusRaw.map(row => ({
-    source_title:       String(row['Source Title'] || '').trim() || null,
-    source_title_norm:  normalizeName(row['Source Title']),
-    issn:               cleanISSN(row['ISSN']),
-    eissn:              cleanISSN(row['EISSN']),
-    publisher:          String(row['Publisher'] || '').trim() || null,
-    coverage:           String(row['Coverage'] || '').trim() || null,
-    source_type:        String(row['Source Type'] || '').trim() || null,
-    active_or_inactive: String(row['Active or Inactive'] || '').trim() || null,
-    discontinued:       String(row['Titles Discontinued by Scopus'] || '').trim() || null,
-    open_access_status: String(row['Open Access Status'] || '').trim() || null,
-  })).filter(r => r.source_title || r.issn);
+  let scopusCount = 0;
+  try {
+    console.log('\n⚠️  Scopus 22.8MB — quá trình có thể mất 2-5 phút, vui lòng đợi...');
+    const scopusRaw = readExcel('ext_list_May_2026.xlsx', 'Scopus Sources May 2026');
+    const scopusRows = scopusRaw.map(row => ({
+      source_title:       String(row['Source Title'] || '').trim() || null,
+      source_title_norm:  normalizeName(row['Source Title']),
+      issn:               cleanISSN(row['ISSN']),
+      eissn:              cleanISSN(row['EISSN']),
+      publisher:          String(row['Publisher'] || '').trim() || null,
+      coverage:           String(row['Coverage'] || '').trim() || null,
+      source_type:        String(row['Source Type'] || '').trim() || null,
+      active_or_inactive: String(row['Active or Inactive'] || '').trim() || null,
+      discontinued:       String(row['Titles Discontinued by Scopus'] || '').trim() || null,
+      open_access_status: String(row['Open Access Status'] || '').trim() || null,
+    })).filter(r => r.source_title || r.issn);
 
-  await uploadTable('scopus_list', scopusRows);
+    await uploadTable('scopus_list', scopusRows);
+    scopusCount = scopusRows.length;
+  } catch (err) {
+    console.warn('\n⚠️  Bỏ qua Scopus list vì không tìm thấy file hoặc lỗi:', err.message);
+  }
 
   // ─── TỔNG KẾT ─────────────────────────────────────────────
   console.log('='.repeat(60));
   console.log('  🎉 UPLOAD HOÀN TẤT!');
-  console.log(`  JCR:    ${jcrRows.length.toLocaleString()} dòng`);
-  console.log(`  HDGSNN: ${hdgsnnRows.length.toLocaleString()} dòng`);
-  console.log(`  Scopus: ${scopusRows.length.toLocaleString()} dòng`);
+  console.log(`  JCR:    ${jcrCount.toLocaleString()} dòng`);
+  console.log(`  HDGSNN: ${hdgsnnCount.toLocaleString()} dòng`);
+  console.log(`  Scopus: ${scopusCount.toLocaleString()} dòng`);
   console.log('='.repeat(60));
 }
 
