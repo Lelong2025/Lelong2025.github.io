@@ -1,4 +1,3 @@
-import { withSupabase } from "@supabase/server";
 import { createClient } from "@supabase/supabase-js";
 
 export default {
@@ -20,30 +19,19 @@ export default {
       return handleSepayWebhook(request, env);
     }
 
-    // Các API yêu cầu user JWT — dùng withSupabase với env config
-    const supabaseOpts = {
-      auth: "user",
-      env: {
-        url: env.SUPABASE_URL,
-        publishableKeys: { default: env.SUPABASE_PUBLISHABLE_KEY },
-        secretKeys: { default: env.SUPABASE_SECRET_KEY },
-        jwksUrl: env.SUPABASE_JWKS_URL
-      }
-    };
-
     if (path === "/api/chat") {
-      return withSupabase(supabaseOpts, (req, ctx) => handleChat(req, env, ctx))(request, env, context);
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleChat(req, env, ctx));
     }
     if (path === "/api/account" && request.method === "GET") {
-      return withSupabase(supabaseOpts, (req, ctx) => handleAccount(req, env, ctx, apiCors))(request, env, context);
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAccount(req, env, ctx, apiCors));
     }
     if (path === "/api/orders" && request.method === "POST") {
-      return withSupabase(supabaseOpts, (req, ctx) => handleCreateOrder(req, env, ctx, apiCors))(request, env, context);
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleCreateOrder(req, env, ctx, apiCors));
     }
     
     const orderMatch = path.match(/^\/api\/orders\/([A-Z0-9]+)\/status$/);
     if (orderMatch && request.method === "GET") {
-      return withSupabase(supabaseOpts, (req, ctx) => handleOrderStatus(req, env, ctx, apiCors, orderMatch[1]))(request, env, context);
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleOrderStatus(req, env, ctx, apiCors, orderMatch[1]));
     }
 
     if (path === "/" && request.method === "GET") {
@@ -55,6 +43,41 @@ export default {
     return jsonResponse({ error: "Not found" }, 404, apiCors.headers);
   }
 };
+
+async function withUserAuth(request, env, cors, handler) {
+  if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
+
+  const authorization = request.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) {
+    console.error("Supabase user authentication configuration is missing");
+    return jsonResponse({ error: "Authentication service unavailable" }, 503, cors.headers);
+  }
+
+  try {
+    const token = match[1].trim();
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      console.warn("User token rejected by Supabase Auth", error?.message || "User missing");
+      return jsonResponse({ error: "Invalid or expired session" }, 401, cors.headers);
+    }
+
+    return handler(request, {
+      userClaims: { id: user.id, email: user.email },
+      supabase,
+      supabaseAdmin: getAdminClient(env)
+    });
+  } catch (error) {
+    console.error("User authentication error", error.message);
+    return jsonResponse({ error: "Authentication service unavailable" }, 503, cors.headers);
+  }
+}
 
 async function handleChat(request, env, ctx) {
   const allowedOrigins = new Set(

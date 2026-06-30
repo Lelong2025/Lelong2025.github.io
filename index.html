@@ -1601,23 +1601,17 @@
       if (!session?.access_token) throw new Error('Bạn cần đăng nhập.');
       currentSession = session;
 
-      const requestWithSession = activeSession => fetch(`${API_BASE}${path}`, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${activeSession.access_token}`,
-            ...(options.headers || {})
-          }
-        });
-
-      let response = await requestWithSession(session);
-      if (response.status === 401) {
-        const { data, error: refreshError } = await db.auth.refreshSession();
-        if (!refreshError && data.session?.access_token) {
-          currentSession = data.session;
-          response = await requestWithSession(data.session);
+      // getSession() already refreshes an expired token when needed. Do not call
+      // refreshSession() after a Worker 401: TOKEN_REFRESHED would trigger another
+      // account request and create an unbounded refresh loop.
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          ...(options.headers || {})
         }
-      }
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(data.error || 'Yêu cầu không thành công.');
@@ -1675,14 +1669,15 @@
       if (currentSession) await refreshAccount();
       db.auth.onAuthStateChange((event, session) => {
         currentSession = session;
-        currentAccount = null;
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') currentAccount = null;
         setTimeout(async () => {
           updateAuthUi();
           if (event === 'PASSWORD_RECOVERY') {
             openUserModal();
             document.getElementById('authForm').style.display = 'none';
             document.getElementById('resetView').style.display = 'grid';
-          } else if (session) {
+          } else if (event === 'SIGNED_IN' && session) {
+            currentAccount = null;
             await refreshAccount();
             document.getElementById('authView').style.display = 'none';
             document.getElementById('accountView').style.display = 'block';
