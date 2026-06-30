@@ -280,11 +280,18 @@ function hasApiConfig(env) {
   return Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+function getSupabaseUrl(env) {
+  // Normalize: strip leading protocol garbage, always use https://
+  let url = (env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+  url = url.replace(/^https?:\/\//, '').replace(/^\/\//, '');
+  return `https://${url}`;
+}
+
 async function requireUser(request, env) {
   if (!hasApiConfig(env)) throw new Error("Supabase server configuration is missing");
   const auth = request.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
-  const response = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+  const response = await fetch(`${getSupabaseUrl(env)}/auth/v1/user`, {
     headers: {
       "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
       "Authorization": auth
@@ -296,7 +303,7 @@ async function requireUser(request, env) {
 
 async function supabaseRequest(env, path, options = {}) {
   if (!hasApiConfig(env)) throw new Error("Supabase server configuration is missing");
-  const response = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
+  const response = await fetch(`${getSupabaseUrl(env)}/rest/v1/${path}`, {
     ...options,
     headers: {
       "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
