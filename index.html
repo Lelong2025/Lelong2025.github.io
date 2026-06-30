@@ -14,6 +14,9 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://duycstnptwojisioeosk.supabase.co https://old-band-adb5.vonhacphuoc.workers.dev; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
   
   <!-- SEO Meta Tags -->
   <title>Tra Cứu Thông Tin Tạp Chí</title>
@@ -49,7 +52,7 @@
   }
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -1135,8 +1138,8 @@
       <h3 style="color: var(--primary-color); margin-top: 0; font-size: 22px; margin-bottom: 20px;">
         <i class="fas fa-bullhorn"></i> Thông báo
       </h3>
-      <a href="http://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/"
-        target="_blank"
+      <a href="https://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/"
+        target="_blank" rel="noopener noreferrer"
         style="color: white; background: linear-gradient(135deg, #f59e0b, #ea580c); text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; font-size: 18px; display: inline-block; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); transition: transform 0.2s, box-shadow 0.2s;">
         Hội đồng giáo sư nhà nước 2025
       </a>
@@ -1147,11 +1150,11 @@
     <div id="externalLinks" class="info-card">
       <strong><i class="fas fa-link"></i> Liên kết hệ thống ngoài:</strong>
       <div class="links-grid">
-        <a id="clarivateLink" href="#" target="_blank">Clarivate Master Journal List</a>
+        <a id="clarivateLink" href="#" target="_blank" rel="noopener noreferrer">Clarivate Master Journal List</a>
         <a id="Non-APC" href="https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/"
-          target="_blank">Danh sách Non-APC</a>
-        <a id="scopusLink" href="#" target="_blank">Scopus Preview</a>
-        <a id="scimagoLink" href="#" target="_blank">SCImago Journal & Country Rank</a>
+          target="_blank" rel="noopener noreferrer">Danh sách Non-APC</a>
+        <a id="scopusLink" href="#" target="_blank" rel="noopener noreferrer">Scopus Preview</a>
+        <a id="scimagoLink" href="#" target="_blank" rel="noopener noreferrer">SCImago Journal & Country Rank</a>
       </div>
     </div>
 
@@ -1203,7 +1206,8 @@
           <button class="iframe-modal-close" onclick="closeIframeModal()">&times;</button>
         </div>
         <div class="iframe-modal-body">
-          <iframe id="modalIframe" src=""></iframe>
+          <iframe id="modalIframe" src="" title="Nội dung nguồn bên ngoài" loading="lazy"
+            sandbox="allow-scripts allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
         </div>
       </div>
     </div>
@@ -1357,7 +1361,7 @@
     // ---- Dữ liệu nhúng sẵn từ HDGSNN2025.xlsx ----
     let hdgsnnData = [{ "STT": 1, "Tên tạp chí": "Các tạp chí khoa học quốc tế và Việt Nam (thuộc ISI)", "Cơ quan xuất bản": "ISI", "Khung điểm quy định": "0 - 2,0• IF≥2: tối đa 3,0• IF<2: tối đa 2,0" }, { "STT": 2, "Tên tạp chí": "Các tạp chí khoa học quốc tế khác (Scopus, PubMed)", "Cơ quan xuất bản": "Scopus, PubMed", "Khung điểm quy định": "0 - 1,5• Bản online: tối đa 1,0• Không online: tối đa 0,75" }, { "STT": 3, "Tên tạp chí": "Bài báo khoa học tại hội nghị quốc tế", "Cơ quan xuất bản": "Kỷ yếu (có phản biện, chủ biên, có ISBN)", "Khung điểm quy định": "0 - 1,0" }, { "STT": 4, "Tên tạp chí": "Bài báo khoa học tại hội nghị quốc gia", "Cơ quan xuất bản": "Kỷ yếu (có phản biện, chủ biên, có ISBN từ 2017)", "Khung điểm quy định": "0 - 0,5" }, { "STT": 5, "Tên tạp chí": "Bảo hộ lao động", "Chỉ số ISSN": "0866-8515", "Cơ quan xuất bản": "Tổng Liên đoàn Lao động Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 6, "Tên tạp chí": "Châm cứu Việt Nam", "Chỉ số ISSN": "1859-0705", "Cơ quan xuất bản": "Hội Châm cứu Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0-0,5 (trước 2020)• 0-0,25 (2020)• 0 (2021-2024)" }, { "STT": 7, "Tên tạp chí": "Chấn thương Chỉnh hình Việt Nam", "Chỉ số ISSN": "0866-7624", "Cơ quan xuất bản": "Hội Chấn thương - Chỉnh hình", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 8, "Tên tạp chí": "Công nghệ sinh học", "Chỉ số ISSN": "1811-4989", "Cơ quan xuất bản": "Viện Hàn lâm Khoa học và Công nghệ VN", "Khung điểm quy định": "0 (từ 2025)• 0-1,0 (trước 2025)" }, { "STT": 9, "Tên tạp chí": "Da liễu học Việt Nam", "Chỉ số ISSN": "1859-4824", "Cơ quan xuất bản": "Hội Da liễu", "Khung điểm quy định": "0 - 0,75 (từ 2020)• 0-0,5 (trước 2020)" }, { "STT": 10, "Tên tạp chí": "Điện quang và Y học hạt nhân", "Chỉ số ISSN": "1859-4832", "Cơ quan xuất bản": "Hội Điện quang và Y học hạt nhân VN", "Khung điểm quy định": "0 - 0,5 (từ 2024)• Thay đổi tăng giảm theo các mốc 2020, 2021, 2022" }, { "STT": 11, "Tên tạp chí": "Điều dưỡng Việt Nam", "Chỉ số ISSN": "2354-0737", "Cơ quan xuất bản": "Hội Điều dưỡng Việt Nam", "Khung điểm quy định": "0 (từ 2022)• 0-0,5 (trước 2020), 0-0,25 (từ 2020)" }, { "STT": 12, "Tên tạp chí": "Dinh dưỡng và Thực phẩm", "Chỉ số ISSN": "1859-0381", "Cơ quan xuất bản": "Hội Dinh dưỡng Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• 0-0,75 (từ 2017), biến động 2020-2021" }, { "STT": 13, "Tên tạp chí": "Độc học", "Chỉ số ISSN": "1859-1140", "Cơ quan xuất bản": "Văn phòng Ban chỉ đạo 33, Bộ TN&MT", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 14, "Tên tạp chí": "Dược liệu", "Chỉ số ISSN": "1859-4735", "Cơ quan xuất bản": "Viện Dược liệu", "Khung điểm quy định": "0 - 0,25 (từ 2022)• 0-0,5 (trước 2022)" }, { "STT": 15, "Tên tạp chí": "Dược học", "Chỉ số ISSN": "0866-7861", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 (từ 2021)• 0-0,5 (trước 2020), 0-0,25 (từ 2020)" }, { "STT": 16, "Tên tạp chí": "Gan Mật Việt Nam", "Chỉ số ISSN": "1859-431X", "Cơ quan xuất bản": "Hội Gan mật Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2020)" }, { "STT": 17, "Tên tạp chí": "Hậu môn - Trực tràng", "Chỉ số ISSN": "1859-235X", "Cơ quan xuất bản": "Hội Hậu môn - Trực tràng", "Khung điểm quy định": "0 - 0,5 (trước 2020)" }, { "STT": 18, "Tên tạp chí": "Khoa học: Khoa học Y Dược", "Chỉ số ISSN": "2588-1132", "Cơ quan xuất bản": "Đại học Quốc gia Hà Nội", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (trước 2024)" }, { "STT": 19, "Tên tạp chí": "Khoa học (ĐH Sư phạm TP.HCM)", "Chỉ số ISSN": "2734-9918", "Cơ quan xuất bản": "Trường Đại học Sư phạm TP Hồ Chí Minh", "Khung điểm quy định": "0 (từ 2025)• 0-0,5 (từ 2021)" }, { "STT": 20, "Tên tạp chí": "Khoa học (ĐH Tây Nguyên)", "Chỉ số ISSN": "1859-4611", "Cơ quan xuất bản": "Trường Đại học Tây Nguyên", "Khung điểm quy định": "0 (từ 2021)• 0-0,5 (trước 2021)" }, { "STT": 21, "Tên tạp chí": "Khoa học & Công nghệ Việt Nam", "Chỉ số ISSN": "2615-9929", "Cơ quan xuất bản": "Bộ Khoa học và Công nghệ", "Khung điểm quy định": "0 - 1,0 (từ 2017)• 0-0,75 (trước 2017)" }, { "STT": 22, "Tên tạp chí": "Khoa học ĐH Huế: Khoa học tự nhiên", "Chỉ số ISSN": "2615-9678", "Cơ quan xuất bản": "Đại học Huế", "Khung điểm quy định": "0 (từ 2025)• 0-0,5 (2021-2022)" }, { "STT": 23, "Tên tạp chí": "Khoa học Nghiên cứu Sức khỏe và Phát triển", "Chỉ số ISSN": "2588-1442", "Cơ quan xuất bản": "Trường Đại học Y tế Công cộng", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-0,75 (từ 2022), 0-0,5 (từ 2020)" }, { "STT": 24, "Tên tạp chí": "Khoa học Tiêu hóa Việt Nam", "Chỉ số ISSN": "1859-0640", "Cơ quan xuất bản": "Hội Khoa học Tiêu hóa Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• Biến động giảm dần qua các năm từ mốc 0-0,75" }, { "STT": 25, "Tên tạp chí": "Khoa học và Công nghệ (ĐH Thái Nguyên)", "Chỉ số ISSN": "2615-9562", "Cơ quan xuất bản": "Đại học Thái Nguyên", "Khung điểm quy định": "0 - 0,5 (từ 2021)• 0-0,25 (năm 2020)" }, { "STT": 26, "Tên tạp chí": "Khoa học và Công nghệ Nhiệt đới", "Chỉ số ISSN": "0866-7535", "Cơ quan xuất bản": "Trung tâm Nhiệt đới Việt - Nga, Bộ QP", "Khung điểm quy định": "0 - 0,25 (từ 2022)• 0-0,5 (trước 2022)" }, { "STT": 27, "Tên tạp chí": "Lao và Bệnh phổi", "Chỉ số ISSN": "1859-3925", "Cơ quan xuất bản": "Hội Lao và Bệnh phổi Việt Nam", "Khung điểm quy định": "0 (từ 2022)• 0-0,25 (từ 2021), 0-0,5 (trước 2020)" }, { "STT": 28, "Tên tạp chí": "MedPharmRes", "Chỉ số ISSN": "2615-9139", "Cơ quan xuất bản": "Đại học Y Dược TP Hồ Chí Minh", "Khung điểm quy định": "0 - 1,0" }, { "STT": 29, "Tên tạp chí": "Nghiên cứu và Thực hành Nhi khoa", "Chỉ số ISSN": "2615-9198", "Cơ quan xuất bản": "Viện NC Sức khỏe trẻ em, BV Nhi TW", "Khung điểm quy định": "0 (từ 2022)• 0-0,5 (từ 2021), 0-0,25 (từ 2020)" }, { "STT": 30, "Tên tạp chí": "Nghiên cứu Y học", "Chỉ số ISSN": "2354-080X", "Cơ quan xuất bản": "Trường Đại học Y Hà Nội", "Khung điểm quy định": "0 - 1,0 (từ 2001)• 0-0,5 (trước đó)" }, { "STT": 31, "Tên tạp chí": "Nghiên cứu Y học Cổ truyền Việt Nam", "Chỉ số ISSN": "1859-1752", "Cơ quan xuất bản": "Bệnh viện Y học Cổ truyền Trung ương", "Khung điểm quy định": "0 (từ 2022)• Giảm dần từ mốc tối đa 0-0,75" }, { "STT": 32, "Tên tạp chí": "Ngoại khoa Việt Nam", "Chỉ số ISSN": "1859-1876", "Cơ quan xuất bản": "Hội ngoại khoa, Tổng Hội Y học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 33, "Tên tạp chí": "Nhãn khoa Việt Nam", "Chỉ số ISSN": "1859-395X", "Cơ quan xuất bản": "Hội Nhãn khoa", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 34, "Tên tạp chí": "Nhi khoa", "Chỉ số ISSN": "1859-3860", "Cơ quan xuất bản": "Hội Nhi khoa Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2025)• 0-0,25 (từ 2022)" }, { "STT": 35, "Tên tạp chí": "Nội khoa", "Chỉ số ISSN": "1859-1884", "Cơ quan xuất bản": "Tổng Hội Y học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 36, "Tên tạp chí": "Nội khoa Việt Nam", "Chỉ số ISSN": "0868-3190", "Cơ quan xuất bản": "Hội Nội khoa Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 37, "Tên tạp chí": "Nội tiết và Đái tháo đường", "Chỉ số ISSN": "1859-4727", "Cơ quan xuất bản": "Hội Nội tiết - Đái tháo đường Việt Nam", "Khung điểm quy định": "0 - 0,5" }, { "STT": 38, "Tên tạp chí": "Ngoại khoa và Phẫu thuật nội soi Việt Nam", "Chỉ số ISSN": "1859-4506", "Cơ quan xuất bản": "Hội Ngoại khoa và Phẫu thuật nội soi VN", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (trước đó)" }, { "STT": 39, "Tên tạp chí": "Phẫu thuật Tim mạch và Lồng ngực Việt Nam", "Chỉ số ISSN": "0866-7551", "Cơ quan xuất bản": "Hội Phẫu thuật Tim mạch và Lồng ngực VN", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 40, "Tên tạp chí": "Phòng chống Sốt rét và các bệnh ký sinh trùng", "Chỉ số ISSN": "0868-3735", "Cơ quan xuất bản": "Viện Sốt rét - Ký sinh trùng - Côn trùng TW", "Khung điểm quy định": "0 - 0,25 (từ 2021)• 0-0,5 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 41, "Tên tạp chí": "Phụ sản", "Chỉ số ISSN": "1859-3844", "Cơ quan xuất bản": "Hội Phụ sản Việt Nam", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2023), 0-0,25 (từ 2022)" }, { "STT": 42, "Tên tạp chí": "Sinh lý học Việt Nam", "Chỉ số ISSN": "1859-2376", "Cơ quan xuất bản": "Hội Sinh lý học Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0-0,5 (từ 2022), 0-0,25 (từ 2021)" }, { "STT": 43, "Tên tạp chí": "Thông tin Y – Dược học", "Chỉ số ISSN": "0868-3891", "Cơ quan xuất bản": "Viện Thông tin thư viện Y học", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 44, "Tên tạp chí": "Tai Mũi Họng Việt Nam", "Chỉ số ISSN": "1859-3704", "Cơ quan xuất bản": "Hội Tai – Mũi – Họng Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (năm 2022-2023), trước đó 0-0,5 và 0-0,75" }, { "STT": 45, "Tên tạp chí": "Tim mạch học", "Chỉ số ISSN": "1859-2848", "Cơ quan xuất bản": "Hội Tim mạch học Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• Biến động qua các năm 2021, 2022, 2023" }, { "STT": 46, "Tên tạp chí": "Truyền nhiễm Việt Nam", "Chỉ số ISSN": "0866-7829", "Cơ quan xuất bản": "Hội Truyền nhiễm Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• 0-0,25 (từ 2021)" }, { "STT": 47, "Tên tạp chí": "Ung thư học Việt Nam", "Chỉ số ISSN": "1859-400X", "Cơ quan xuất bản": "Hội Phòng chống Ung thư Việt Nam", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 48, "Tên tạp chí": "Vietnam Journal of Medicine & Pharmacy", "Chỉ số ISSN": "0866-7942", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 - 1,0 (trước 2020)" }, { "STT": 49, "Tên tạp chí": "Vietnam Journal of Science, Technology and Engineering", "Chỉ số ISSN": "2615-9937", "Cơ quan xuất bản": "Bộ Khoa học và Công nghệ", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-1,25 (từ 2019)" }, { "STT": 50, "Tên tạp chí": "Y Dược cổ truyền Việt Nam", "Chỉ số ISSN": "2354-1334", "Cơ quan xuất bản": "Học viện Y Dược học Cổ truyền Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (2021-2023), trước đó 0-0,25 và 0-0,5" }, { "STT": 51, "Tên tạp chí": "Y Dược học (ĐH Y Dược Huế)", "Chỉ số ISSN": "1859-3836", "Cơ quan xuất bản": "Trường Đại học Y Dược, Đại học Huế", "Khung điểm quy định": "0 - 1,0 (từ 2020)• 0-0,75 (từ 2013), 0-0,5 (trước đó)" }, { "STT": 52, "Tên tạp chí": "Y Dược học Cần Thơ", "Chỉ số ISSN": "2354-1210", "Cơ quan xuất bản": "Trường Đại học Y Dược Cần Thơ", "Khung điểm quy định": "0 - 0,5 (từ 2023)• 0-0,25 (từ 2022), 0-0,5 (trước đó)" }, { "STT": 53, "Tên tạp chí": "Y Dược học Cổ truyền Quân sự", "Chỉ số ISSN": "1859-3755", "Cơ quan xuất bản": "Viện Y học Cổ truyền Quân đội", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0 (2021-2024), trước đó 0-0,25 và 0-0,5" }, { "STT": 54, "Tên tạp chí": "Y Dược học Lâm sàng 108", "Chỉ số ISSN": "1859-2872", "Cơ quan xuất bản": "Viện NCKH Y dược Lâm sàng 108", "Khung điểm quy định": "0 - 0,75 (từ 2020)• 0-1,0 (trước đó)" }, { "STT": 55, "Tên tạp chí": "Y Dược Thực hành 175", "Chỉ số ISSN": "2354-1024", "Cơ quan xuất bản": "Bệnh viện Quân y 175", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (2022-2023), trước đó biến động từ 0-1,0" }, { "STT": 56, "Tên tạp chí": "Y dược học Quân sự", "Chỉ số ISSN": "1859-0748", "Cơ quan xuất bản": "Học viện Quân y", "Khung điểm quy định": "0 - 1,0 (từ 2024)• Thay đổi liên tục qua các mốc 2001, 2021, 2022, 2023" }, { "STT": 57, "Tên tạp chí": "Y học cộng đồng", "Chỉ số ISSN": "2354-0613", "Cơ quan xuất bản": "Viện Sức khỏe cộng đồng", "Khung điểm quy định": "0 - 0,75 (từ 2021)• 0-0,5 (trước 2021)" }, { "STT": 58, "Tên tạp chí": "Y học dự phòng", "Chỉ số ISSN": "0868-2836", "Cơ quan xuất bản": "Hội Y học Dự phòng", "Khung điểm quy định": "0 - 1,0 (từ 2001)• 0-0,5 (trước 2001)" }, { "STT": 59, "Tên tạp chí": "Y học lâm sàng (BV Bạch Mai)", "Chỉ số ISSN": "1859-3593", "Cơ quan xuất bản": "Bệnh viện Bạch Mai", "Khung điểm quy định": "0 - 0,75 (từ 2024)• Biến động giảm về 0-0,5 rồi tăng lại" }, { "STT": 60, "Tên tạp chí": "Y học lâm sàng (BV TW Huế)", "Chỉ số ISSN": "1859-3895", "Cơ quan xuất bản": "Bệnh viện Trung ương Huế", "Khung điểm quy định": "0 - 1,0 (từ 2020)• 0-0,75 (trước 2020)" }, { "STT": 61, "Tên tạp chí": "Y học Thảm họa và Bỏng", "Chỉ số ISSN": "1859-3461", "Cơ quan xuất bản": "Viện Bỏng Quốc gia", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 62, "Tên tạp chí": "Y học Quân sự", "Chỉ số ISSN": "1859-1655", "Cơ quan xuất bản": "Cục Quân y", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2023), 0-0,25 (từ 2021)" }, { "STT": 63, "Tên tạp chí": "Y học thực hành", "Chỉ số ISSN": "1859-1663", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 64, "Tên tạp chí": "Y học TP. Hồ Chí Minh", "Chỉ số ISSN": "1859-1779", "Cơ quan xuất bản": "Đại học Y Dược TP Hồ Chí Minh", "Khung điểm quy định": "0 - 0,75 (từ 2025)• Biến động giảm về mốc 0-0,5 trước khi tăng lại" }, { "STT": 65, "Tên tạp chí": "Y học Việt Nam", "Chỉ số ISSN": "1859-1868", "Cơ quan xuất bản": "Tổng hội Y học Việt Nam", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (từ 2020), 0-1,0 (trước đó)" }, { "STT": 66, "Tên tạp chí": "Y tế công cộng", "Chỉ số ISSN": "1859-1132", "Cơ quan xuất bản": "Hội Y tế Công cộng Việt Nam", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-0,75 (từ 2021), 0-1,0 (từ 2013)" }, { "STT": 67, "Tên tạp chí": "Khoa học Điều dưỡng", "Chỉ số ISSN": "2734-9632", "Cơ quan xuất bản": "Trường Đại học Điều dưỡng Nam Định", "Khung điểm quy định": "0 - 0,5 (từ 2025)• 0-0,25 (từ 2022)" }, { "STT": 68, "Tên tạp chí": "Đông y", "Chỉ số ISSN": "1859-3933", "Cơ quan xuất bản": "Hội Đông y Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 69, "Tên tạp chí": "Tâm thần học", "Cơ quan xuất bản": "Hội Tâm thần học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 70, "Tên tạp chí": "Phẫu thuật thần kinh", "Cơ quan xuất bản": "Hội Thần kinh Nội khoa", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 71, "Tên tạp chí": "Hình thái học", "Cơ quan xuất bản": "Hội Hình thái học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 72, "Tên tạp chí": "Y dược Thái Bình", "Chỉ số ISSN": "2815-5548", "Cơ quan xuất bản": "Trường Đại học Y Dược Thái Bình", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 73, "Tên tạp chí": "Kiểm nghiệm và An toàn thực phẩm", "Chỉ số ISSN": "2734-9152", "Cơ quan xuất bản": "Viện Kiểm nghiệm ATVSTP Quốc gia", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 74, "Tên tạp chí": "Kiểm định Vắc xin và Sinh phẩm y tế", "Chỉ số ISSN": "2815-6269", "Cơ quan xuất bản": "Viện Kiểm định Quốc gia Vắc xin & SPMYT", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 75, "Tên tạp chí": "Y Dược học Phạm Ngọc Thạch", "Chỉ số ISSN": "2815-6366", "Cơ quan xuất bản": "Trường Đại học Y khoa Phạm Ngọc Thạch", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 76, "Tên tạp chí": "Phát triển KH&CN: Khoa học Sức khỏe", "Chỉ số ISSN": "2734-9446", "Cơ quan xuất bản": "ĐH Khoa học Sức khoẻ, ĐHQG TP.HCM", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 77, "Tên tạp chí": "Sức khỏe nội tiết", "Chỉ số ISSN": "3030-4032", "Cơ quan xuất bản": "Hội Người Giáo dục Bệnh Đái tháo đường VN", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 78, "Tên tạp chí": "Khoa học Trường Đại học Hồng Bàng", "Chỉ số ISSN": "2615-9686", "Cơ quan xuất bản": "Trường Đại học Quốc tế Hồng Bàng", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }, { "STT": 79, "Tên tạp chí": "Sinh học (Academia Journal of Biology)", "Chỉ số ISSN": "2615-9023", "Cơ quan xuất bản": "Viện Khoa học sự sống - Viện HLKH&CN VN", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }, { "STT": 80, "Tên tạp chí": "Thần kinh học Việt Nam", "Chỉ số ISSN": "2354-0931", "Cơ quan xuất bản": "Hội Thần kinh học Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }];
 
-    let pdfData = [{ "STT": 0, "Hội đồng Giáo sư ngành / Liên ngành": "Toàn văn Quyết định số 26/QĐ-HĐGSNN", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf" }, { "STT": 1, "Hội đồng Giáo sư ngành / Liên ngành": "Chăn nuôi - Thú y - Thuỷ sản", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/1-HD%20CN-TY-TS-DMTC%202025_0001.pdf" }, { "STT": 2, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/2-HD%20Co%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 3, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ khí - Động lực", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/3-HD%20CK-DL-DMTC%202025_0001.pdf" }, { "STT": 4, "Hội đồng Giáo sư ngành / Liên ngành": "Công nghệ thông tin", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/4-HD%20CNTT-DMTC%202025_0001.pdf" }, { "STT": 5, "Hội đồng Giáo sư ngành / Liên ngành": "Dược học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/5-HD%20Duoc%20hoc-DMTC%202025_0001.pdf" }, { "STT": 6, "Hội đồng Giáo sư ngành / Liên ngành": "Điện - Điện tử - Tự động hoá", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/6-HD%20Dien-DT-TDH-DMTC%202025_0001.pdf" }, { "STT": 7, "Hội đồng Giáo sư ngành / Liên ngành": "Giao thông vận tải", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/7-HD%20GTVT-DMTC%202025_0001.pdf" }, { "STT": 8, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Giáo dục", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/8-HD%20KH%20Giao%20duc-DMTC%202025_0001(1).pdf" }, { "STT": 9, "Hội đồng Giáo sư ngành / Liên ngành": "Hoá học - Công nghệ thực phẩm", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/9-HD%20Hoa%20hoc-CNTP-DMTC%202025_0001(2).pdf" }, { "STT": 10, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học An ninh", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/10-HD%20KH%20An%20ninh-DMTC%202025_0001(1).pdf" }, { "STT": 11, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Quân sự", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/11-HD%20KH%20Quan%20su-DMTC%202025_0001.pdf" }, { "STT": 12, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Trái đất - Mỏ", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/12-HD%20KHTD-Mo-DMTC%202025_0001.pdf" }, { "STT": 13, "Hội đồng Giáo sư ngành / Liên ngành": "Kinh tế", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/13-HD%20Kinh%20te-DMTC%202025_0001(4).pdf" }, { "STT": 14, "Hội đồng Giáo sư ngành / Liên ngành": "Luật học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/14-HD%20Luat%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 15, "Hội đồng Giáo sư ngành / Liên ngành": "Luyện kim", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/15-HD%20Luyen%20kim-DMTC%202025_0001(1).pdf" }, { "STT": 16, "Hội đồng Giáo sư ngành / Liên ngành": "Ngôn ngữ học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/16-HD%20Ngon%20ngu%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 17, "Hội đồng Giáo sư ngành / Liên ngành": "Nông nghiệp - Lâm nghiệp", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/17-HD%20Nong%20nghiep-LN-DMTC%202025_0001(1).pdf" }, { "STT": 18, "Hội đồng Giáo sư ngành / Liên ngành": "Sinh học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/18-HD%20Sinh%20hoc-DMTC%202025_0001.pdf" }, { "STT": 19, "Hội đồng Giáo sư ngành / Liên ngành": "Sử học - Khảo cổ học - Dân tộc học / Nhân học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/19-HD%20Su%20hoc-KCH-DTH-NH-DMTC%202025_0001(1).pdf" }, { "STT": 20, "Hội đồng Giáo sư ngành / Liên ngành": "Tâm lý học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/20-HD%20Tam%20ly%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 21, "Hội đồng Giáo sư ngành / Liên ngành": "Thuỷ lợi", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/21-HD%20Thuy%20loi-DMTC%202025_0001.pdf" }, { "STT": 22, "Hội đồng Giáo sư ngành / Liên ngành": "Toán học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/22-HD%20Toan%20hoc-DMTC%202025_0001.pdf" }, { "STT": 23, "Hội đồng Giáo sư ngành / Liên ngành": "Triết học - Xã hội học - Chính trị học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/23-HD%20Triet%20hoc-CTH-XHH-DMTC%202025_0001(3).pdf" }, { "STT": 24, "Hội đồng Giáo sư ngành / Liên ngành": "Văn hoá - Nghệ thuật - Thể dục thể thao", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/24-HD%20VH-NT-TDTT-DMTC%202025_0001(1).pdf" }, { "STT": 25, "Hội đồng Giáo sư ngành / Liên ngành": "Văn học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/25-HD%20Van%20hoc-DMTC%202025_0001.pdf" }, { "STT": 26, "Hội đồng Giáo sư ngành / Liên ngành": "Vật lý", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/26-HD%20Vat%20ly-DMTC%202025_0001.pdf" }, { "STT": 27, "Hội đồng Giáo sư ngành / Liên ngành": "Xây dựng - Kiến trúc", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/27-HD%20XD-KT-DMTC%202025_0001.pdf" }, { "STT": 28, "Hội đồng Giáo sư ngành / Liên ngành": "Y học", "Bản gốc chi tiết (Tải về/Xem)": "http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/28-HD%20Y%20hoc-DMTC%202025_0001(2).pdf" }];
+    let pdfData = [{ "STT": 0, "Hội đồng Giáo sư ngành / Liên ngành": "Toàn văn Quyết định số 26/QĐ-HĐGSNN", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf" }, { "STT": 1, "Hội đồng Giáo sư ngành / Liên ngành": "Chăn nuôi - Thú y - Thuỷ sản", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/1-HD%20CN-TY-TS-DMTC%202025_0001.pdf" }, { "STT": 2, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/2-HD%20Co%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 3, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ khí - Động lực", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/3-HD%20CK-DL-DMTC%202025_0001.pdf" }, { "STT": 4, "Hội đồng Giáo sư ngành / Liên ngành": "Công nghệ thông tin", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/4-HD%20CNTT-DMTC%202025_0001.pdf" }, { "STT": 5, "Hội đồng Giáo sư ngành / Liên ngành": "Dược học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/5-HD%20Duoc%20hoc-DMTC%202025_0001.pdf" }, { "STT": 6, "Hội đồng Giáo sư ngành / Liên ngành": "Điện - Điện tử - Tự động hoá", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/6-HD%20Dien-DT-TDH-DMTC%202025_0001.pdf" }, { "STT": 7, "Hội đồng Giáo sư ngành / Liên ngành": "Giao thông vận tải", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/7-HD%20GTVT-DMTC%202025_0001.pdf" }, { "STT": 8, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Giáo dục", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/8-HD%20KH%20Giao%20duc-DMTC%202025_0001(1).pdf" }, { "STT": 9, "Hội đồng Giáo sư ngành / Liên ngành": "Hoá học - Công nghệ thực phẩm", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/9-HD%20Hoa%20hoc-CNTP-DMTC%202025_0001(2).pdf" }, { "STT": 10, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học An ninh", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/10-HD%20KH%20An%20ninh-DMTC%202025_0001(1).pdf" }, { "STT": 11, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Quân sự", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/11-HD%20KH%20Quan%20su-DMTC%202025_0001.pdf" }, { "STT": 12, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Trái đất - Mỏ", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/12-HD%20KHTD-Mo-DMTC%202025_0001.pdf" }, { "STT": 13, "Hội đồng Giáo sư ngành / Liên ngành": "Kinh tế", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/13-HD%20Kinh%20te-DMTC%202025_0001(4).pdf" }, { "STT": 14, "Hội đồng Giáo sư ngành / Liên ngành": "Luật học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/14-HD%20Luat%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 15, "Hội đồng Giáo sư ngành / Liên ngành": "Luyện kim", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/15-HD%20Luyen%20kim-DMTC%202025_0001(1).pdf" }, { "STT": 16, "Hội đồng Giáo sư ngành / Liên ngành": "Ngôn ngữ học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/16-HD%20Ngon%20ngu%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 17, "Hội đồng Giáo sư ngành / Liên ngành": "Nông nghiệp - Lâm nghiệp", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/17-HD%20Nong%20nghiep-LN-DMTC%202025_0001(1).pdf" }, { "STT": 18, "Hội đồng Giáo sư ngành / Liên ngành": "Sinh học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/18-HD%20Sinh%20hoc-DMTC%202025_0001.pdf" }, { "STT": 19, "Hội đồng Giáo sư ngành / Liên ngành": "Sử học - Khảo cổ học - Dân tộc học / Nhân học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/19-HD%20Su%20hoc-KCH-DTH-NH-DMTC%202025_0001(1).pdf" }, { "STT": 20, "Hội đồng Giáo sư ngành / Liên ngành": "Tâm lý học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/20-HD%20Tam%20ly%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 21, "Hội đồng Giáo sư ngành / Liên ngành": "Thuỷ lợi", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/21-HD%20Thuy%20loi-DMTC%202025_0001.pdf" }, { "STT": 22, "Hội đồng Giáo sư ngành / Liên ngành": "Toán học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/22-HD%20Toan%20hoc-DMTC%202025_0001.pdf" }, { "STT": 23, "Hội đồng Giáo sư ngành / Liên ngành": "Triết học - Xã hội học - Chính trị học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/23-HD%20Triet%20hoc-CTH-XHH-DMTC%202025_0001(3).pdf" }, { "STT": 24, "Hội đồng Giáo sư ngành / Liên ngành": "Văn hoá - Nghệ thuật - Thể dục thể thao", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/24-HD%20VH-NT-TDTT-DMTC%202025_0001(1).pdf" }, { "STT": 25, "Hội đồng Giáo sư ngành / Liên ngành": "Văn học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/25-HD%20Van%20hoc-DMTC%202025_0001.pdf" }, { "STT": 26, "Hội đồng Giáo sư ngành / Liên ngành": "Vật lý", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/26-HD%20Vat%20ly-DMTC%202025_0001.pdf" }, { "STT": 27, "Hội đồng Giáo sư ngành / Liên ngành": "Xây dựng - Kiến trúc", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/27-HD%20XD-KT-DMTC%202025_0001.pdf" }, { "STT": 28, "Hội đồng Giáo sư ngành / Liên ngành": "Y học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/28-HD%20Y%20hoc-DMTC%202025_0001(2).pdf" }];
 
     // ─── SUPABASE CLIENT ────────────────────────────────────────────
     const { createClient: _sbCreate } = window.supabase;
@@ -1365,6 +1369,15 @@
       'https://duycstnptwojisioeosk.supabase.co',
       'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW'
     );
+
+    function escapeHTML(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
     function formatISSN(issn) {
       if (!issn) return 'N/A';
@@ -1504,8 +1517,14 @@
       const input = document.getElementById("searchInput");
       const query = input.value.trim();
       if (!query) return;
+      if (query.length > 150) {
+        input.setCustomValidity('Từ khóa không được vượt quá 150 ký tự.');
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity('');
 
-      const normQuery = normalizeStr(query);
+      const normQuery = normalizeStr(query).replace(/[%,()]/g, '');
       const cleanedQuery = cleanISSN(query);
       const isIssnSearch = cleanedQuery.length >= 7;
 
@@ -1558,9 +1577,9 @@
           hdgsnnMatches.forEach(item => {
             hdgsnnHTML += `
               <li class="result-item">
-                <div class="result-item-title">${item.ten_tap_chi || "N/A"}</div>
-                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
-                <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${item.diem_hdgsnn !== null ? item.diem_hdgsnn : "N/A"}</span></div>
+                <div class="result-item-title">${escapeHTML(item.ten_tap_chi || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${escapeHTML(item.diem_hdgsnn !== null ? item.diem_hdgsnn : "N/A")}</span></div>
               </li>`;
           });
           hdgsnnHTML += `</ul>`;
@@ -1577,13 +1596,13 @@
           jcrMatches.forEach(item => {
             jcrHTML += `
               <li class="result-item">
-                <div class="result-item-title">${item.journal_name || "N/A"}</div>
-                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
-                <div class="result-item-detail"><b>eISSN:</b> <span>${formatISSN(item.eissn)}</span></div>
-                <div class="result-item-detail"><b>Ngành:</b> <span>${item.category || "N/A"}</span></div>
-                <div class="result-item-detail"><b>Impact Factor 2023:</b> <span class="badge badge-points">${item.jcr_2024 || 'N/A'}</span></div>
-                <div class="result-item-detail"><b>Impact Factor 2024:</b> <span class="badge badge-points">${item.jcr_2025 || 'N/A'}</span></div>
-                <div class="result-item-detail"><b>Phân hạng Q:</b> <span class="badge badge-oa">${item.jif_quartile || 'N/A'}</span></div>
+                <div class="result-item-title">${escapeHTML(item.journal_name || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>eISSN:</b> <span>${escapeHTML(formatISSN(item.eissn))}</span></div>
+                <div class="result-item-detail"><b>Ngành:</b> <span>${escapeHTML(item.category || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2023:</b> <span class="badge badge-points">${escapeHTML(item.jcr_2024 || 'N/A')}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2024:</b> <span class="badge badge-points">${escapeHTML(item.jcr_2025 || 'N/A')}</span></div>
+                <div class="result-item-detail"><b>Phân hạng Q:</b> <span class="badge badge-oa">${escapeHTML(item.jif_quartile || 'N/A')}</span></div>
               </li>`;
           });
           jcrHTML += `</ul>`;
@@ -1603,17 +1622,17 @@
             const activeBadge = isActive
               ? `<span class="badge badge-active">Active</span>`
               : `<span class="badge badge-inactive">Inactive</span>`;
-            const oaStatus = item.open_access_status ? `<span class="badge badge-oa">${item.open_access_status}</span>` : "";
+            const oaStatus = item.open_access_status ? `<span class="badge badge-oa">${escapeHTML(item.open_access_status)}</span>` : "";
             const discontinued = item.discontinued ? `<span class="badge badge-discontinued">Discontinued</span>` : "";
 
             scopusHTML += `
               <li class="result-item">
-                <div class="result-item-title">${item.source_title || "N/A"}</div>
-                <div class="result-item-detail"><b>ISSN:</b> <span>${formatISSN(item.issn)}</span></div>
-                <div class="result-item-detail"><b>EISSN:</b> <span>${formatISSN(item.eissn)}</span></div>
-                <div class="result-item-detail"><b>Publisher:</b> <span>${item.publisher || "N/A"}</span></div>
-                <div class="result-item-detail"><b>Coverage:</b> <span>${item.coverage || "N/A"}</span></div>
-                <div class="result-item-detail"><b>Source Type:</b> <span>${item.source_type || "N/A"}</span></div>
+                <div class="result-item-title">${escapeHTML(item.source_title || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>EISSN:</b> <span>${escapeHTML(formatISSN(item.eissn))}</span></div>
+                <div class="result-item-detail"><b>Publisher:</b> <span>${escapeHTML(item.publisher || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Coverage:</b> <span>${escapeHTML(item.coverage || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Source Type:</b> <span>${escapeHTML(item.source_type || "N/A")}</span></div>
                 <div class="result-item-detail"><b>Trạng thái:</b> <span>${activeBadge} ${discontinued} ${oaStatus}</span></div>
               </li>`;
           });
@@ -1623,7 +1642,7 @@
 
         // Đưa HTML vào giao diện
         excelInfoDiv.innerHTML = `
-          <h3><i class="fas fa-info-circle"></i> Kết quả tìm kiếm cho: "${query}"</h3>
+          <h3><i class="fas fa-info-circle"></i> Kết quả tìm kiếm cho: "${escapeHTML(query)}"</h3>
           <div class="search-results-grid">
             ${hdgsnnHTML}
             ${jcrHTML}
@@ -1642,14 +1661,14 @@
         document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
         document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
         currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
-        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${firstMatchIssnRaw}#search_results`;
+        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${encodeURIComponent(firstMatchIssnRaw)}#search_results`;
         currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
         updateIframeSources();
 
         if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length });
 
       } catch (err) {
-        excelInfoDiv.innerHTML = `<p style="color: #ef4444; text-align: center; font-size: 16px; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ${err.message}</p>`;
+        excelInfoDiv.innerHTML = `<p style="color: #ef4444; text-align: center; font-size: 16px; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ${escapeHTML(err.message)}</p>`;
       }
     }
 
@@ -1665,34 +1684,34 @@
 
     // ---- Dữ liệu 28 ngành từ QĐ 26/HĐGSNN 2025 ----
     const DMTC_2025 = [
-      { id: 1, nganh: 'Chăn nuôi - Thú y - Thuỷ sản', key: ['chan nuoi', 'thu y', 'thuy san', 'chăn nuôi', 'thú y', 'thuỷ sản', 'nuôi trồng thủy sản'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/1-HD CN-TY-TS-DMTC 2025_0001.pdf' },
-      { id: 2, nganh: 'Cơ học', key: ['co hoc', 'cơ học', 'mechanics'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/2-HD Co hoc-DMTC 2025_0001(1).pdf' },
-      { id: 3, nganh: 'Cơ khí - Động lực', key: ['co khi', 'dong luc', 'cơ khí', 'động lực'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/3-HD CK-DL-DMTC 2025_0001.pdf' },
-      { id: 4, nganh: 'Công nghệ thông tin', key: ['cong nghe thong tin', 'cntt', 'công nghệ thông tin', 'khoa hoc may tinh', 'it '], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/4-HD CNTT-DMTC 2025_0001.pdf' },
-      { id: 5, nganh: 'Dược học', key: ['duoc hoc', 'duoc ', 'dược học', 'dược ', 'pharmacy'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/5-HD Duoc hoc-DMTC 2025_0001.pdf' },
-      { id: 6, nganh: 'Điện - Điện tử - Tự động hoá', key: ['dien tu', 'tu dong', 'điện tử', 'tự động', 'dien '], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/6-HD Dien-DT-TDH-DMTC 2025_0001.pdf' },
-      { id: 7, nganh: 'Giao thông vận tải', key: ['giao thong', 'van tai', 'giao thông', 'vận tải', 'gtvt'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/7-HD GTVT-DMTC 2025_0001.pdf' },
-      { id: 8, nganh: 'Khoa học Giáo dục', key: ['giao duc', 'giáo dục', 'khoa hoc giao duc', 'education'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/8-HD KH Giao duc-DMTC 2025_0001(1).pdf' },
-      { id: 9, nganh: 'Hoá học - Công nghệ thực phẩm', key: ['hoa hoc', 'thuc pham', 'hoá học', 'thực phẩm', 'chemistry', 'food'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/9-HD Hoa hoc-CNTP-DMTC 2025_0001(2).pdf' },
-      { id: 10, nganh: 'Khoa học An ninh', key: ['an ninh', 'khoa hoc an ninh'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/10-HD KH An ninh-DMTC 2025_0001(1).pdf' },
-      { id: 11, nganh: 'Khoa học Quân sự', key: ['quan su', 'quân sự', 'military'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/11-HD KH Quan su-DMTC 2025_0001.pdf' },
-      { id: 12, nganh: 'Khoa học Trái đất - Mỏ', key: ['trai dat', 'mo ', 'trái đất', 'địa chất', 'dia chat', 'earth'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/12-HD KHTD-Mo-DMTC 2025_0001.pdf' },
-      { id: 13, nganh: 'Kinh tế', key: ['kinh te', 'kinh tế', 'economics', 'kinh doanh', 'quan tri'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/13-HD Kinh te-DMTC 2025_0001(4).pdf' },
-      { id: 14, nganh: 'Luật học', key: ['luat', 'luật', 'phap luat', 'pháp luật', 'law'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/14-HD Luat hoc-DMTC 2025_0001(1).pdf' },
-      { id: 15, nganh: 'Luyện kim', key: ['luyen kim', 'luyện kim', 'metallurgy', 'kim loai'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/15-HD Luyen kim-DMTC 2025_0001(1).pdf' },
-      { id: 16, nganh: 'Ngôn ngữ học', key: ['ngon ngu', 'ngôn ngữ', 'ngoai ngu', 'ngoại ngữ', 'linguistics', 'language'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/16-HD Ngon ngu hoc-DMTC 2025_0001(1).pdf' },
-      { id: 17, nganh: 'Nông nghiệp - Lâm nghiệp', key: ['nong nghiep', 'lam nghiep', 'nông nghiệp', 'lâm nghiệp', 'agriculture', 'forestry'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/17-HD Nong nghiep-LN-DMTC 2025_0001(1).pdf' },
-      { id: 18, nganh: 'Sinh học', key: ['sinh hoc', 'sinh học', 'biology', 'vi sinh'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/18-HD Sinh hoc-DMTC 2025_0001.pdf' },
-      { id: 19, nganh: 'Sử học - Khảo cổ học - Dân tộc học', key: ['su hoc', 'khao co', 'dan toc', 'sử học', 'khảo cổ', 'dân tộc', 'history'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/19-HD Su hoc-KCH-DTH-NH-DMTC 2025_0001(1).pdf' },
-      { id: 20, nganh: 'Tâm lý học', key: ['tam ly', 'tâm lý', 'psychology'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/20-HD Tam ly hoc-DMTC 2025_0001(1).pdf' },
-      { id: 21, nganh: 'Thuỷ lợi', key: ['thuy loi', 'thuỷ lợi', 'water resources'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/21-HD Thuy loi-DMTC 2025_0001.pdf' },
-      { id: 22, nganh: 'Toán học', key: ['toan', 'toán', 'mathematics', 'math'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/22-HD Toan hoc-DMTC 2025_0001.pdf' },
-      { id: 23, nganh: 'Triết học - Xã hội học - Chính trị học', key: ['triet', 'xa hoi', 'chinh tri', 'triết', 'xã hội', 'chính trị', 'philosophy'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/23-HD Triet hoc-CTH-XHH-DMTC 2025_0001(3).pdf' },
-      { id: 24, nganh: 'Văn hoá - Nghệ thuật - Thể dục thể thao', key: ['van hoa', 'nghe thuat', 'the duc', 'the thao', 'văn hoá', 'nghệ thuật', 'thể thao', 'sports'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/24-HD VH-NT-TDTT-DMTC 2025_0001(1).pdf' },
-      { id: 25, nganh: 'Văn học', key: ['van hoc', 'văn học', 'literature'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/25-HD Van hoc-DMTC 2025_0001.pdf' },
-      { id: 26, nganh: 'Vật lý', key: ['vat ly', 'vật lý', 'physics'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/26-HD Vat ly-DMTC 2025_0001.pdf' },
-      { id: 27, nganh: 'Xây dựng - Kiến trúc', key: ['xay dung', 'kien truc', 'xây dựng', 'kiến trúc', 'civil', 'architecture'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/27-HD XD-KT-DMTC 2025_0001.pdf' },
-      { id: 28, nganh: 'Y học', key: ['y hoc', 'y học', 'y khoa', 'medicine', 'benh vien', 'bệnh viện'], pdf: 'http://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/28-HD Y hoc-DMTC 2025_0001(2).pdf' },
+      { id: 1, nganh: 'Chăn nuôi - Thú y - Thuỷ sản', key: ['chan nuoi', 'thu y', 'thuy san', 'chăn nuôi', 'thú y', 'thuỷ sản', 'nuôi trồng thủy sản'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/1-HD CN-TY-TS-DMTC 2025_0001.pdf' },
+      { id: 2, nganh: 'Cơ học', key: ['co hoc', 'cơ học', 'mechanics'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/2-HD Co hoc-DMTC 2025_0001(1).pdf' },
+      { id: 3, nganh: 'Cơ khí - Động lực', key: ['co khi', 'dong luc', 'cơ khí', 'động lực'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/3-HD CK-DL-DMTC 2025_0001.pdf' },
+      { id: 4, nganh: 'Công nghệ thông tin', key: ['cong nghe thong tin', 'cntt', 'công nghệ thông tin', 'khoa hoc may tinh', 'it '], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/4-HD CNTT-DMTC 2025_0001.pdf' },
+      { id: 5, nganh: 'Dược học', key: ['duoc hoc', 'duoc ', 'dược học', 'dược ', 'pharmacy'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/5-HD Duoc hoc-DMTC 2025_0001.pdf' },
+      { id: 6, nganh: 'Điện - Điện tử - Tự động hoá', key: ['dien tu', 'tu dong', 'điện tử', 'tự động', 'dien '], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/6-HD Dien-DT-TDH-DMTC 2025_0001.pdf' },
+      { id: 7, nganh: 'Giao thông vận tải', key: ['giao thong', 'van tai', 'giao thông', 'vận tải', 'gtvt'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/7-HD GTVT-DMTC 2025_0001.pdf' },
+      { id: 8, nganh: 'Khoa học Giáo dục', key: ['giao duc', 'giáo dục', 'khoa hoc giao duc', 'education'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/8-HD KH Giao duc-DMTC 2025_0001(1).pdf' },
+      { id: 9, nganh: 'Hoá học - Công nghệ thực phẩm', key: ['hoa hoc', 'thuc pham', 'hoá học', 'thực phẩm', 'chemistry', 'food'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/9-HD Hoa hoc-CNTP-DMTC 2025_0001(2).pdf' },
+      { id: 10, nganh: 'Khoa học An ninh', key: ['an ninh', 'khoa hoc an ninh'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/10-HD KH An ninh-DMTC 2025_0001(1).pdf' },
+      { id: 11, nganh: 'Khoa học Quân sự', key: ['quan su', 'quân sự', 'military'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/11-HD KH Quan su-DMTC 2025_0001.pdf' },
+      { id: 12, nganh: 'Khoa học Trái đất - Mỏ', key: ['trai dat', 'mo ', 'trái đất', 'địa chất', 'dia chat', 'earth'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/12-HD KHTD-Mo-DMTC 2025_0001.pdf' },
+      { id: 13, nganh: 'Kinh tế', key: ['kinh te', 'kinh tế', 'economics', 'kinh doanh', 'quan tri'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/13-HD Kinh te-DMTC 2025_0001(4).pdf' },
+      { id: 14, nganh: 'Luật học', key: ['luat', 'luật', 'phap luat', 'pháp luật', 'law'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/14-HD Luat hoc-DMTC 2025_0001(1).pdf' },
+      { id: 15, nganh: 'Luyện kim', key: ['luyen kim', 'luyện kim', 'metallurgy', 'kim loai'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/15-HD Luyen kim-DMTC 2025_0001(1).pdf' },
+      { id: 16, nganh: 'Ngôn ngữ học', key: ['ngon ngu', 'ngôn ngữ', 'ngoai ngu', 'ngoại ngữ', 'linguistics', 'language'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/16-HD Ngon ngu hoc-DMTC 2025_0001(1).pdf' },
+      { id: 17, nganh: 'Nông nghiệp - Lâm nghiệp', key: ['nong nghiep', 'lam nghiep', 'nông nghiệp', 'lâm nghiệp', 'agriculture', 'forestry'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/17-HD Nong nghiep-LN-DMTC 2025_0001(1).pdf' },
+      { id: 18, nganh: 'Sinh học', key: ['sinh hoc', 'sinh học', 'biology', 'vi sinh'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/18-HD Sinh hoc-DMTC 2025_0001.pdf' },
+      { id: 19, nganh: 'Sử học - Khảo cổ học - Dân tộc học', key: ['su hoc', 'khao co', 'dan toc', 'sử học', 'khảo cổ', 'dân tộc', 'history'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/19-HD Su hoc-KCH-DTH-NH-DMTC 2025_0001(1).pdf' },
+      { id: 20, nganh: 'Tâm lý học', key: ['tam ly', 'tâm lý', 'psychology'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/20-HD Tam ly hoc-DMTC 2025_0001(1).pdf' },
+      { id: 21, nganh: 'Thuỷ lợi', key: ['thuy loi', 'thuỷ lợi', 'water resources'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/21-HD Thuy loi-DMTC 2025_0001.pdf' },
+      { id: 22, nganh: 'Toán học', key: ['toan', 'toán', 'mathematics', 'math'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/22-HD Toan hoc-DMTC 2025_0001.pdf' },
+      { id: 23, nganh: 'Triết học - Xã hội học - Chính trị học', key: ['triet', 'xa hoi', 'chinh tri', 'triết', 'xã hội', 'chính trị', 'philosophy'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/23-HD Triet hoc-CTH-XHH-DMTC 2025_0001(3).pdf' },
+      { id: 24, nganh: 'Văn hoá - Nghệ thuật - Thể dục thể thao', key: ['van hoa', 'nghe thuat', 'the duc', 'the thao', 'văn hoá', 'nghệ thuật', 'thể thao', 'sports'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/24-HD VH-NT-TDTT-DMTC 2025_0001(1).pdf' },
+      { id: 25, nganh: 'Văn học', key: ['van hoc', 'văn học', 'literature'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/25-HD Van hoc-DMTC 2025_0001.pdf' },
+      { id: 26, nganh: 'Vật lý', key: ['vat ly', 'vật lý', 'physics'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/26-HD Vat ly-DMTC 2025_0001.pdf' },
+      { id: 27, nganh: 'Xây dựng - Kiến trúc', key: ['xay dung', 'kien truc', 'xây dựng', 'kiến trúc', 'civil', 'architecture'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/27-HD XD-KT-DMTC 2025_0001.pdf' },
+      { id: 28, nganh: 'Y học', key: ['y hoc', 'y học', 'y khoa', 'medicine', 'benh vien', 'bệnh viện'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/28-HD Y hoc-DMTC 2025_0001(2).pdf' },
     ];
 
     const QUICK_QUESTIONS = [
@@ -1780,7 +1799,7 @@
         .replace(/tim|tra cuu|xem|cho toi|biet|ve|thong tin|tap chi|issn|eissn|diem|cua/g, "")
         .trim();
 
-      const normQuery = normalizeStr(nameQuery);
+      const normQuery = normalizeStr(nameQuery).replace(/[%,()]/g, '').slice(0, 150);
 
       try {
         const isIssnSearch = cleanedQuery.length >= 7;
@@ -1837,6 +1856,12 @@
       const input = document.getElementById('ai-chat-input');
       const userText = input.value.trim();
       if (!userText) return;
+      if (userText.length > 2000) {
+        input.setCustomValidity('Tin nhắn không được vượt quá 2.000 ký tự.');
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity('');
 
       document.getElementById('quick-replies-container')?.remove();
       addMessage('user', userText, false);
@@ -1867,7 +1892,7 @@
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            messages: chatHistory,
+            messages: chatHistory.slice(-12),
             contextData: contextData
           })
         });
@@ -1886,7 +1911,7 @@
 
       } catch (err) {
         removeTyping(tid);
-        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${err.message}. Vui lòng thử lại sau.`, true);
+        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${err.message}. Vui lòng thử lại sau.`, false);
       } finally {
         document.getElementById('ai-send-btn').disabled = false;
       }

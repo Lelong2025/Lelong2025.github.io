@@ -1,16 +1,25 @@
 export default {
   async fetch(request, env) {
     // Xử lý CORS Preflight (OPTIONS)
-    const origin = request.headers.get("Origin") || "*";
+    const allowedOrigins = new Set(
+      (env.ALLOWED_ORIGINS || "https://lelong2025.github.io,http://localhost:8787,http://127.0.0.1:5500")
+        .split(",").map(value => value.trim()).filter(Boolean)
+    );
+    const origin = request.headers.get("Origin");
+    const originAllowed = origin && allowedOrigins.has(origin);
     const corsHeaders = {
-      "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400"
+      ...(originAllowed ? { "Access-Control-Allow-Origin": origin } : {}),
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer"
     };
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
+      return new Response(null, { status: originAllowed ? 204 : 403, headers: corsHeaders });
     }
 
     if (request.method === "GET") {
@@ -29,11 +38,57 @@ export default {
       });
     }
 
+    if (!originAllowed) {
+      return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    const contentType = request.headers.get("Content-Type") || "";
+    const contentLength = Number(request.headers.get("Content-Length") || 0);
+    if (!contentType.toLowerCase().startsWith("application/json") || contentLength > 65536) {
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    if (env.AI_RATE_LIMITER) {
+      const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+      const { success } = await env.AI_RATE_LIMITER.limit({ key: clientIp });
+      if (!success) {
+        return new Response(JSON.stringify({ error: "Too many requests" }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Retry-After": "60", ...corsHeaders }
+        });
+      }
+    }
+
     try {
-      const body = await request.json();
+      const rawBody = await request.text();
+      if (new TextEncoder().encode(rawBody).length > 65536) {
+        return new Response(JSON.stringify({ error: "Request too large" }), {
+          status: 413,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      const body = JSON.parse(rawBody);
       const { messages, contextData } = body;
 
-      if (!messages || !Array.isArray(messages)) {
+      const validMessages = Array.isArray(messages)
+        && messages.length > 0
+        && messages.length <= 12
+        && messages.every(message => message
+          && ["user", "assistant"].includes(message.role)
+          && typeof message.content === "string"
+          && message.content.length > 0
+          && message.content.length <= 2000)
+        && messages.reduce((sum, message) => sum + message.content.length, 0) <= 8000;
+      const validContext = contextData === undefined
+        || (contextData && typeof contextData === "object" && JSON.stringify(contextData).length <= 25000);
+
+      if (!validMessages || !validContext) {
         return new Response(JSON.stringify({ error: "Invalid request payload. 'messages' array is required." }), {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -122,7 +177,7 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
       if (!openAiResponse.ok) {
         const errText = await openAiResponse.text();
         console.error("OpenAI API Error:", errText);
-        return new Response(JSON.stringify({ error: `OpenAI API returned error: ${openAiResponse.statusText}`, details: errText }), {
+        return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), {
           status: openAiResponse.status,
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
@@ -137,7 +192,7 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
 
     } catch (err) {
       console.error("Worker Error:", err.message);
-      return new Response(JSON.stringify({ error: "Internal Server Error", message: err.message }), {
+      return new Response(JSON.stringify({ error: "Internal Server Error" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
