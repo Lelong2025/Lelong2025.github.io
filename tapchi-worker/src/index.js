@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, "") || "/";
 
-    if (path === "/webhook/sepay") return handleSepayWebhook(request, env);
+    if (path === "/hooks/sepay-payment") return handleSepayWebhook(request, env);
 
     const apiCors = buildCorsHeaders(request, env);
     if (request.method === "OPTIONS") {
