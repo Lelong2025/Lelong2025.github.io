@@ -762,6 +762,51 @@
       #ai-chat-panel { width: calc(100vw - 16px); right: 8px; bottom: 88px; }
       #ai-chat-btn { right: 14px; bottom: 14px; }
     }
+    .account-button {
+      border: 1px solid rgba(16,163,127,.35); background: rgba(16,163,127,.12);
+      color: #10a37f; border-radius: 999px; padding: 9px 15px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .account-button:hover { background: rgba(16,163,127,.22); }
+    .vip-modal {
+      position: fixed; inset: 0; z-index: 100000; display: none; align-items: center;
+      justify-content: center; padding: 18px; background: rgba(2,6,23,.78); backdrop-filter: blur(8px);
+    }
+    .vip-modal.open { display: flex; }
+    .vip-card {
+      width: min(100%, 440px); max-height: calc(100vh - 36px); overflow-y: auto;
+      background: var(--card-bg); color: var(--text-color); border: 1px solid var(--card-border);
+      border-radius: 22px; padding: 24px; box-shadow: 0 25px 80px rgba(0,0,0,.55);
+    }
+    .vip-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .vip-card-head h2 { margin:0; font-size:21px; color:#10a37f; }
+    .vip-close { border:0; background:transparent; color:inherit; font-size:27px; cursor:pointer; }
+    .vip-tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .vip-tabs button { flex:1; border:1px solid var(--card-border); border-radius:10px; padding:10px; cursor:pointer; background:transparent; color:inherit; font-weight:700; }
+    .vip-tabs button.active { background:#10a37f; color:#fff; border-color:#10a37f; }
+    .vip-form { display:grid; gap:12px; }
+    .vip-form input { width:100%; box-sizing:border-box; border:1px solid var(--card-border); border-radius:11px; padding:12px; background:var(--input-bg); color:var(--text-color); font:inherit; }
+    .vip-primary, .vip-secondary { border:0; border-radius:11px; padding:12px 14px; font-weight:800; cursor:pointer; }
+    .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; }
+    .vip-secondary { background:rgba(100,116,139,.16); color:inherit; }
+    .vip-link { border:0; background:transparent; color:#10a37f; cursor:pointer; padding:4px; }
+    .vip-message { min-height:20px; font-size:13px; margin-top:10px; color:#94a3b8; }
+    .vip-message.error { color:#ef4444; }
+    .vip-message.success { color:#10b981; }
+    .vip-status-box { border-radius:14px; padding:14px; background:rgba(100,116,139,.1); margin-bottom:14px; line-height:1.65; }
+    .vip-active { color:#10b981; font-weight:800; }
+    .vip-inactive { color:#f59e0b; font-weight:800; }
+    .payment-box { display:none; text-align:center; border-top:1px solid var(--card-border); margin-top:16px; padding-top:16px; }
+    .payment-box.open { display:block; }
+    .payment-box img { width:min(100%,280px); border-radius:14px; background:white; }
+    .payment-code { font:800 18px monospace; color:#10a37f; user-select:all; }
+    .vip-actions { display:grid; gap:10px; }
+    #chat-access-note { display:none; padding:10px 14px; font-size:12px; text-align:center; color:#f59e0b; background:rgba(245,158,11,.1); }
+    @media(max-width:640px) {
+      .header-container { flex-wrap:wrap; }
+      .header-title { order:3; width:100%; }
+      .account-button { margin-left:auto; }
+    }
     .quick-replies { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0 10px; }
     .quick-btn {
       background: rgba(16,163,127,0.1); border: 1px solid rgba(16,163,127,0.28);
@@ -1121,7 +1166,62 @@
     <button class="theme-toggle" id="themeToggleBtn" title="Chuyển đổi giao diện Sáng/Tối">
       <i class="fas fa-moon"></i>
     </button>
+    <button id="accountButton" class="account-button" onclick="openUserModal()">
+      <i class="fas fa-user"></i> Đăng nhập
+    </button>
 
+  </div>
+
+  <!-- ===== ĐĂNG NHẬP / TÀI KHOẢN VIP ===== -->
+  <div id="userModal" class="vip-modal" onclick="if(event.target === this) closeUserModal()">
+    <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <div class="vip-card-head">
+        <h2 id="userModalTitle"><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
+        <button class="vip-close" onclick="closeUserModal()" aria-label="Đóng">&times;</button>
+      </div>
+
+      <div id="authView">
+        <div class="vip-tabs">
+          <button id="loginTab" class="active" onclick="setAuthMode('login')">Đăng nhập</button>
+          <button id="registerTab" onclick="setAuthMode('register')">Đăng ký</button>
+        </div>
+        <form id="authForm" class="vip-form" onsubmit="submitAuth(event)">
+          <input id="authName" type="text" maxlength="80" autocomplete="name" placeholder="Tên hiển thị" style="display:none">
+          <input id="authEmail" type="email" required autocomplete="email" placeholder="Email">
+          <input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="Mật khẩu (ít nhất 8 ký tự)">
+          <button id="authSubmit" class="vip-primary" type="submit">Đăng nhập</button>
+          <button class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button>
+        </form>
+        <form id="resetView" class="vip-form" style="display:none" onsubmit="saveNewPassword(event)">
+          <p>Nhập mật khẩu mới cho tài khoản của bạn.</p>
+          <input id="newPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Mật khẩu mới">
+          <button class="vip-primary" type="submit">Lưu mật khẩu mới</button>
+        </form>
+      </div>
+
+      <div id="accountView" style="display:none">
+        <div class="vip-status-box">
+          <div><strong id="accountEmail"></strong></div>
+          <div>Trạng thái: <span id="vipStatus" class="vip-inactive">Chưa kích hoạt VIP</span></div>
+          <div id="vipExpiryRow" style="display:none">Hết hạn: <strong id="vipExpiry"></strong></div>
+          <div>Lượt AI hôm nay: <strong id="vipUsage">0/30</strong></div>
+        </div>
+        <div class="vip-actions">
+          <button class="vip-primary" type="button" onclick="createVipOrder()">Mua/Gia hạn 30 ngày · 25.000đ</button>
+          <button class="vip-secondary" type="button" onclick="signOutUser()">Đăng xuất</button>
+        </div>
+        <div id="paymentBox" class="payment-box">
+          <h3>Quét QR để thanh toán</h3>
+          <img id="paymentQr" alt="Mã QR thanh toán Chatbox AI">
+          <p><strong id="paymentAmount">25.000đ</strong></p>
+          <p>Nội dung chuyển khoản</p>
+          <p id="paymentCode" class="payment-code"></p>
+          <p id="paymentCountdown" class="vip-message"></p>
+          <p style="font-size:12px;color:#94a3b8">Không sửa số tiền hoặc nội dung chuyển khoản.</p>
+        </div>
+      </div>
+      <div id="authMessage" class="vip-message" aria-live="polite"></div>
+    </section>
   </div>
 
   <div class="main-content">
@@ -1267,6 +1367,7 @@
     <div id="ai-chat-messages"></div>
 
     <!-- Input -->
+    <div id="chat-access-note">Cần tài khoản VIP đang hoạt động để sử dụng AI.</div>
     <div id="ai-chat-footer">
       <div id="ai-input-row">
         <textarea id="ai-chat-input" placeholder="Nhập tên tạp chí, ISSN, hoặc câu hỏi..." rows="1"
@@ -1369,6 +1470,238 @@
       'https://duycstnptwojisioeosk.supabase.co',
       'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW'
     );
+    const API_BASE = 'https://old-band-adb5.vonhacphuoc.workers.dev';
+    let currentSession = null;
+    let currentAccount = null;
+    let currentAuthMode = 'login';
+    let paymentPollTimer = null;
+
+    function setUserMessage(message = '', type = '') {
+      const element = document.getElementById('authMessage');
+      element.textContent = message;
+      element.className = `vip-message ${type}`.trim();
+    }
+
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const registering = mode === 'register';
+      document.getElementById('loginTab').classList.toggle('active', !registering);
+      document.getElementById('registerTab').classList.toggle('active', registering);
+      document.getElementById('authName').style.display = registering ? 'block' : 'none';
+      document.getElementById('authName').required = registering;
+      document.getElementById('authPassword').autocomplete = registering ? 'new-password' : 'current-password';
+      document.getElementById('authSubmit').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
+      document.getElementById('authForm').style.display = 'grid';
+      document.getElementById('resetView').style.display = 'none';
+      setUserMessage();
+    }
+
+    function openUserModal() {
+      document.getElementById('userModal').classList.add('open');
+      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
+      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+      if (currentSession) refreshAccount();
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').classList.remove('open');
+    }
+
+    async function submitAuth(event) {
+      event.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const displayName = document.getElementById('authName').value.trim();
+      const submit = document.getElementById('authSubmit');
+      submit.disabled = true;
+      setUserMessage('Đang xử lý...');
+      try {
+        if (currentAuthMode === 'register') {
+          const { data, error } = await db.auth.signUp({
+            email, password,
+            options: {
+              data: { display_name: displayName },
+              emailRedirectTo: `${location.origin}${location.pathname}`
+            }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setUserMessage('Đăng ký thành công. Hãy kiểm tra email để xác minh tài khoản.', 'success');
+          } else {
+            setUserMessage('Tạo tài khoản thành công.', 'success');
+          }
+        } else {
+          const { error } = await db.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          setUserMessage('Đăng nhập thành công.', 'success');
+        }
+      } catch (error) {
+        setUserMessage(error.message || 'Không thể xác thực tài khoản.', 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    async function requestPasswordReset() {
+      const email = document.getElementById('authEmail').value.trim();
+      if (!email) {
+        setUserMessage('Nhập email trước khi yêu cầu đặt lại mật khẩu.', 'error');
+        return;
+      }
+      const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}${location.pathname}`
+      });
+      setUserMessage(error ? error.message : 'Đã gửi liên kết đặt lại mật khẩu vào email.', error ? 'error' : 'success');
+    }
+
+    async function saveNewPassword(event) {
+      event.preventDefault();
+      const password = document.getElementById('newPassword').value;
+      const { error } = await db.auth.updateUser({ password });
+      if (error) {
+        setUserMessage(error.message, 'error');
+        return;
+      }
+      setUserMessage('Đã cập nhật mật khẩu mới.', 'success');
+      document.getElementById('resetView').style.display = 'none';
+    }
+
+    async function signOutUser() {
+      await db.auth.signOut();
+      currentAccount = null;
+      closeUserModal();
+    }
+
+    async function apiFetch(path, options = {}) {
+      if (!currentSession?.access_token) throw new Error('Bạn cần đăng nhập.');
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.error || 'Yêu cầu không thành công.');
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    }
+
+    function renderAccount(account) {
+      if (!account) return;
+      document.getElementById('accountEmail').textContent = account.user.email || '';
+      const status = document.getElementById('vipStatus');
+      status.textContent = account.is_vip ? 'VIP đang hoạt động' : 'Chưa kích hoạt VIP';
+      status.className = account.is_vip ? 'vip-active' : 'vip-inactive';
+      const expiryRow = document.getElementById('vipExpiryRow');
+      const expiry = account.subscription?.expires_at;
+      expiryRow.style.display = expiry ? 'block' : 'none';
+      if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleString('vi-VN');
+      const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
+      document.getElementById('vipUsage').textContent = `${account.usage_today || 0}/${limit}`;
+      document.getElementById('chat-access-note').style.display = account.is_vip ? 'none' : 'block';
+    }
+
+    async function refreshAccount() {
+      if (!currentSession) return null;
+      try {
+        currentAccount = await apiFetch('/api/account');
+        renderAccount(currentAccount);
+        return currentAccount;
+      } catch (error) {
+        setUserMessage(error.message, 'error');
+        return null;
+      }
+    }
+
+    function updateAuthUi() {
+      const button = document.getElementById('accountButton');
+      if (currentSession?.user) {
+        button.innerHTML = '<i class="fas fa-user-check"></i> Tài khoản';
+      } else {
+        button.innerHTML = '<i class="fas fa-user"></i> Đăng nhập';
+        document.getElementById('chat-access-note').style.display = 'block';
+      }
+      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
+      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+    }
+
+    async function initAuth() {
+      const { data } = await db.auth.getSession();
+      currentSession = data.session;
+      updateAuthUi();
+      if (currentSession) await refreshAccount();
+      db.auth.onAuthStateChange((event, session) => {
+        currentSession = session;
+        currentAccount = null;
+        setTimeout(async () => {
+          updateAuthUi();
+          if (event === 'PASSWORD_RECOVERY') {
+            openUserModal();
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('resetView').style.display = 'grid';
+          } else if (session) {
+            await refreshAccount();
+            document.getElementById('authView').style.display = 'none';
+            document.getElementById('accountView').style.display = 'block';
+          }
+        }, 0);
+      });
+    }
+
+    function stopPaymentPolling() {
+      if (paymentPollTimer) clearTimeout(paymentPollTimer);
+      paymentPollTimer = null;
+    }
+
+    async function pollPayment(code, expiresAt) {
+      stopPaymentPolling();
+      const countdown = document.getElementById('paymentCountdown');
+      const tick = async () => {
+        const remaining = new Date(expiresAt).getTime() - Date.now();
+        if (remaining <= 0) {
+          countdown.textContent = 'Đơn thanh toán đã hết hạn.';
+          countdown.className = 'vip-message error';
+          return;
+        }
+        const minutes = String(Math.floor(remaining / 60000)).padStart(2, '0');
+        const seconds = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+        countdown.textContent = `Đang chờ thanh toán · ${minutes}:${seconds}`;
+        try {
+          const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`);
+          if (order.status === 'paid') {
+            countdown.textContent = 'Thanh toán thành công! VIP đã được kích hoạt.';
+            countdown.className = 'vip-message success';
+            await refreshAccount();
+            return;
+          }
+        } catch (_) {}
+        paymentPollTimer = setTimeout(tick, 4000);
+      };
+      tick();
+    }
+
+    async function createVipOrder() {
+      setUserMessage('Đang tạo mã thanh toán...');
+      try {
+        const order = await apiFetch('/api/orders', { method: 'POST', body: '{}' });
+        document.getElementById('paymentQr').src = order.qr_url;
+        document.getElementById('paymentCode').textContent = order.code;
+        document.getElementById('paymentAmount').textContent = new Intl.NumberFormat('vi-VN', {
+          style: 'currency', currency: 'VND'
+        }).format(order.amount);
+        document.getElementById('paymentBox').classList.add('open');
+        setUserMessage('Quét QR và giữ nguyên nội dung chuyển khoản.', 'success');
+        pollPayment(order.code, order.expires_at);
+      } catch (error) {
+        setUserMessage(error.message, 'error');
+      }
+    }
 
     function escapeHTML(value) {
       return String(value ?? '')
@@ -1454,6 +1787,8 @@
     });
 
     async function initApp() {
+
+      await initAuth();
 
       // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
       setSplashStep('step-jcr', 'active');
@@ -1727,7 +2062,19 @@
       return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     }
 
-    function toggleChat() {
+    async function toggleChat() {
+      if (!currentSession) {
+        setAuthMode('login');
+        openUserModal();
+        setUserMessage('Đăng nhập và kích hoạt VIP để sử dụng Chatbox AI.');
+        return;
+      }
+      const account = currentAccount || await refreshAccount();
+      if (!account?.is_vip) {
+        openUserModal();
+        setUserMessage('Tài khoản chưa có VIP. Bạn có thể thanh toán 25.000đ để dùng AI trong 30 ngày.');
+        return;
+      }
       isChatOpen = !isChatOpen;
       document.getElementById('ai-chat-panel').classList.toggle('open', isChatOpen);
       document.getElementById('ai-chat-badge').style.display = 'none';
@@ -1886,10 +2233,11 @@
         const contextData = await searchLocalDatabase(userText);
 
         // Gọi Cloudflare Worker
-        const response = await fetch("https://old-band-adb5.vonhacphuoc.workers.dev", {
+        const response = await fetch(`${API_BASE}/api/chat`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentSession.access_token}`
           },
           body: JSON.stringify({
             messages: chatHistory.slice(-12),
@@ -1900,11 +2248,22 @@
         removeTyping(tid);
 
         if (!response.ok) {
-          throw new Error("Không thể kết nối đến máy chủ Trợ lý AI.");
+          const errorData = await response.json().catch(() => ({}));
+          if (response.status === 403) currentAccount = null;
+          throw new Error(errorData.error === 'vip_required'
+            ? 'Tài khoản VIP đã hết hạn.'
+            : errorData.error === 'daily_limit'
+              ? 'Bạn đã dùng hết lượt AI hôm nay.'
+              : 'Không thể kết nối đến máy chủ Trợ lý AI.');
         }
 
         const data = await response.json();
         const replyText = data.result || "Không có phản hồi từ Trợ lý AI.";
+
+        if (data.usage && currentAccount) {
+          currentAccount.usage_today = data.usage.used;
+          renderAccount(currentAccount);
+        }
 
         addMessage('ai', replyText, false);
         chatHistory.push({ role: 'assistant', content: replyText });

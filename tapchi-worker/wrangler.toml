@@ -6,3 +6,9 @@ compatibility_date = "2024-01-01"
 name = "AI_RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 30, period = 60 }
+
+[vars]
+SEPAY_BANK = "ACB" # Mã ngân hàng (ví dụ: MBBank, Vietcombank, Techcombank, ...)
+SEPAY_ACCOUNT_NUMBER = "24598667" # Số tài khoản nhận tiền của bạn
+SEPAY_ACCOUNT_NAME = "TA TRAN VINH QUANG" # Tên chủ tài khoản ngân hàng (viết hoa không dấu)
+
