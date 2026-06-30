@@ -2,6 +2,30 @@
 <html lang="vi" data-theme="dark">
 
 <head>
+  <script>
+    // Some third-party analytics code installs a document.onkeydown handler and
+    // assumes every synthetic event has a string `key`. Ignore malformed events
+    // and consume rejected async handlers so they cannot become unhandled errors.
+    (function guardDocumentKeydown() {
+      let handler = null;
+      Object.defineProperty(document, 'onkeydown', {
+        get() { return handler; },
+        set(fn) {
+          handler = typeof fn === 'function' ? function(event) {
+            if (typeof event?.key !== 'string') return;
+            try {
+              const result = fn.call(this, event);
+              if (result && typeof result.catch === 'function') result.catch(() => {});
+              return result;
+            } catch (_) {
+              return undefined;
+            }
+          } : fn;
+        },
+        configurable: true
+      });
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XKNM5RRLQW"></script>
   <script>
@@ -1573,18 +1597,27 @@
     }
 
     async function apiFetch(path, options = {}) {
-      // Luôn lấy session mới nhất để tránh token cũ gây lỗi 401 khi tự gia hạn
       const { data: { session } } = await db.auth.getSession();
       if (!session?.access_token) throw new Error('Bạn cần đăng nhập.');
       currentSession = session;
-      const response = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          ...(options.headers || {})
+
+      const requestWithSession = activeSession => fetch(`${API_BASE}${path}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeSession.access_token}`,
+            ...(options.headers || {})
+          }
+        });
+
+      let response = await requestWithSession(session);
+      if (response.status === 401) {
+        const { data, error: refreshError } = await db.auth.refreshSession();
+        if (!refreshError && data.session?.access_token) {
+          currentSession = data.session;
+          response = await requestWithSession(data.session);
         }
-      });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(data.error || 'Yêu cầu không thành công.');
@@ -2236,13 +2269,10 @@
         // Tra cứu dữ liệu cục bộ làm ngữ cảnh hỗ trợ
         const contextData = await searchLocalDatabase(userText);
 
-        // Gọi Cloudflare Worker
-        const response = await fetch(`${API_BASE}/api/chat`, {
+        // Gọi Cloudflare Worker bằng session mới nhất; apiFetch tự làm mới token
+        // và thử lại một lần nếu máy chủ trả về 401.
+        const data = await apiFetch('/api/chat', {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${currentSession.access_token}`
-          },
           body: JSON.stringify({
             messages: chatHistory.slice(-12),
             contextData: contextData
@@ -2250,18 +2280,6 @@
         });
 
         removeTyping(tid);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          if (response.status === 403) currentAccount = null;
-          throw new Error(errorData.error === 'vip_required'
-            ? 'Tài khoản VIP đã hết hạn.'
-            : errorData.error === 'daily_limit'
-              ? 'Bạn đã dùng hết lượt AI hôm nay.'
-              : 'Không thể kết nối đến máy chủ Trợ lý AI.');
-        }
-
-        const data = await response.json();
         const replyText = data.result || "Không có phản hồi từ Trợ lý AI.";
 
         if (data.usage && currentAccount) {
@@ -2273,8 +2291,16 @@
         chatHistory.push({ role: 'assistant', content: replyText });
 
       } catch (err) {
+        if (err.status === 403) currentAccount = null;
         removeTyping(tid);
-        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${err.message}. Vui lòng thử lại sau.`, false);
+        const message = err.data?.error === 'vip_required'
+          ? 'Tài khoản VIP đã hết hạn.'
+          : err.data?.error === 'daily_limit'
+            ? 'Bạn đã dùng hết lượt AI hôm nay.'
+            : err.status === 401
+              ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+              : err.message;
+        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${message}. Vui lòng thử lại sau.`, false);
       } finally {
         document.getElementById('ai-send-btn').disabled = false;
       }
@@ -2390,20 +2416,6 @@
     setTimeout(() => {
       if (!isChatOpen) document.getElementById('ai-chat-badge').style.display = 'flex';
     }, 3000);
-
-    // Bắt lỗi TypeError từ Google Tag Manager khi event.key là undefined
-    (function patchGtmKeydown() {
-      let _handler = null;
-      Object.defineProperty(document, 'onkeydown', {
-        get() { return _handler; },
-        set(fn) {
-          _handler = fn ? function(e) {
-            try { fn.call(this, e); } catch (_) {}
-          } : fn;
-        },
-        configurable: true
-      });
-    })();
 
   </script>
 </body>
