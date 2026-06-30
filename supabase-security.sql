@@ -149,9 +149,16 @@ begin
   values (new.id, left(coalesce(new.raw_user_meta_data ->> 'display_name', ''), 80))
   on conflict (user_id) do nothing;
 
-  insert into public.subscriptions (user_id, plan_id, status)
-  values (new.id, 'chatbox_ai', 'inactive')
-  on conflict (user_id) do nothing;
+  insert into public.subscriptions (user_id, plan_id, status, expires_at)
+  values (
+    new.id,
+    'chatbox_ai',
+    case when new.email = 'phuonglong@lhu.edu.vn' then 'active'::text else 'inactive'::text end,
+    case when new.email = 'phuonglong@lhu.edu.vn' then '2099-12-31 23:59:59+00'::timestamptz else null end
+  )
+  on conflict (user_id) do update
+    set status = excluded.status,
+        expires_at = excluded.expires_at;
   return new;
 end;
 $$;
@@ -167,9 +174,16 @@ select id, left(coalesce(raw_user_meta_data ->> 'display_name', ''), 80)
 from auth.users
 on conflict (user_id) do nothing;
 
-insert into public.subscriptions (user_id, plan_id, status)
-select id, 'chatbox_ai', 'inactive' from auth.users
-on conflict (user_id) do nothing;
+insert into public.subscriptions (user_id, plan_id, status, expires_at)
+select
+  id,
+  'chatbox_ai',
+  case when email = 'phuonglong@lhu.edu.vn' then 'active'::text else 'inactive'::text end,
+  case when email = 'phuonglong@lhu.edu.vn' then '2099-12-31 23:59:59+00'::timestamptz else null end
+from auth.users
+on conflict (user_id) do update
+  set status = excluded.status,
+      expires_at = excluded.expires_at;
 
 -- Trừ một lượt chat theo cách atomic, đồng thời kiểm tra VIP ở server.
 create or replace function public.consume_ai_message(p_user_id uuid)
