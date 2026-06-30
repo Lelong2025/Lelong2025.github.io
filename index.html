@@ -794,42 +794,65 @@
     .account-button:hover { background: rgba(16,163,127,.22); }
     .vip-modal {
       position: fixed; inset: 0; z-index: 100000; display: none; align-items: center;
-      justify-content: center; padding: 18px; background: rgba(2,6,23,.78); backdrop-filter: blur(8px);
+      justify-content: center; padding: 20px; background: rgba(2,6,23,.72); backdrop-filter: blur(14px);
     }
     .vip-modal.open { display: flex; }
     .vip-card {
-      width: min(100%, 440px); max-height: calc(100vh - 36px); overflow-y: auto;
-      background: var(--card-bg); color: var(--text-color); border: 1px solid var(--card-border);
-      border-radius: 22px; padding: 24px; box-shadow: 0 25px 80px rgba(0,0,0,.55);
+      width: min(100%, 480px); max-height: min(760px, calc(100vh - 40px)); overflow-y: auto;
+      background: linear-gradient(160deg, var(--card-bg), rgba(16,163,127,.035));
+      color: var(--text-color); border: 1px solid rgba(148,163,184,.2);
+      border-radius: 26px; padding: 25px; box-shadow: 0 30px 90px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.04);
+      scrollbar-width: thin; scrollbar-color: rgba(16,163,127,.5) transparent;
     }
-    .vip-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
-    .vip-card-head h2 { margin:0; font-size:21px; color:#10a37f; }
-    .vip-close { border:0; background:transparent; color:inherit; font-size:27px; cursor:pointer; }
+    .vip-card::-webkit-scrollbar { width:6px; }
+    .vip-card::-webkit-scrollbar-thumb { background:rgba(16,163,127,.45); border-radius:99px; }
+    .vip-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+    .vip-card-head h2 { margin:0; font-size:21px; color:#10a37f; letter-spacing:-.02em; }
+    .vip-close { width:38px; height:38px; display:grid; place-items:center; border:1px solid transparent; border-radius:50%; background:rgba(100,116,139,.1); color:inherit; font-size:25px; line-height:1; cursor:pointer; transition:.2s; }
+    .vip-close:hover { color:#ef4444; border-color:rgba(239,68,68,.25); background:rgba(239,68,68,.08); transform:rotate(5deg); }
     .vip-tabs { display:flex; gap:8px; margin-bottom:16px; }
     .vip-tabs button { flex:1; border:1px solid var(--card-border); border-radius:10px; padding:10px; cursor:pointer; background:transparent; color:inherit; font-weight:700; }
     .vip-tabs button.active { background:#10a37f; color:#fff; border-color:#10a37f; }
     .vip-form { display:grid; gap:12px; }
     .vip-form input { width:100%; box-sizing:border-box; border:1px solid var(--card-border); border-radius:11px; padding:12px; background:var(--input-bg); color:var(--text-color); font:inherit; }
-    .vip-primary, .vip-secondary { border:0; border-radius:11px; padding:12px 14px; font-weight:800; cursor:pointer; }
-    .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; }
-    .vip-secondary { background:rgba(100,116,139,.16); color:inherit; }
+    .vip-primary, .vip-secondary { border:0; border-radius:13px; padding:13px 16px; font-weight:800; cursor:pointer; transition:transform .2s, box-shadow .2s, background .2s; }
+    .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; box-shadow:0 8px 22px rgba(16,163,127,.22); }
+    .vip-primary:hover { transform:translateY(-1px); box-shadow:0 11px 28px rgba(16,163,127,.32); }
+    .vip-secondary { background:rgba(100,116,139,.1); color:#94a3b8; border:1px solid rgba(148,163,184,.15); }
+    .vip-secondary:hover { color:#ef4444; background:rgba(239,68,68,.07); }
     .vip-link { border:0; background:transparent; color:#10a37f; cursor:pointer; padding:4px; }
     .vip-message { min-height:20px; font-size:13px; margin-top:10px; color:#94a3b8; }
     .vip-message.error { color:#ef4444; }
     .vip-message.success { color:#10b981; }
-    .vip-status-box { border-radius:14px; padding:14px; background:rgba(100,116,139,.1); margin-bottom:14px; line-height:1.65; }
+    .vip-status-box { border-radius:18px; padding:16px 17px; background:linear-gradient(135deg,rgba(16,163,127,.1),rgba(100,116,139,.07)); border:1px solid rgba(16,163,127,.14); margin-bottom:14px; }
+    .vip-account-email { display:flex; align-items:center; gap:9px; padding-bottom:12px; margin-bottom:10px; border-bottom:1px solid rgba(148,163,184,.13); font-size:15px; overflow-wrap:anywhere; }
+    .vip-account-email i { color:#10a37f; }
+    .vip-detail-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0; font-size:14px; color:#94a3b8; }
+    .vip-detail-row strong, .vip-detail-row span { text-align:right; }
     .vip-active { color:#10b981; font-weight:800; }
     .vip-inactive { color:#f59e0b; font-weight:800; }
-    .payment-box { display:none; text-align:center; border-top:1px solid var(--card-border); margin-top:16px; padding-top:16px; }
+    .payment-box { display:none; text-align:center; margin-top:18px; padding:20px; border:1px solid rgba(16,163,127,.18); border-radius:20px; background:rgba(100,116,139,.055); animation:paymentReveal .28s ease-out; }
     .payment-box.open { display:block; }
-    .payment-box img { width:min(100%,280px); border-radius:14px; background:white; }
-    .payment-code { font:800 18px monospace; color:#10a37f; user-select:all; }
-    .vip-actions { display:grid; gap:10px; }
+    @keyframes paymentReveal { from { opacity:0; transform:translateY(8px); } }
+    .payment-box h3 { margin:0 0 4px; font-size:19px; }
+    .payment-subtitle { margin:0 0 15px; color:#94a3b8; font-size:13px; }
+    .payment-qr-wrap { width:224px; max-width:100%; margin:0 auto 13px; padding:10px; border-radius:18px; background:#fff; box-shadow:0 12px 34px rgba(15,23,42,.16); }
+    .payment-box img { display:block; width:100%; border-radius:10px; background:white; }
+    .payment-amount { margin:8px 0 14px; font-size:21px; color:#10a37f; }
+    .payment-label { margin:0 0 7px; color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .payment-code { display:block; margin:0; padding:10px 12px; border:1px dashed rgba(16,163,127,.4); border-radius:11px; background:rgba(16,163,127,.08); font:800 16px/1.3 monospace; color:#10a37f; overflow-wrap:anywhere; user-select:all; }
+    .payment-note { margin:8px 0 0; font-size:12px; color:#94a3b8; }
+    .vip-actions { display:grid; grid-template-columns:1fr auto; gap:10px; }
+    .vip-actions .vip-secondary { min-width:112px; }
     #chat-access-note { display:none; padding:10px 14px; font-size:12px; text-align:center; color:#f59e0b; background:rgba(245,158,11,.1); }
     @media(max-width:640px) {
       .header-container { flex-wrap:wrap; }
       .header-title { order:3; width:100%; }
       .account-button { margin-left:auto; }
+      .vip-modal { align-items:flex-end; padding:0; }
+      .vip-card { width:100%; max-height:92vh; border-radius:26px 26px 0 0; padding:21px 18px; }
+      .vip-actions { grid-template-columns:1fr; }
+      .payment-box { padding:17px 14px; }
     }
     .quick-replies { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0 10px; }
     .quick-btn {
@@ -1225,23 +1248,24 @@
 
       <div id="accountView" style="display:none">
         <div class="vip-status-box">
-          <div><strong id="accountEmail"></strong></div>
-          <div>Trạng thái: <span id="vipStatus" class="vip-inactive">Chưa kích hoạt VIP</span></div>
-          <div id="vipExpiryRow" style="display:none">Hết hạn: <strong id="vipExpiry"></strong></div>
-          <div>Lượt AI hôm nay: <strong id="vipUsage">0/30</strong></div>
+          <div class="vip-account-email"><i class="fas fa-user-circle"></i><strong id="accountEmail"></strong></div>
+          <div class="vip-detail-row"><span>Trạng thái</span><span id="vipStatus" class="vip-inactive">Chưa kích hoạt VIP</span></div>
+          <div id="vipExpiryRow" class="vip-detail-row" style="display:none"><span>Hết hạn</span><strong id="vipExpiry"></strong></div>
+          <div class="vip-detail-row"><span>Lượt AI hôm nay</span><strong id="vipUsage">0/30</strong></div>
         </div>
         <div class="vip-actions">
-          <button class="vip-primary" type="button" onclick="createVipOrder()">Mua/Gia hạn 30 ngày · 25.000đ</button>
-          <button class="vip-secondary" type="button" onclick="signOutUser()">Đăng xuất</button>
+          <button class="vip-primary" type="button" onclick="createVipOrder()"><i class="fas fa-crown"></i>&nbsp; Mua/Gia hạn 30 ngày · 25.000đ</button>
+          <button class="vip-secondary" type="button" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i>&nbsp; Đăng xuất</button>
         </div>
         <div id="paymentBox" class="payment-box">
           <h3>Quét QR để thanh toán</h3>
-          <img id="paymentQr" alt="Mã QR thanh toán Chatbox AI">
-          <p><strong id="paymentAmount">25.000đ</strong></p>
-          <p>Nội dung chuyển khoản</p>
+          <p class="payment-subtitle">Mở ứng dụng ngân hàng và quét mã bên dưới</p>
+          <div class="payment-qr-wrap"><img id="paymentQr" alt="Mã QR thanh toán Chatbox AI"></div>
+          <p class="payment-amount"><strong id="paymentAmount">25.000đ</strong></p>
+          <p class="payment-label">Nội dung chuyển khoản</p>
           <p id="paymentCode" class="payment-code"></p>
           <p id="paymentCountdown" class="vip-message"></p>
-          <p style="font-size:12px;color:#94a3b8">Không sửa số tiền hoặc nội dung chuyển khoản.</p>
+          <p class="payment-note"><i class="fas fa-shield-alt"></i> Giữ nguyên số tiền và nội dung chuyển khoản.</p>
         </div>
       </div>
       <div id="authMessage" class="vip-message" aria-live="polite"></div>
@@ -1638,7 +1662,7 @@
       status.className = account.is_vip ? 'vip-active' : 'vip-inactive';
       const expiryRow = document.getElementById('vipExpiryRow');
       const expiry = account.subscription?.expires_at;
-      expiryRow.style.display = expiry ? 'block' : 'none';
+      expiryRow.style.display = expiry ? 'flex' : 'none';
       if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleString('vi-VN');
       const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
       document.getElementById('vipUsage').textContent = `${account.usage_today || 0}/${limit}`;
