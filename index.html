@@ -1715,8 +1715,10 @@
         try {
           const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`);
           if (order.status === 'paid') {
-            countdown.textContent = 'Thanh toán thành công! VIP đã được kích hoạt.';
-            countdown.className = 'vip-message success';
+            stopPaymentPolling();
+            document.getElementById('paymentBox').classList.remove('open');
+            document.getElementById('paymentQr').removeAttribute('src');
+            setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
             await refreshAccount();
             return;
           }
