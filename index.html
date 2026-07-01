@@ -1564,15 +1564,28 @@
 
     // ─── SUPABASE CLIENT ────────────────────────────────────────────
     const { createClient: _sbCreate } = window.supabase;
+    const SUPABASE_URL = 'https://duycstnptwojisioeosk.supabase.co';
+    const SUPABASE_PUBLIC_KEY = 'sb_publishable_Jb7uRmyy59sLy4sW6caCAQ_pDNdMxDe';
     const db = _sbCreate(
-      'https://duycstnptwojisioeosk.supabase.co',
-      'sb_publishable_YVXJ92LuogmSEQNXw8lqVQ_GJXI8hJW',
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY,
       {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
           storage: window.localStorage
+        }
+      }
+    );
+    const publicDb = _sbCreate(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
         }
       }
     );
@@ -1946,7 +1959,7 @@
       try {
         updateLoadingStatus('Đang kết nối cơ sở dữ liệu Supabase...');
         // Ping kiểm tra kết nối Supabase
-        const { error } = await db.from('jcr_data').select('id').limit(1);
+        const { error } = await publicDb.from('jcr_data').select('id').limit(1);
         if (error) throw error;
         setSplashStep('step-jcr', 'done');
         setSplashStep('step-hdgsnn', 'done');
@@ -2018,14 +2031,14 @@
       try {
         const [jcrRes, hdgsnnRes, scopusRes] = await Promise.all([
           isIssnSearch
-            ? db.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
-            : db.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(50),
+            ? publicDb.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : publicDb.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(50),
           isIssnSearch
-            ? db.from('hdgsnn_list').select('*').eq('issn', cleanedQuery)
-            : db.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`),
+            ? publicDb.from('hdgsnn_list').select('*').eq('issn', cleanedQuery)
+            : publicDb.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`),
           isIssnSearch
-            ? db.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
-            : db.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(50),
+            ? publicDb.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : publicDb.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(50),
         ]);
 
         const jcrMatches = jcrRes.data || [];
@@ -2310,14 +2323,14 @@
         const isIssnSearch = cleanedQuery.length >= 7;
         const [hdgsnnRes, jcrRes, scopusRes] = await Promise.all([
           isIssnSearch
-            ? db.from('hdgsnn_list').select('*').eq('issn', cleanedQuery).limit(10)
-            : (normQuery.length > 3 ? db.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+            ? publicDb.from('hdgsnn_list').select('*').eq('issn', cleanedQuery).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
           isIssnSearch
-            ? db.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
-            : (normQuery.length > 3 ? db.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+            ? publicDb.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
           isIssnSearch
-            ? db.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
-            : (normQuery.length > 3 ? db.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+            ? publicDb.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
         ]);
 
         // Map Supabase fields → format cho chatbot Worker
