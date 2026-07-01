@@ -13,17 +13,17 @@ async function renderNavLinks() {
 
   if (user) {
     navContainer.innerHTML = `
-      <a href="/account.html" class="nav-link" title="Tài khoản của bạn">
+      <a href="/account.html" class="nav-link account-button" title="Tài khoản của bạn">
         <i class="fas fa-user"></i> Tài khoản
       </a>
-      ${isAdmin ? '<a href="/admin.html" class="nav-link nav-link-admin" title="Trang quản trị"><i class="fas fa-shield-alt"></i> Quản trị</a>' : ''}
-      <button class="nav-link nav-link-logout" onclick="handleNavLogout()" title="Đăng xuất">
+      ${isAdmin ? '<a href="/admin.html" class="nav-link account-button nav-link-admin" title="Trang quản trị"><i class="fas fa-shield-alt"></i> Quản trị</a>' : ''}
+      <button class="nav-link account-button nav-link-logout" onclick="handleNavLogout()" title="Đăng xuất">
         <i class="fas fa-sign-out-alt"></i> Đăng xuất
       </button>
     `;
   } else {
     navContainer.innerHTML = `
-      <button class="nav-link" onclick="handleNavLogin()" title="Đăng nhập / Đăng ký">
+      <button class="nav-link account-button" onclick="handleNavLogin()" title="Đăng nhập / Đăng ký">
         <i class="fas fa-sign-in-alt"></i> Đăng nhập
       </button>
     `;

@@ -19,7 +19,12 @@ if (SUPABASE_PUBLISHABLE_KEY.startsWith('<')) {
 }
 
 export const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true }
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
 });
 
 export async function getSession() {
