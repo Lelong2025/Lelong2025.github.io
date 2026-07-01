@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản trị — Tra cứu Tạp chí</title>
+  <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success-color: #10b981;
+      --error-color: #ef4444;
+      --warning-color: #f59e0b;
+      --admin-accent: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      min-height: 100vh;
+    }
+    .page-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .page-header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-color);
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .page-header .logo img { height: 32px; }
+    #accountNavLinks { display: flex; gap: 8px; align-items: center; }
+    .account-button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .account-button:hover { background: var(--primary-hover); }
+    .nav-link-admin { background: var(--admin-accent); }
+    .nav-link-admin:hover { background: #b91c1c; }
+    .nav-link-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); }
+    .nav-link-logout:hover { background: var(--bg-color); color: var(--error-color); border-color: var(--error-color); }
+
+    /* Admin layout */
+    .admin-tabs {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .admin-tab {
+      padding: 14px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .admin-tab:hover { color: var(--text-color); }
+    .admin-tab.active {
+      color: var(--admin-accent);
+      border-bottom-color: var(--admin-accent);
+    }
+    .admin-tab i { margin-right: 6px; }
+    .admin-content { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .admin-tab-content { display: none; }
+    .admin-tab-content.active { display: block; }
+
+    /* 403 page */
+    .forbidden-page {
+      max-width: 480px;
+      margin: 80px auto;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .forbidden-page i { font-size: 64px; color: var(--text-muted); margin-bottom: 20px; display: block; }
+    .forbidden-page h1 { font-size: 24px; margin: 0 0 12px; }
+    .forbidden-page p { color: var(--text-muted); margin-bottom: 24px; }
+
+    /* Stat cards */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .stat-value { font-size: 24px; font-weight: 600; color: var(--text-color); }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h2 i { color: var(--admin-accent); }
+
+    /* Chart */
+    .chart-controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .chart-filter { display: flex; gap: 4px; }
+    .chart-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .chart-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    .chart-toggles { display: flex; gap: 12px; font-size: 13px; color: var(--text-muted); }
+    .chart-toggles label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .chart-svg { width: 100%; height: 300px; display: block; }
+    .chart-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .chart-tooltip {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    /* Tables */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .admin-table th {
+      text-align: left;
+      padding: 10px 8px;
+      background: var(--bg-color);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .admin-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: var(--bg-color); cursor: pointer; }
+    .admin-table code {
+      background: var(--bg-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-paid { background: #d1fae5; color: #065f46; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-active { background: #d1fae5; color: #065f46; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+
+    /* Search input */
+    .search-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .pagination button {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Settings form */
+    .settings-form { display: grid; gap: 16px; max-width: 480px; }
+    .settings-form label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .settings-form input[type="text"], .settings-form input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .settings-form .checkbox-row { display: flex; align-items: center; gap: 8px; }
+    .settings-form .checkbox-row input { width: auto; }
+    .settings-form button {
+      padding: 10px 20px;
+      background: var(--admin-accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      justify-self: start;
+    }
+    .settings-form button:hover { background: #b91c1c; }
+    .form-message {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: none;
+    }
+    .form-message.success { display: block; background: #d1fae5; color: #065f46; }
+    .form-message.error { display: block; background: #fee2e2; color: #991b1b; }
+    .form-message.info { display: block; background: #dbeafe; color: #1e40af; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 12px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 600px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .admin-content { padding: 0 8px; }
+      .page-header { padding: 8px 12px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <a href="/" class="logo">
+      <img src="logo_dung_vi.png" alt="Logo">
+      Tra cứu Tạp chí <span style="color:var(--admin-accent);font-size:12px;background:#fee2e2;padding:2px 6px;border-radius:4px;">ADMIN</span>
+    </a>
+    <div id="accountNavLinks"></div>
+  </header>
+
+  <!-- 403 page -->
+  <div id="forbiddenPage" class="forbidden-page" style="display:none">
+    <i class="fas fa-lock"></i>
+    <h1>403 — Không có quyền truy cập</h1>
+    <p>Bạn cần đăng nhập với tài khoản admin để truy cập trang này.</p>
+    <a href="/" class="account-button"><i class="fas fa-home"></i> Về trang chủ</a>
+  </div>
+
+  <!-- Admin main -->
+  <div id="adminMain" style="display:none">
+
+    <nav class="admin-tabs">
+      <button class="admin-tab active" data-tab="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+      <button class="admin-tab" data-tab="users"><i class="fas fa-users"></i> Users</button>
+      <button class="admin-tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
+    </nav>
+
+    <div class="admin-content">
+
+      <!-- Dashboard tab -->
+      <section id="tab-dashboard" class="admin-tab-content active">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">Doanh thu hôm nay</div><div class="stat-value" id="stat-revenue-today">—</div></div>
+          <div class="stat-card"><div class="stat-label">Doanh thu tháng này</div><div class="stat-value" id="stat-revenue-month">—</div></div>
+          <div class="stat-card"><div class="stat-label">Tổng doanh thu</div><div class="stat-value" id="stat-revenue-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">VIP đang hoạt động</div><div class="stat-value" id="stat-vip-active">—</div></div>
+          <div class="stat-card"><div class="stat-label">Tổng user</div><div class="stat-value" id="stat-users-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Page views hôm nay</div><div class="stat-value" id="stat-pv-today">—</div></div>
+        </div>
+
+        <div class="card">
+          <h2><i class="fas fa-chart-area"></i> Biểu đồ</h2>
+          <div class="chart-controls">
+            <div class="chart-filter">
+              <button class="chart-btn active" data-granularity="day" data-periods="30">Ngày</button>
+              <button class="chart-btn" data-granularity="week" data-periods="12">Tuần</button>
+              <button class="chart-btn" data-granularity="month" data-periods="12">Tháng</button>
+            </div>
+            <div class="chart-toggles">
+              <label><input type="checkbox" id="toggleRevenue" checked> <span style="color:#2563eb">●</span> Doanh thu</label>
+              <label><input type="checkbox" id="togglePageViews" checked> <span style="color:#10b981">●</span> Page views</label>
+            </div>
+          </div>
+          <div id="chartContainer" style="position:relative;">
+            <div id="chartLoading" style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-circle-notch fa-spin"></i> Đang tải...</div>
+            <svg id="chartSvg" class="chart-svg" viewBox="0 0 800 300" preserveAspectRatio="none" style="display:none"></svg>
+            <div id="chartEmpty" class="chart-empty" style="display:none">Chưa có dữ liệu.</div>
+          </div>
+          <div id="chartTooltip" class="chart-tooltip" style="display:none"></div>
+        </div>
+
+        <div class="card">
+          <h2><i class="fas fa-receipt"></i> Giao dịch gần đây</h2>
+          <table class="admin-table">
+            <thead><tr><th>Ngày</th><th>Email</th><th>Số tiền</th><th>Trạng thái</th></tr></thead>
+            <tbody id="recentPaymentsBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Users tab -->
+      <section id="tab-users" class="admin-tab-content">
+        <input type="search" id="usersSearch" class="search-input" placeholder="Tìm email hoặc tên...">
+        <div class="card" style="padding:0; overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Email</th><th>Tên</th><th>VIP</th><th>Hết hạn</th><th>Tổng nạp</th><th>Ngày tạo</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="usersPagination" class="pagination"></div>
+      </section>
+
+      <!-- Settings tab -->
+      <section id="tab-settings" class="admin-tab-content">
+        <div class="card">
+          <h2><i class="fas fa-crown"></i> Cài đặt gói VIP</h2>
+          <form id="vipSettingsForm" class="settings-form">
+            <div>
+              <label for="settingPrice">Giá (VND)</label>
+              <input type="number" id="settingPrice" name="price" min="1000" step="1000" required>
+            </div>
+            <div>
+              <label for="settingDuration">Thời hạn (ngày)</label>
+              <input type="number" id="settingDuration" name="duration" min="1" required>
+            </div>
+            <div>
+              <label for="settingDailyLimit">Lượt AI / ngày</label>
+              <input type="number" id="settingDailyLimit" name="dailyLimit" min="1" required>
+            </div>
+            <div>
+              <label for="settingPrefix">Prefix mã thanh toán (2-10 ký tự A-Z, 0-9)</label>
+              <input type="text" id="settingPrefix" name="prefix" pattern="[A-Z0-9]{2,10}" required>
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="settingActive" name="active">
+              <label for="settingActive" style="margin:0">Kích hoạt gói</label>
+            </div>
+            <button type="submit"><i class="fas fa-save"></i> Lưu thay đổi</button>
+            <div id="settingsMessage" class="form-message"></div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- User detail modal -->
+  <div id="userDetailModal" class="modal-overlay" onclick="if(event.target===this) closeUserDetail()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin:0;"><i class="fas fa-user"></i> <span id="userDetailTitle">Chi tiết user</span></h2>
+        <button class="modal-close" onclick="closeUserDetail()">&times;</button>
+      </div>
+      <div id="userDetailBody">Đang tải...</div>
+    </div>
+  </div>
+
+  <script type="module" src="./assets/nav.js"></script>
+  <script type="module" src="./admin.js"></script>
+
+</body>
+</html>
