@@ -38,7 +38,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://duycstnptwojisioeosk.supabase.co https://old-band-adb5.vonhacphuoc.workers.dev; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://esm.sh https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co; worker-src 'self' blob:; child-src 'self' blob: https://www.google.com; frame-src 'self' https://www.google.com"> https://cdn.jsdelivr.net https://duycstnptwojisioeosk.supabase.co https://old-band-adb5.vonhacphuoc.workers.dev; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
   
@@ -1761,15 +1761,14 @@
     }
 
     function updateAuthUi() {
-      const button = document.getElementById('accountButton');
-      if (currentSession?.user) {
-        button.innerHTML = '<i class="fas fa-user-check"></i> Tài khoản';
-      } else {
-        button.innerHTML = '<i class="fas fa-user"></i> Đăng nhập';
-        document.getElementById('chat-access-note').style.display = 'block';
-      }
-      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
-      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+      // Header button updated bởi assets/nav.js (render #accountNavLinks)
+      // Ở đây chỉ update modal views + chat-access-note
+      const note = document.getElementById('chat-access-note');
+      if (!currentSession?.user && note) note.style.display = 'block';
+      const authView = document.getElementById('authView');
+      const accountView = document.getElementById('accountView');
+      if (authView) authView.style.display = currentSession ? 'none' : 'block';
+      if (accountView) accountView.style.display = currentSession ? 'block' : 'none';
     }
 
     async function initAuth() {
