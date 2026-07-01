@@ -11,7 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.109.0';
 const SUPABASE_URL = 'https://duycstnptwojisioeosk.supabase.co';
 
 // TODO: Paste publishable key MỚI vào đây (sau khi rotate)
-const SUPABASE_PUBLISHABLE_KEY = '<PASTE_NEW_PUBLISHABLE_KEY_HERE>';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Jb7uRmyy59sLy4sW6caCAQ_pDNdMxDe';
 
 if (SUPABASE_PUBLISHABLE_KEY.startsWith('<')) {
   console.warn('[supabase-client] SUPABASE_PUBLISHABLE_KEY chưa được set. ' +
