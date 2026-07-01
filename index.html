@@ -842,6 +842,12 @@
     .auth-submit { width:100%; margin-top:2px; min-height:48px; font-size:15px; }
     .auth-submit:disabled { opacity:.65; cursor:wait; transform:none; }
     .auth-form-footer { display:flex; justify-content:center; margin-top:-2px; }
+    .password-rules { display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; margin:-2px 0 2px; padding:12px; border-radius:11px; background:#f8fafc; color:#64748b; font-size:12px; }
+    [data-theme="dark"] .password-rules { background:#0f172a; color:#94a3b8; }
+    .password-rule { display:flex; align-items:center; gap:7px; }
+    .password-rule i { width:14px; color:#94a3b8; }
+    .password-rule.valid { color:#059669; }
+    .password-rule.valid i { color:#10b981; }
     .vip-primary, .vip-secondary { border:0; border-radius:13px; padding:13px 16px; font-weight:800; cursor:pointer; transition:transform .2s, box-shadow .2s, background .2s; }
     .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; box-shadow:0 8px 22px rgba(16,163,127,.22); }
     .vip-primary:hover { transform:translateY(-1px); box-shadow:0 11px 28px rgba(16,163,127,.32); }
@@ -859,6 +865,7 @@
     .vip-detail-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:5px 0; font-size:14px; color:#475569; }
     [data-theme="dark"] .vip-detail-row { color:#cbd5e1; }
     .vip-detail-row strong, .vip-detail-row span { text-align:right; }
+    .vip-detail-row strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
     .vip-active { color:#10b981; font-weight:800; }
     .vip-inactive { color:#f59e0b; font-weight:800; }
     .payment-box { display:none; text-align:center; margin-top:18px; padding:20px; border:1px solid #dbe5e3; border-radius:20px; background:#f8fafc; animation:paymentReveal .28s ease-out; }
@@ -877,6 +884,158 @@
     .vip-actions { display:grid; grid-template-columns:1fr auto; gap:10px; }
     .vip-actions .vip-secondary { min-width:112px; }
     #chat-access-note { display:none; padding:10px 14px; font-size:12px; text-align:center; color:#f59e0b; background:rgba(245,158,11,.1); }
+    .portal-shell {
+      position: fixed; inset: 0; z-index: 99990; display: none;
+      background: #f5f7fb; color: #1e293b; overflow: hidden;
+    }
+    [data-theme="dark"] .portal-shell { background: #0f172a; color: #e2e8f0; }
+    .portal-shell.open { display: grid; grid-template-columns: 272px minmax(0, 1fr); }
+    .portal-menu-toggle, .portal-nav-backdrop { display: none; }
+    .portal-sidebar {
+      display: flex; flex-direction: column; min-height: 100vh; padding: 24px;
+      background: #ffffff; border-right: 1px solid #e2e8f0;
+    }
+    [data-theme="dark"] .portal-sidebar { background: #111827; border-right-color: #334155; }
+    .portal-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
+    .portal-brand-image {
+      width: 100%; max-width: 220px; height: 82px; display: block; object-fit: contain;
+      border-radius: 8px; background: #fff; padding: 6px;
+    }
+    .portal-logo {
+      width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px;
+      background: linear-gradient(135deg, #2f6df6, #4b8cff); color: #fff;
+      box-shadow: 0 10px 24px rgba(47,109,246,.28);
+    }
+    .portal-brand strong { display: block; font-size: 20px; letter-spacing: -.02em; }
+    .portal-brand span { display: block; margin-top: 2px; color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    [data-theme="dark"] .portal-brand span { color: #94a3b8; }
+    .portal-section-label { margin: 20px 0 9px; color: #64748b; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    [data-theme="dark"] .portal-section-label { color: #94a3b8; }
+    .portal-nav { display: grid; gap: 8px; }
+    .portal-nav button {
+      min-height: 50px; display: flex; align-items: center; gap: 12px;
+      border: 1px solid transparent; border-radius: 12px; padding: 0 14px;
+      background: transparent; color: #64748b; font: inherit; font-weight: 800;
+      cursor: pointer; text-align: left;
+    }
+    [data-theme="dark"] .portal-nav button { color: #94a3b8; }
+    .portal-nav button.active, .portal-nav button:hover { background: #eef4ff; color: #2f6df6; border-color: #dbeafe; }
+    [data-theme="dark"] .portal-nav button.active, [data-theme="dark"] .portal-nav button:hover {
+      background: #172644; border-color: #234675; color: #4b8cff;
+    }
+    .portal-nav button[data-admin-only] { display: none; }
+    .portal-shell.admin-enabled .portal-nav button[data-admin-only] { display: flex; }
+    .portal-spacer { flex: 1; }
+    .portal-profile {
+      display: flex; align-items: center; gap: 11px; padding: 12px;
+      border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; overflow: hidden;
+    }
+    [data-theme="dark"] .portal-profile { background: #1e293b; border-color: #334155; }
+    .portal-avatar { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #2f6df6; color: #fff; font-weight: 900; }
+    .portal-profile strong, .portal-profile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .portal-profile strong { font-size: 13px; }
+    .portal-profile span { margin-top: 2px; color: #10b981; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    .portal-main { min-height: 100vh; overflow-y: auto; padding: 34px 40px 42px; }
+    .portal-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+    .portal-title h2 { margin: 0 0 7px; font-size: clamp(25px, 3vw, 36px); line-height: 1.05; letter-spacing: -.03em; }
+    .portal-title p { margin: 0; color: #64748b; font-size: 15px; }
+    [data-theme="dark"] .portal-title p { color: #94a3b8; }
+    .portal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+    .portal-btn {
+      min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      border: 1px solid #dbe3ec; border-radius: 11px; padding: 0 16px;
+      background: #fff; color: #1e293b; font: inherit; font-weight: 850; cursor: pointer;
+    }
+    [data-theme="dark"] .portal-btn { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    .portal-btn.primary { border-color: transparent; background: #2f6df6; color: #fff; box-shadow: 0 9px 22px rgba(47,109,246,.25); }
+    .portal-btn.danger { color: #ef4444; }
+    .portal-grid { display: grid; gap: 24px; }
+    .portal-grid.two { grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); }
+    .portal-grid.cards { grid-template-columns: repeat(4, minmax(190px, 1fr)); }
+    .portal-panel, .portal-card {
+      border: 1px solid #dbe3ec; border-radius: 8px; background: #fff;
+      box-shadow: 0 12px 28px rgba(15,23,42,.07);
+    }
+    [data-theme="dark"] .portal-panel, [data-theme="dark"] .portal-card {
+      background: #1e293b; border-color: #334155; box-shadow: none;
+    }
+    .portal-card { position: relative; overflow: hidden; padding: 22px; min-height: 120px; }
+    .portal-card small { display: block; color: #64748b; font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .portal-card strong { display: block; margin-top: 10px; font-size: 30px; letter-spacing: -.03em; }
+    .portal-card span { display: inline-flex; align-items: center; gap: 6px; margin-top: 13px; color: #10b981; font-size: 12px; font-weight: 900; }
+    .portal-card span.warn { color: #f59e0b; }
+    .portal-card > i { position: absolute; right: 22px; top: 22px; color: #e2e8f0; font-size: 46px; }
+    [data-theme="dark"] .portal-card > i { color: rgba(148,163,184,.16); }
+    .portal-panel { overflow: hidden; }
+    .portal-panel-head { display: flex; justify-content: space-between; gap: 14px; padding: 22px 24px 12px; }
+    .portal-panel-head h3 { margin: 0 0 4px; font-size: 21px; letter-spacing: -.02em; }
+    .portal-panel-head p { margin: 0; color: #64748b; font-size: 13px; }
+    [data-theme="dark"] .portal-panel-head p { color: #94a3b8; }
+    .portal-segment { display: inline-flex; align-items: center; height: 38px; padding: 4px; border: 1px solid #dbe3ec; border-radius: 11px; background: #f8fafc; }
+    [data-theme="dark"] .portal-segment { background: #111827; border-color: #334155; }
+    .portal-segment button { height: 28px; border: 0; border-radius: 8px; padding: 0 14px; background: transparent; color: #64748b; font-weight: 850; cursor: pointer; }
+    .portal-segment button, .vip-card, .vip-card button, .vip-card input {
+      font-family: 'Inter', Arial, sans-serif; letter-spacing: 0;
+    }
+    .portal-segment button.active { background: #fff; color: #2f6df6; box-shadow: 0 2px 8px rgba(15,23,42,.08); }
+    [data-theme="dark"] .portal-segment button.active { background: #1e293b; color: #4b8cff; }
+    .portal-line-chart { width: 100%; height: 330px; padding: 14px 22px 22px; }
+    .portal-line-chart svg { width: 100%; height: 100%; overflow: visible; }
+    .portal-donut { display: grid; place-items: center; padding: 8px 18px 18px; }
+    .portal-donut-ring {
+      width: 220px; aspect-ratio: 1; border-radius: 50%;
+      background: conic-gradient(#94a3b8 0 50%, #2f6df6 50% 65%, #10b981 65% 100%);
+      position: relative;
+    }
+    .portal-donut-ring::after { content: ""; position: absolute; inset: 38px; border-radius: 50%; background: #fff; }
+    [data-theme="dark"] .portal-donut-ring::after { background: #1e293b; }
+    .portal-legend { display: grid; gap: 10px; width: 100%; padding: 0 18px 22px; }
+    .portal-legend-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; border: 1px solid #dbe3ec; border-radius: 8px; padding: 0 14px; font-weight: 850; }
+    [data-theme="dark"] .portal-legend-row { border-color: #334155; background: #111827; }
+    .portal-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 9px; background: #2f6df6; }
+    .portal-dot.green { background: #10b981; }
+    .portal-dot.gray { background: #94a3b8; }
+    .portal-table { width: 100%; border-collapse: collapse; }
+    .portal-table th, .portal-table td { padding: 17px 24px; border-top: 1px solid #e2e8f0; text-align: left; }
+    [data-theme="dark"] .portal-table th, [data-theme="dark"] .portal-table td { border-top-color: #334155; }
+    .portal-table th { color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+    .portal-table td { font-size: 14px; font-weight: 700; }
+    .portal-user-cell { display: flex; align-items: center; gap: 11px; }
+    .portal-mini-avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: #eef4ff; color: #2f6df6; font-weight: 900; }
+    .portal-pill { display: inline-flex; align-items: center; min-height: 23px; border-radius: 999px; padding: 0 10px; background: #dbeafe; color: #2563eb; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+    .portal-pill.green { background: #d1fae5; color: #059669; }
+    .portal-pill.orange { background: #fef3c7; color: #d97706; }
+    .portal-vip-card {
+      padding: 28px 32px; border: 0; border-radius: 22px;
+      background: linear-gradient(135deg, #2f6df6, #273bbd); color: #fff;
+      box-shadow: 0 18px 34px rgba(47,109,246,.28);
+    }
+    .portal-vip-card .portal-pill { background: rgba(255,255,255,.18); color: #fff; border: 1px solid rgba(255,255,255,.28); }
+    .portal-vip-title { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 46px; }
+    .portal-vip-title h3 { margin: 12px 0 0; font-size: 34px; font-style: italic; letter-spacing: -.03em; }
+    .portal-progress-line { height: 12px; border-radius: 999px; background: rgba(255,255,255,.22); overflow: hidden; }
+    .portal-progress-line span { display: block; height: 100%; width: 80%; border-radius: inherit; background: #fff; }
+    .portal-vip-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px; margin-top: 24px; }
+    .portal-vip-meta small { display: block; color: rgba(255,255,255,.72); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .portal-vip-meta strong { display: block; margin-top: 5px; font-size: 17px; }
+    .portal-balance { display: grid; place-items: center; gap: 16px; min-height: 244px; padding: 28px; text-align: center; }
+    .portal-balance i { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 16px; background: #eef4ff; color: #2f6df6; font-size: 24px; }
+    [data-theme="dark"] .portal-balance i { background: #274473; }
+    .portal-balance strong { display: block; font-size: 31px; letter-spacing: -.03em; }
+    .portal-form { display: grid; gap: 16px; padding: 24px; }
+    .portal-field { display: grid; gap: 8px; }
+    .portal-field label { color: #64748b; font-size: 13px; font-weight: 850; }
+    .portal-field input {
+      width: 100%; min-height: 50px; border: 1px solid #dbe3ec; border-radius: 11px;
+      padding: 0 14px; background: #f8fafc; color: #1e293b; font: inherit; outline: none;
+    }
+    [data-theme="dark"] .portal-field input { background: #111827; border-color: #334155; color: #e2e8f0; }
+    .portal-settings { display: grid; grid-template-columns: minmax(0, 1fr) minmax(310px, .5fr); gap: 24px; }
+    .portal-settings-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 8px 24px 24px; }
+    .portal-limit-box { display: grid; gap: 14px; margin: 0 24px 24px; padding: 20px; border: 1px solid #dbe3ec; border-radius: 8px; background: #f8fafc; }
+    [data-theme="dark"] .portal-limit-box { background: #111827; border-color: #334155; }
+    .portal-page { display: none; }
+    .portal-page.active { display: block; }
     @media(max-width:640px) {
       .header-container { flex-wrap:wrap; }
       .header-title { order:3; width:100%; }
@@ -885,6 +1044,77 @@
       .vip-card { width:100%; max-height:92vh; border-radius:26px 26px 0 0; padding:21px 18px; }
       .vip-actions { grid-template-columns:1fr; }
       .payment-box { padding:17px 14px; }
+    }
+    @media(max-width:1180px) {
+      .portal-shell.open { grid-template-columns: 88px minmax(0, 1fr); }
+      .portal-sidebar { padding: 18px 14px; }
+      .portal-brand div, .portal-section-label, .portal-nav span, .portal-profile > div:not(.portal-avatar) { display: none; }
+      .portal-brand { justify-content: center; }
+      .portal-nav button { justify-content: center; padding: 0; }
+      .portal-profile { justify-content: center; padding: 10px; }
+      .portal-grid.cards { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+      .portal-grid.two, .portal-settings { grid-template-columns: 1fr; }
+    }
+    @media(max-width:720px) {
+      .portal-shell.open { grid-template-columns: 1fr; }
+      .portal-sidebar {
+        position: fixed; inset: 0 auto 0 0; z-index: 5; width: min(280px, 82vw);
+        min-height: 100vh; height: 100vh; padding: 22px 18px;
+        transform: translateX(-105%); transition: transform .25s ease;
+        box-shadow: 18px 0 42px rgba(2,6,23,.28); overflow-y: auto;
+      }
+      .portal-shell.nav-open .portal-sidebar { transform: translateX(0); }
+      .portal-brand {
+        width: 100%; height: 82px; flex: 0 0 82px; margin: 0 0 20px;
+        overflow: visible; border-radius: 8px; background: transparent;
+      }
+      .portal-brand-image {
+        width: 100%; max-width: 220px; height: 82px; padding: 6px; border-radius: 8px;
+        object-fit: contain; transform: none;
+      }
+      .portal-section-label { display: block; }
+      .portal-nav { width: 100%; grid-auto-flow: row; grid-auto-columns: auto; }
+      .portal-nav button { width: 100%; min-height: 48px; justify-content: flex-start; padding: 0 14px; border-radius: 9px; }
+      .portal-nav span { display: inline; }
+      .portal-spacer { display: block; }
+      .portal-profile { display: flex; }
+      .portal-profile > div:not(.portal-avatar) { display: block; }
+      .portal-profile .portal-avatar { display: grid; place-items: center; }
+      .portal-sidebar > .portal-btn.danger { width: 100% !important; padding: 0 16px; font-size: inherit; }
+      .portal-sidebar > .portal-btn.danger i { font-size: inherit; }
+      .portal-nav-backdrop {
+        display: block; position: fixed; inset: 0; z-index: 4; border: 0;
+        background: rgba(2,6,23,.58); opacity: 0; pointer-events: none;
+        transition: opacity .25s ease;
+      }
+      .portal-shell.nav-open .portal-nav-backdrop { opacity: 1; pointer-events: auto; }
+      .portal-menu-toggle {
+        position: fixed; left: 16px; bottom: 18px; z-index: 6; width: 52px; height: 52px;
+        display: grid; place-items: center; border: 1px solid rgba(255,255,255,.22);
+        border-radius: 50%; background: #2f6df6; color: #fff; font-size: 20px;
+        box-shadow: 0 12px 30px rgba(47,109,246,.42); cursor: pointer;
+      }
+      .portal-shell.nav-open .portal-menu-toggle {
+        left: min(216px, calc(82vw - 64px)); top: 14px; bottom: auto; background: #1e293b;
+      }
+      .portal-main { min-height: 100vh; padding: 20px 14px 88px; }
+      .portal-topbar { flex-direction: column; gap: 16px; margin-bottom: 22px; }
+      .portal-title h2 { font-size: 27px; line-height: 1.12; }
+      .portal-title p { font-size: 14px; line-height: 1.4; }
+      .portal-actions { justify-content: flex-start; width: 100%; }
+      .portal-actions .portal-btn { flex: 1; }
+      .portal-grid.cards, .portal-settings-row { grid-template-columns: 1fr; }
+      .portal-panel-head { flex-direction: column; }
+      .portal-table-wrap { overflow-x: auto; }
+      .portal-table { min-width: 680px; }
+      .portal-vip-card { padding: 22px 18px; border-radius: 16px; }
+      .portal-vip-title { display: block; position: relative; margin-bottom: 30px; padding-right: 78px; }
+      .portal-vip-title > .portal-pill { position: absolute; top: 0; right: 0; }
+      .portal-vip-title h3 { margin-top: 14px; font-size: 27px; white-space: nowrap; }
+      .portal-vip-meta { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px 12px; }
+      .portal-vip-meta strong { font-size: 15px; }
+      .portal-vip-meta .portal-btn { grid-column: 1 / -1; width: 100%; }
+      .portal-progress-line { height: 10px; }
     }
     .quick-replies { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0 10px; }
     .quick-btn {
@@ -1260,12 +1490,12 @@
       </div>
 
       <div id="authView">
-        <div class="auth-welcome">
+        <div id="authWelcome" class="auth-welcome">
           <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
           <h3 id="authHeading">Chào mừng trở lại</h3>
           <p id="authLead">Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.</p>
         </div>
-        <div class="vip-tabs">
+        <div id="authTabs" class="vip-tabs">
           <button id="loginTab" class="active" type="button" onclick="setAuthMode('login')"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
           <button id="registerTab" type="button" onclick="setAuthMode('register')"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
         </div>
@@ -1287,12 +1517,30 @@
             </div>
           </div>
           <button id="authSubmit" class="vip-primary auth-submit" type="submit"><i class="fas fa-arrow-right"></i>&nbsp; <span id="authSubmitLabel">Đăng nhập</span></button>
-          <div class="auth-form-footer"><button class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button></div>
+          <div class="auth-form-footer"><button id="passwordResetRequest" class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button></div>
         </form>
         <form id="resetView" class="vip-form" style="display:none" onsubmit="saveNewPassword(event)">
-          <p>Nhập mật khẩu mới cho tài khoản của bạn.</p>
-          <input id="newPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Mật khẩu mới">
-          <button class="vip-primary" type="submit">Lưu mật khẩu mới</button>
+          <div class="auth-welcome" style="margin-bottom:4px;">
+            <div class="auth-welcome-icon"><i class="fas fa-key"></i></div>
+            <h3>Đặt mật khẩu mới</h3>
+            <p>Mật khẩu cần có ít nhất 8 ký tự.</p>
+          </div>
+          <div class="auth-field">
+            <label for="newPassword">Mật khẩu mới</label>
+            <div class="auth-input-wrap"><i class="fas fa-lock"></i><input id="newPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Nhập mật khẩu an toàn" oninput="updatePasswordRules(this.value)"><button class="password-toggle" type="button" onclick="togglePasswordVisibility('newPassword', this)" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button></div>
+          </div>
+          <div id="passwordRules" class="password-rules">
+            <span class="password-rule" data-rule="length"><i class="fas fa-circle"></i>Ít nhất 8 ký tự</span>
+            <span class="password-rule" data-rule="lower"><i class="fas fa-circle"></i>Chữ thường</span>
+            <span class="password-rule" data-rule="upper"><i class="fas fa-circle"></i>Chữ hoa</span>
+            <span class="password-rule" data-rule="number"><i class="fas fa-circle"></i>Chữ số</span>
+            <span class="password-rule" data-rule="special"><i class="fas fa-circle"></i>Ký tự đặc biệt</span>
+          </div>
+          <div class="auth-field">
+            <label for="confirmNewPassword">Xác nhận mật khẩu mới</label>
+            <div class="auth-input-wrap"><i class="fas fa-shield-halved"></i><input id="confirmNewPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Nhập lại mật khẩu"><button class="password-toggle" type="button" onclick="togglePasswordVisibility('confirmNewPassword', this)" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button></div>
+          </div>
+          <button id="saveNewPasswordButton" class="vip-primary auth-submit" type="submit"><i class="fas fa-floppy-disk"></i>&nbsp; Lưu mật khẩu mới</button>
         </form>
       </div>
 
@@ -1321,6 +1569,184 @@
       <div id="authMessage" class="vip-message" aria-live="polite"></div>
     </section>
   </div>
+
+  <!-- ===== USER / ADMIN PORTAL ===== -->
+  <section id="accountPortal" class="portal-shell" aria-hidden="true">
+    <button type="button" class="portal-nav-backdrop" aria-label="Đóng menu" onclick="togglePortalNav(false)"></button>
+    <button type="button" class="portal-menu-toggle" aria-label="Mở menu tài khoản" onclick="togglePortalNav()"><i class="fas fa-bars"></i></button>
+    <aside class="portal-sidebar">
+      <div class="portal-brand">
+        <img class="portal-brand-image" src="logo_dung_vi.png" alt="Đại học Lạc Hồng">
+        <span id="portalRoleLabel" hidden>Tài khoản người dùng</span>
+      </div>
+
+      <div class="portal-section-label">Menu chính</div>
+      <nav class="portal-nav" aria-label="Điều hướng tài khoản">
+        <button type="button" onclick="closeAccountPortal()"><i class="fas fa-magnifying-glass"></i><span>Về trang tra cứu</span></button>
+        <button type="button" class="active" data-page="userOverview" onclick="switchPortalPage('userOverview')"><i class="fas fa-gauge-high"></i><span>Tổng quan</span></button>
+        <button type="button" data-page="userTransactions" onclick="switchPortalPage('userTransactions')"><i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao dịch</span></button>
+        <button type="button" data-page="userPassword" onclick="switchPortalPage('userPassword')"><i class="fas fa-shield-halved"></i><span>Đổi mật khẩu</span></button>
+        <button type="button" data-admin-only data-page="adminDashboard" onclick="switchPortalPage('adminDashboard')"><i class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
+        <button type="button" data-admin-only data-page="adminUsers" onclick="switchPortalPage('adminUsers')"><i class="fas fa-users"></i><span>Người dùng</span></button>
+        <button type="button" data-admin-only data-page="adminSettings" onclick="switchPortalPage('adminSettings')"><i class="fas fa-gears"></i><span>Cài đặt</span></button>
+      </nav>
+
+      <div class="portal-spacer"></div>
+      <button type="button" class="portal-btn danger" onclick="signOutUser()" style="margin-bottom:12px;width:100%;"><i class="fas fa-right-from-bracket"></i> Đăng xuất</button>
+      <div class="portal-profile">
+        <div id="portalAvatar" class="portal-avatar">U</div>
+        <div><strong id="portalProfileName">Người dùng</strong><span id="portalProfileStatus">Online</span></div>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-topbar">
+        <div class="portal-title">
+          <h2 id="portalPageTitle">Chào mừng trở lại!</h2>
+          <p id="portalPageSubtitle">Quản lý tài khoản và theo dõi gói VIP tại đây.</p>
+        </div>
+        <div class="portal-actions">
+          <button type="button" class="portal-btn" onclick="closeAccountPortal()"><i class="fas fa-xmark"></i> Đóng</button>
+          <button type="button" class="portal-btn primary" onclick="createVipOrder();openUserModal(true);"><i class="fas fa-crown"></i> Gia hạn VIP</button>
+        </div>
+      </div>
+
+      <section id="userOverview" class="portal-page active">
+        <div class="portal-grid two">
+          <div class="portal-vip-card">
+            <div class="portal-vip-title">
+              <div>
+                <span class="portal-pill">Hạng thành viên</span>
+                <h3 id="portalVipPlan">PREMIUM VIP</h3>
+              </div>
+              <span id="portalVipBadge" class="portal-pill green"><i class="fas fa-circle-check"></i>&nbsp; ACTIVE</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;font-weight:800;">
+              <span id="portalVipProgressLabel">Tiến trình sử dụng gói</span><span id="portalVipPercent">80%</span>
+            </div>
+            <div class="portal-progress-line"><span id="portalVipProgress"></span></div>
+            <div class="portal-vip-meta">
+              <div><small>Ngày kích hoạt</small><strong id="portalVipStart">Chưa kích hoạt</strong></div>
+              <div><small>Ngày hết hạn</small><strong id="portalVipEnd">Chưa có</strong></div>
+              <button type="button" class="portal-btn" onclick="createVipOrder();openUserModal(true);">Gia hạn ngay</button>
+            </div>
+          </div>
+          <div class="portal-panel portal-balance">
+            <i class="fas fa-wallet"></i>
+            <div><span style="color:#64748b;">Ví tài khoản</span><strong>Không áp dụng</strong></div>
+            <button type="button" class="portal-btn" style="width:100%;" onclick="createVipOrder();openUserModal(true);">Thanh toán VIP</button>
+          </div>
+        </div>
+
+        <div class="portal-grid two" style="margin-top:24px;">
+          <section class="portal-panel">
+            <div class="portal-panel-head"><div><h3><i class="fas fa-list" style="color:#2f6df6;"></i> Lịch sử giao dịch</h3><p>Các giao dịch gần đây nhất</p></div><button class="vip-link" type="button" onclick="switchPortalPage('userTransactions')">Xem tất cả</button></div>
+            <div class="portal-table-wrap"><table class="portal-table" id="portalTransactionTable"></table></div>
+          </section>
+          <section class="portal-panel">
+            <div class="portal-panel-head"><div><h3><i class="fas fa-lock" style="color:#2f6df6;"></i> Đổi mật khẩu</h3><p>Cập nhật thông tin bảo mật tài khoản</p></div></div>
+            <form class="portal-form" onsubmit="changePortalPassword(event)">
+              <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password" autocomplete="current-password" placeholder="••••••••"></div>
+              <div class="portal-field"><label>Mật khẩu mới</label><input id="portalNewPassword" type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+              <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalConfirmPassword" type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+              <button class="portal-btn primary" type="submit">Cập nhật mật khẩu</button>
+              <p id="portalPasswordMessage" class="vip-message" style="text-align:center;margin:0;"></p>
+            </form>
+          </section>
+        </div>
+
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head"><div><h3><i class="fas fa-chart-line" style="color:#2f6df6;"></i> Tần suất truy cập & sử dụng tài nguyên</h3><p id="userChartSubtitle">Theo dõi lượt sử dụng trong tuần</p></div><div id="userChartFilter" class="portal-segment"><button class="active" data-mode="week" onclick="setUserChartMode('week')">Hằng tuần</button><button data-mode="month" onclick="setUserChartMode('month')">Hằng tháng</button></div></div>
+          <div class="portal-line-chart" id="userUsageChart"></div>
+        </section>
+      </section>
+
+      <section id="userTransactions" class="portal-page">
+        <section class="portal-panel">
+          <div class="portal-panel-head"><div><h3>Lịch sử giao dịch</h3><p>Nạp tiền, mua VIP và tài nguyên lẻ</p></div></div>
+          <div class="portal-table-wrap"><table class="portal-table" id="portalTransactionFullTable"></table></div>
+        </section>
+      </section>
+
+      <section id="userPassword" class="portal-page">
+        <section class="portal-panel" style="max-width:640px;">
+          <div class="portal-panel-head"><div><h3>Đổi mật khẩu</h3><p>Mật khẩu tối thiểu 8 ký tự.</p></div></div>
+          <form class="portal-form" onsubmit="changePortalPassword(event)">
+            <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password" autocomplete="current-password" placeholder="••••••••"></div>
+            <div class="portal-field"><label>Mật khẩu mới</label><input id="portalNewPasswordPage" type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+            <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalConfirmPasswordPage" type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+            <button class="portal-btn primary" type="submit">Lưu mật khẩu mới</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="adminDashboard" class="portal-page">
+        <div class="portal-grid cards">
+          <div class="portal-card"><small>Tổng doanh thu</small><strong id="adminRevenueMetric">0 đ</strong><span>Giao dịch đã thanh toán</span><i class="fas fa-sack-dollar"></i></div>
+          <div class="portal-card"><small>Người dùng VIP</small><strong id="adminVipMetric">0</strong><span>VIP còn hiệu lực</span><i class="fas fa-crown"></i></div>
+          <div class="portal-card"><small>Lượt dùng AI</small><strong id="adminUsageMetric">0</strong><span>Tổng lượt đã ghi nhận</span><i class="fas fa-users-viewfinder"></i></div>
+          <div class="portal-card"><small>Tổng tài khoản</small><strong id="adminUsersMetric">0</strong><span>Supabase Auth</span><i class="fas fa-user-plus"></i></div>
+        </div>
+        <div class="portal-grid two" style="margin-top:24px;">
+          <section class="portal-panel">
+            <div class="portal-panel-head"><div><h3>Phân tích Doanh thu</h3><p id="adminChartSubtitle">Doanh thu 7 ngày gần nhất</p></div><div id="adminChartFilter" class="portal-segment"><button class="active" data-mode="day" onclick="setAdminChartMode('day')">Ngày</button><button data-mode="week" onclick="setAdminChartMode('week')">Tuần</button><button data-mode="month" onclick="setAdminChartMode('month')">Tháng</button></div></div>
+            <div class="portal-line-chart" id="adminRevenueChart"></div>
+          </section>
+          <section class="portal-panel">
+            <div class="portal-panel-head"><div><h3>Tỷ lệ Người dùng</h3><p>Phân loại theo hạng mức</p></div></div>
+            <div class="portal-donut"><div id="adminUserDonut" class="portal-donut-ring"></div></div>
+            <div class="portal-legend">
+              <div class="portal-legend-row"><span><i class="portal-dot green"></i>VIP</span><strong id="adminVipPercent">0%</strong></div>
+              <div class="portal-legend-row"><span><i class="portal-dot gray"></i>STANDARD</span><strong id="adminStandardPercent">100%</strong></div>
+            </div>
+          </section>
+        </div>
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head"><div><h3>Người dùng VIP gần đây</h3><p>Danh sách khách hàng vừa kích hoạt gói nâng cao</p></div><button class="portal-btn" onclick="switchPortalPage('adminUsers')">Xem tất cả</button></div>
+          <div class="portal-table-wrap"><table class="portal-table" id="adminRecentVipTable"></table></div>
+        </section>
+      </section>
+
+      <section id="adminUsers" class="portal-page">
+        <section class="portal-panel">
+            <div class="portal-panel-head"><div><h3>Quản lý người dùng</h3><p>Theo dõi trạng thái VIP, email và ngày hết hạn.</p></div><button class="portal-btn primary" onclick="exportAdminUsers()"><i class="fas fa-download"></i> Xuất báo cáo</button></div>
+          <div class="portal-table-wrap"><table class="portal-table" id="adminUsersTable"></table></div>
+        </section>
+      </section>
+
+      <section id="adminSettings" class="portal-page">
+        <div class="portal-settings">
+          <div class="portal-grid">
+            <section class="portal-panel">
+              <div class="portal-panel-head"><div><h3><i class="fas fa-tags" style="color:#2f6df6;"></i> Cấu hình thanh toán gói VIP</h3><p>Thiết lập giá trị cho các gói đăng ký hội viên</p></div></div>
+              <div class="portal-settings-row">
+                <div class="portal-field"><label>Giá gói VIP (VND)</label><input id="adminPlanPrice" type="number" min="0"></div>
+                <div class="portal-field"><label>Thời hạn VIP (ngày)</label><input id="adminPlanDuration" type="number" min="1"></div>
+                <div class="portal-field"><label>Lượt AI mỗi ngày</label><input id="adminPlanLimit" type="number" min="1"></div>
+              </div>
+            </section>
+            <section class="portal-panel">
+              <div class="portal-panel-head"><div><h3>Thông tin cấu hình</h3><p id="adminPlanName">Đang tải gói VIP...</p></div></div>
+              <div class="portal-form"><button class="portal-btn primary" type="button" onclick="saveAdminSettings()"><i class="fas fa-floppy-disk"></i> Lưu thay đổi</button><p id="adminSettingsMessage" class="vip-message" style="margin:0;"></p></div>
+            </section>
+          </div>
+          <div class="portal-grid">
+            <section class="portal-panel">
+              <div class="portal-panel-head"><div><h3><i class="fas fa-sliders" style="color:#f59e0b;"></i> Giới hạn lượt dùng</h3><p>Hạn mức theo ngày</p></div></div>
+              <div class="portal-limit-box"><strong>Tài khoản thường</strong><p>Phải có VIP mới được sử dụng trợ lý AI.</p></div>
+              <div class="portal-limit-box" style="border-color:#2f6df6;"><strong style="color:#2f6df6;">Tài khoản VIP</strong><p id="adminLimitSummary">Đang tải giới hạn...</p></div>
+            </section>
+            <section class="portal-panel">
+              <div class="portal-panel-head"><div><h3>Tùy chọn nâng cao</h3><p>Bảo trì, thử nghiệm và hóa đơn tự động</p></div></div>
+              <div class="portal-form">
+                <p>Các tùy chọn này chưa có trường dữ liệu tương ứng nên không hiển thị số liệu giả.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
 
   <div class="main-content">
     <div id="searchBox">
@@ -1566,6 +1992,11 @@
     const { createClient: _sbCreate } = window.supabase;
     const SUPABASE_URL = 'https://duycstnptwojisioeosk.supabase.co';
     const SUPABASE_PUBLIC_KEY = 'sb_publishable_Jb7uRmyy59sLy4sW6caCAQ_pDNdMxDe';
+    const initialAuthUrl = new URL(location.href);
+    const initialAuthHash = new URLSearchParams(initialAuthUrl.hash.slice(1));
+    const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === '1'
+      || initialAuthUrl.searchParams.get('type') === 'recovery'
+      || initialAuthHash.get('type') === 'recovery';
     const db = _sbCreate(
       SUPABASE_URL,
       SUPABASE_PUBLIC_KEY,
@@ -1583,6 +2014,7 @@
       SUPABASE_PUBLIC_KEY,
       {
         auth: {
+          storageKey: 'lelong-public-readonly',
           persistSession: false,
           autoRefreshToken: false,
           detectSessionInUrl: false
@@ -1595,6 +2027,8 @@
     let currentAuthMode = 'login';
     let paymentPollTimer = null;
     let activePaymentCode = null;
+    let passwordRecoveryActive = false;
+    let passwordRecoveryRequested = initialPasswordRecovery;
 
     function setUserMessage(message = '', type = '') {
       const element = document.getElementById('authMessage');
@@ -1615,9 +2049,26 @@
         ? 'Đăng ký để kích hoạt VIP và bắt đầu trò chuyện cùng AI.'
         : 'Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.';
       document.getElementById('authSubmitLabel').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
+      document.getElementById('authWelcome').style.display = 'block';
+      document.getElementById('authTabs').style.display = 'flex';
       document.getElementById('authForm').style.display = 'grid';
       document.getElementById('resetView').style.display = 'none';
       setUserMessage();
+    }
+
+    function showPasswordRecovery() {
+      passwordRecoveryActive = true;
+      document.getElementById('userModal').classList.add('open');
+      document.getElementById('authView').style.display = 'block';
+      document.getElementById('accountView').style.display = 'none';
+      document.getElementById('paymentBox').classList.remove('open');
+      document.getElementById('paymentQr').removeAttribute('src');
+      document.getElementById('authWelcome').style.display = 'none';
+      document.getElementById('authTabs').style.display = 'none';
+      document.getElementById('authForm').style.display = 'none';
+      document.getElementById('resetView').style.display = 'grid';
+      setUserMessage('Liên kết hợp lệ. Hãy tạo mật khẩu mới.', 'success');
+      setTimeout(() => document.getElementById('newPassword').focus(), 0);
     }
 
     function togglePasswordVisibility(inputId, button) {
@@ -1628,10 +2079,15 @@
       button.setAttribute('aria-label', showing ? 'Hiện mật khẩu' : 'Ẩn mật khẩu');
     }
 
-    function openUserModal() {
+    function openUserModal(forceModal = false) {
+      if (currentSession && !forceModal && !passwordRecoveryActive && !passwordRecoveryRequested) {
+        openAccountPortal();
+        return;
+      }
       document.getElementById('userModal').classList.add('open');
-      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
-      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+      const recovering = passwordRecoveryActive || passwordRecoveryRequested;
+      document.getElementById('authView').style.display = recovering || !currentSession ? 'block' : 'none';
+      document.getElementById('accountView').style.display = currentSession && !recovering ? 'block' : 'none';
       if (currentSession) refreshAccount();
     }
 
@@ -1661,12 +2117,12 @@
           if (!data.session) {
             setUserMessage('Đăng ký thành công. Hãy kiểm tra email để xác minh tài khoản.', 'success');
           } else {
-            setUserMessage('Tạo tài khoản thành công.', 'success');
+            closeUserModal();
           }
         } else {
           const { error } = await db.auth.signInWithPassword({ email, password });
           if (error) throw error;
-          setUserMessage('Đăng nhập thành công.', 'success');
+          closeUserModal();
         }
       } catch (error) {
         setUserMessage(error.message || 'Không thể xác thực tài khoản.', 'error');
@@ -1679,30 +2135,122 @@
       const email = document.getElementById('authEmail').value.trim();
       if (!email) {
         setUserMessage('Nhập email trước khi yêu cầu đặt lại mật khẩu.', 'error');
+        document.getElementById('authEmail').focus();
         return;
       }
-      const { error } = await db.auth.resetPasswordForEmail(email, {
-        redirectTo: `${location.origin}${location.pathname}`
+      const button = document.getElementById('passwordResetRequest');
+      button.disabled = true;
+      button.textContent = 'Đang gửi...';
+      const redirectUrl = new URL(location.href);
+      redirectUrl.search = '';
+      redirectUrl.hash = '';
+      redirectUrl.searchParams.set('recovery', '1');
+      try {
+        const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl.toString() });
+        if (error) throw error;
+        setUserMessage('Đã gửi liên kết đặt lại mật khẩu. Vui lòng kiểm tra hộp thư và thư rác.', 'success');
+      } catch (error) {
+        setUserMessage(error.message || 'Không thể gửi email đặt lại mật khẩu.', 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Quên mật khẩu?';
+      }
+    }
+
+    function passwordRuleState(password) {
+      return {
+        length: password.length >= 8,
+        lower: /[a-z]/.test(password),
+        upper: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9\s]/.test(password)
+      };
+    }
+
+    function updatePasswordRules(password) {
+      const rules = passwordRuleState(password);
+      document.querySelectorAll('#passwordRules .password-rule').forEach(element => {
+        const valid = Boolean(rules[element.dataset.rule]);
+        element.classList.toggle('valid', valid);
+        element.querySelector('i').className = valid ? 'fas fa-circle-check' : 'fas fa-circle';
       });
-      setUserMessage(error ? error.message : 'Đã gửi liên kết đặt lại mật khẩu vào email.', error ? 'error' : 'success');
+      return Object.values(rules).every(Boolean);
+    }
+
+    async function ensurePasswordRecoverySession() {
+      const { data: sessionData } = await db.auth.getSession();
+      if (sessionData.session) return sessionData.session;
+
+      const accessToken = initialAuthHash.get('access_token');
+      const refreshToken = initialAuthHash.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { data, error } = await db.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        if (!error && data.session) return data.session;
+      }
+
+      const code = initialAuthUrl.searchParams.get('code');
+      if (code) {
+        const { data, error } = await db.auth.exchangeCodeForSession(code);
+        if (!error && data.session) return data.session;
+      }
+      throw new Error('Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu liên kết mới.');
     }
 
     async function saveNewPassword(event) {
       event.preventDefault();
       const password = document.getElementById('newPassword').value;
-      const { error } = await db.auth.updateUser({ password });
-      if (error) {
-        setUserMessage(error.message, 'error');
+      const confirmation = document.getElementById('confirmNewPassword').value;
+      const button = document.getElementById('saveNewPasswordButton');
+      if (!updatePasswordRules(password)) {
+        setUserMessage('Mật khẩu chưa đáp ứng đầy đủ các điều kiện bảo mật.', 'error');
         return;
       }
-      setUserMessage('Đã cập nhật mật khẩu mới.', 'success');
-      document.getElementById('resetView').style.display = 'none';
+      if (password !== confirmation) {
+        setUserMessage('Hai mật khẩu chưa trùng khớp.', 'error');
+        return;
+      }
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>&nbsp; Đang cập nhật...';
+      try {
+        await ensurePasswordRecoverySession();
+        const { error } = await db.auth.updateUser({ password });
+        if (error) throw error;
+        passwordRecoveryActive = false;
+        passwordRecoveryRequested = false;
+        document.getElementById('resetView').reset();
+        updatePasswordRules('');
+        await db.auth.signOut({ scope: 'local' });
+        currentSession = null;
+        currentAccount = null;
+        const cleanUrl = new URL(location.href);
+        cleanUrl.searchParams.delete('recovery');
+        cleanUrl.searchParams.delete('code');
+        cleanUrl.hash = '';
+        history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`);
+        setAuthMode('login');
+        document.getElementById('authView').style.display = 'block';
+        document.getElementById('accountView').style.display = 'none';
+        document.getElementById('userModal').classList.add('open');
+        setUserMessage('Đổi mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.', 'success');
+      } catch (error) {
+        const message = /auth session missing/i.test(error.message || '')
+          ? 'Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu liên kết mới.'
+          : error.message;
+        setUserMessage(message || 'Không thể cập nhật mật khẩu.', 'error');
+      } finally {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-floppy-disk"></i>&nbsp; Lưu mật khẩu mới';
+      }
     }
 
     async function signOutUser() {
       await cancelPendingPayment();
       await db.auth.signOut();
       currentAccount = null;
+      closeAccountPortal();
       closeUserModal();
     }
 
@@ -1742,6 +2290,10 @@
       document.getElementById('paymentQr').removeAttribute('src');
       try {
         await apiFetch(`/api/orders/${encodeURIComponent(code)}`, { method: 'DELETE' });
+        if (currentAccount?.payments) {
+          currentAccount.payments = currentAccount.payments.filter(payment => payment.payment_code !== code);
+          renderPortalTables();
+        }
       } catch (error) {
         console.warn('Không thể hủy đơn thanh toán đang chờ:', error.message);
       }
@@ -1756,10 +2308,364 @@
       const expiryRow = document.getElementById('vipExpiryRow');
       const expiry = account.subscription?.expires_at;
       expiryRow.style.display = expiry ? 'flex' : 'none';
-      if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleString('vi-VN');
+      if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleDateString('vi-VN');
       const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
       document.getElementById('vipUsage').textContent = `${account.usage_today || 0}/${limit}`;
       document.getElementById('chat-access-note').style.display = account.is_vip ? 'none' : 'block';
+      renderPortalAccount(account);
+    }
+
+    let adminDashboardData = null;
+    let userChartMode = 'week';
+    let adminChartMode = 'day';
+    let portalHistoryPushed = false;
+
+    function isAdminAccount() {
+      const accountUser = currentAccount?.user || {};
+      const sessionUser = currentSession?.user || {};
+      const role = sessionUser.app_metadata?.role
+        || sessionUser.user_metadata?.role
+        || accountUser.app_metadata?.role
+        || accountUser.user_metadata?.role
+        || currentAccount?.role;
+      return role === 'admin' || currentAccount?.role === 'admin';
+    }
+
+    function formatPortalDate(value, fallback = 'Chưa kích hoạt') {
+      if (!value) return fallback;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString('vi-VN');
+    }
+
+    function renderPortalAccount(account) {
+      const user = account?.user || currentSession?.user || {};
+      const sessionUser = currentSession?.user || {};
+      const name = sessionUser.user_metadata?.display_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Người dùng';
+      const firstLetter = name.trim().charAt(0).toUpperCase() || 'U';
+      const admin = isAdminAccount();
+      const expiry = account?.subscription?.expires_at;
+      const paidPayments = (account?.payments || []).filter(payment => payment.status === 'paid');
+      const start = paidPayments[paidPayments.length - 1]?.paid_at;
+      const limit = account?.subscription?.vip_plans?.daily_ai_limit || 30;
+      const used = Number(account?.usage_today || 0);
+      const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+
+      document.getElementById('accountPortal').classList.toggle('admin-enabled', admin);
+      document.getElementById('portalRoleLabel').textContent = admin ? 'Hệ thống quản trị' : 'Tài khoản người dùng';
+      document.getElementById('portalProfileName').textContent = name;
+      document.getElementById('portalAvatar').textContent = firstLetter;
+      document.getElementById('portalVipPlan').textContent = account?.is_vip
+        ? String(account.subscription?.vip_plans?.name || 'PREMIUM VIP').toUpperCase()
+        : 'TÀI KHOẢN STANDARD';
+      document.getElementById('portalVipBadge').innerHTML = account?.is_vip
+        ? '<i class="fas fa-circle-check"></i>&nbsp; ACTIVE'
+        : '<i class="fas fa-clock"></i>&nbsp; INACTIVE';
+      document.getElementById('portalVipStart').textContent = formatPortalDate(start);
+      document.getElementById('portalVipEnd').textContent = formatPortalDate(expiry, 'Chưa có');
+      document.getElementById('portalVipPercent').textContent = `${percent}%`;
+      document.getElementById('portalVipProgress').style.width = `${percent}%`;
+      document.getElementById('portalVipProgressLabel').textContent = `Lượt dùng hôm nay (${used}/${limit})`;
+    }
+
+    function openAccountPortal(page = 'userOverview') {
+      if (!currentSession) {
+        openUserModal(true);
+        return;
+      }
+      closeUserModal();
+      renderPortalAccount(currentAccount || { user: currentSession.user, is_vip: false });
+      renderPortalTables();
+      renderPortalCharts();
+      switchPortalPage(page);
+      if (isAdminAccount()) void loadAdminDashboard();
+      const portal = document.getElementById('accountPortal');
+      togglePortalNav(false);
+      portal.classList.add('open');
+      portal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      if (!portalHistoryPushed) {
+        history.pushState({ accountPortal: true }, '', location.href);
+        portalHistoryPushed = true;
+      }
+    }
+
+    function closeAccountPortal(fromHistory = false) {
+      const portal = document.getElementById('accountPortal');
+      if (!portal) return;
+      togglePortalNav(false);
+      if (portal.contains(document.activeElement)) document.activeElement.blur();
+      portal.classList.remove('open');
+      portal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (portalHistoryPushed && !fromHistory) {
+        portalHistoryPushed = false;
+        history.back();
+      } else if (fromHistory) {
+        portalHistoryPushed = false;
+      }
+    }
+
+    window.addEventListener('popstate', () => {
+      const portal = document.getElementById('accountPortal');
+      if (portal?.classList.contains('open')) closeAccountPortal(true);
+    });
+
+    function togglePortalNav(force) {
+      const portal = document.getElementById('accountPortal');
+      if (!portal) return;
+      const open = typeof force === 'boolean' ? force : !portal.classList.contains('nav-open');
+      portal.classList.toggle('nav-open', open);
+      const button = portal.querySelector('.portal-menu-toggle');
+      if (button) {
+        button.setAttribute('aria-label', open ? 'Đóng menu tài khoản' : 'Mở menu tài khoản');
+        button.innerHTML = `<i class="fas fa-${open ? 'xmark' : 'bars'}"></i>`;
+      }
+    }
+
+    function switchPortalPage(pageId) {
+      const page = document.getElementById(pageId);
+      if (!page || (pageId.startsWith('admin') && !isAdminAccount())) return;
+      document.querySelectorAll('.portal-page').forEach(item => item.classList.toggle('active', item.id === pageId));
+      document.querySelectorAll('.portal-nav button[data-page]').forEach(button => button.classList.toggle('active', button.dataset.page === pageId));
+      const labels = {
+        userOverview: ['Chào mừng trở lại!', 'Quản lý tài khoản và theo dõi gói VIP của bạn tại đây.'],
+        userTransactions: ['Lịch sử giao dịch', 'Theo dõi toàn bộ hoạt động thanh toán trên tài khoản.'],
+        userPassword: ['Bảo mật tài khoản', 'Đổi mật khẩu để bảo vệ tài khoản của bạn.'],
+        adminDashboard: ['Trình điều khiển', 'Dữ liệu thực từ thanh toán, tài khoản và lượt dùng AI.'],
+        adminUsers: ['Quản lý người dùng', 'Theo dõi số lượng tài khoản và trạng thái VIP.'],
+        adminSettings: ['Cài đặt hệ thống', 'Cấu hình giá VIP, thời hạn và lượt dùng trong ngày.']
+      };
+      const [title, subtitle] = labels[pageId] || labels.userOverview;
+      document.getElementById('portalPageTitle').textContent = title;
+      document.getElementById('portalPageSubtitle').textContent = subtitle;
+      document.querySelector('.portal-main')?.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.matchMedia('(max-width: 720px)').matches) togglePortalNav(false);
+      if (pageId.startsWith('admin') && !adminDashboardData) void loadAdminDashboard();
+    }
+
+    function transactionTableMarkup(rows) {
+      const labels = { paid: 'Thành công', pending: 'Đang chờ', expired: 'Hết hạn', cancelled: 'Đã hủy', failed: 'Thất bại' };
+      const body = rows.length ? rows.map(row => {
+        const success = row.status === 'paid';
+        const date = row.paid_at || row.created_at;
+        return `<tr><td>${escapeHTML(formatPortalDate(date, '-'))}</td><td><strong>Thanh toán VIP</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.payment_code || row.plan_id || '')}</small></td><td>${Number(row.amount_vnd || 0).toLocaleString('vi-VN')} đ</td><td><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
+      }).join('') : '<tr><td colspan="4" style="text-align:center;color:#64748b;">Chưa có giao dịch.</td></tr>';
+      return `<thead><tr><th>Ngày</th><th>Nội dung</th><th>Số tiền</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
+    }
+
+    function userTableMarkup(rows) {
+      const body = rows.length ? rows.map(row => {
+        const initials = String(row.name || 'U').split(' ').slice(-2).map(part => part[0]).join('').toUpperCase();
+        const plan = row.subscription?.vip_plans?.name || row.subscription?.plan_id || 'Standard';
+        return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td><span class="portal-pill">${escapeHTML(plan)}</span></td><td>${escapeHTML(formatPortalDate(row.subscription?.expires_at, '-'))}</td><td><span class="portal-pill ${row.is_vip ? 'green' : 'orange'}">${row.is_vip ? 'Hoạt động' : 'Không VIP'}</span></td></tr>`;
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Chưa có người dùng.</td></tr>';
+      return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Gói dịch vụ</th><th>Ngày hết hạn</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
+    }
+
+    function renderPortalTables() {
+      const transactionMarkup = transactionTableMarkup(currentAccount?.payments || []);
+      document.getElementById('portalTransactionTable').innerHTML = transactionMarkup;
+      document.getElementById('portalTransactionFullTable').innerHTML = transactionMarkup;
+      const users = adminDashboardData?.users || [];
+      document.getElementById('adminRecentVipTable').innerHTML = userTableMarkup(users.filter(user => user.is_vip).slice(0, 5));
+      document.getElementById('adminUsersTable').innerHTML = userTableMarkup(users);
+    }
+
+    function lineChartMarkup(values, labels) {
+      const width = 900;
+      const height = 270;
+      const pad = 28;
+      const max = Math.max(...values, 1);
+      const points = values.map((value, index) => {
+        const x = pad + (index * (width - pad * 2)) / (values.length - 1);
+        const y = height - pad - (value / max) * (height - pad * 2);
+        return [x, y];
+      });
+      const line = points.map(point => point.join(',')).join(' ');
+      const area = `${pad},${height - pad} ${line} ${width - pad},${height - pad}`;
+      const grid = [0, .25, .5, .75, 1].map(step => `<line x1="${pad}" y1="${pad + step * (height - pad * 2)}" x2="${width - pad}" y2="${pad + step * (height - pad * 2)}" stroke="currentColor" opacity=".1"/>`).join('');
+      const dots = points.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="#2f6df6"/>`).join('');
+      const xLabels = labels.map((label, index) => `<text x="${points[index][0]}" y="${height - 3}" text-anchor="middle" fill="currentColor" opacity=".55" font-size="12">${label}</text>`).join('');
+      return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Biểu đồ đường">${grid}<polygon points="${area}" fill="#2f6df6" opacity=".09"/><polyline points="${line}" fill="none" stroke="#2f6df6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${xLabels}</svg>`;
+    }
+
+    function setSegmentActive(containerId, mode) {
+      document.querySelectorAll(`#${containerId} button`).forEach(button => {
+        button.classList.toggle('active', button.dataset.mode === mode);
+      });
+    }
+
+    function setUserChartMode(mode) {
+      userChartMode = mode === 'month' ? 'month' : 'week';
+      setSegmentActive('userChartFilter', userChartMode);
+      renderPortalCharts();
+    }
+
+    function setAdminChartMode(mode) {
+      adminChartMode = ['day', 'week', 'month'].includes(mode) ? mode : 'day';
+      setSegmentActive('adminChartFilter', adminChartMode);
+      renderPortalCharts();
+    }
+
+    function renderPortalCharts() {
+      const usage = new Map((currentAccount?.usage_history || []).map(row => [row.usage_date, Number(row.message_count || 0)]));
+      const usageDayCount = userChartMode === 'month' ? 30 : 7;
+      const usageDays = Array.from({ length: usageDayCount }, (_, index) => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() - usageDayCount + 1 + index);
+        return date;
+      });
+      let usageValues;
+      let usageLabels;
+      if (userChartMode === 'month') {
+        usageValues = [];
+        usageLabels = [];
+        for (let index = 0; index < 30; index += 5) {
+          const bucket = usageDays.slice(index, index + 5);
+          usageValues.push(bucket.reduce((sum, date) => sum + (usage.get(date.toISOString().slice(0, 10)) || 0), 0));
+          usageLabels.push(bucket[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
+        }
+        document.getElementById('userChartSubtitle').textContent = 'Tổng lượt sử dụng theo từng 5 ngày';
+      } else {
+        usageValues = usageDays.map(date => usage.get(date.toISOString().slice(0, 10)) || 0);
+        usageLabels = usageDays.map(date => date.toLocaleDateString('vi-VN', { weekday: 'short' }));
+        document.getElementById('userChartSubtitle').textContent = 'Theo dõi lượt sử dụng trong 7 ngày gần nhất';
+      }
+      document.getElementById('userUsageChart').innerHTML = lineChartMarkup(usageValues, usageLabels);
+
+      const paid = adminDashboardData?.payments || [];
+      let periods = [];
+      let revenueValues = [];
+      if (adminChartMode === 'day') {
+        periods = Array.from({ length: 7 }, (_, index) => {
+          const date = new Date();
+          date.setHours(0, 0, 0, 0);
+          date.setDate(date.getDate() - 6 + index);
+          return { start: date, end: new Date(date.getTime() + 86400000), label: date.toLocaleDateString('vi-VN', { weekday: 'short' }) };
+        });
+        document.getElementById('adminChartSubtitle').textContent = 'Doanh thu 7 ngày gần nhất';
+      } else if (adminChartMode === 'week') {
+        periods = Array.from({ length: 8 }, (_, index) => {
+          const end = new Date();
+          end.setHours(0, 0, 0, 0);
+          end.setDate(end.getDate() - (7 - index) * 7 + 7);
+          const start = new Date(end);
+          start.setDate(start.getDate() - 7);
+          return { start, end, label: `${start.getDate()}/${start.getMonth() + 1}` };
+        });
+        document.getElementById('adminChartSubtitle').textContent = 'Doanh thu 8 tuần gần nhất';
+      } else {
+        periods = Array.from({ length: 6 }, (_, index) => {
+          const start = new Date();
+          start.setHours(0, 0, 0, 0);
+          start.setDate(1);
+          start.setMonth(start.getMonth() - 5 + index);
+          const end = new Date(start);
+          end.setMonth(end.getMonth() + 1);
+          return { start, end, label: `T${start.getMonth() + 1}` };
+        });
+        document.getElementById('adminChartSubtitle').textContent = 'Doanh thu 6 tháng gần nhất';
+      }
+      revenueValues = periods.map(period => paid.reduce((sum, row) => {
+        const date = new Date(row.paid_at || row.created_at);
+        return date >= period.start && date < period.end ? sum + Number(row.amount_vnd || 0) : sum;
+      }, 0));
+      document.getElementById('adminRevenueChart').innerHTML = lineChartMarkup(revenueValues, periods.map(period => period.label));
+      setSegmentActive('userChartFilter', userChartMode);
+      setSegmentActive('adminChartFilter', adminChartMode);
+    }
+
+    function renderAdminDashboard(data) {
+      const metrics = data.metrics || {};
+      document.getElementById('adminRevenueMetric').textContent = `${Number(metrics.revenue_vnd || 0).toLocaleString('vi-VN')} đ`;
+      document.getElementById('adminVipMetric').textContent = Number(metrics.vip_users || 0).toLocaleString('vi-VN');
+      document.getElementById('adminUsageMetric').textContent = Number(metrics.ai_uses || 0).toLocaleString('vi-VN');
+      document.getElementById('adminUsersMetric').textContent = Number(metrics.total_users || 0).toLocaleString('vi-VN');
+      const vipPercent = metrics.total_users ? Math.round((metrics.vip_users / metrics.total_users) * 100) : 0;
+      document.getElementById('adminVipPercent').textContent = `${vipPercent}%`;
+      document.getElementById('adminStandardPercent').textContent = `${100 - vipPercent}%`;
+      document.getElementById('adminUserDonut').style.background = `conic-gradient(#10b981 0 ${vipPercent}%, #94a3b8 ${vipPercent}% 100%)`;
+
+      const plan = (data.plans || []).find(item => item.id === 'chatbox_ai') || data.plans?.[0];
+      if (plan) {
+        document.getElementById('adminPlanPrice').value = plan.price_vnd;
+        document.getElementById('adminPlanDuration').value = plan.duration_days;
+        document.getElementById('adminPlanLimit').value = plan.daily_ai_limit;
+        document.getElementById('adminPlanName').textContent = `${plan.name} (${plan.active ? 'đang hoạt động' : 'đã tắt'})`;
+        document.getElementById('adminLimitSummary').textContent = `${plan.daily_ai_limit} lượt/ngày`;
+      }
+      renderPortalTables();
+      renderPortalCharts();
+    }
+
+    async function loadAdminDashboard() {
+      if (!isAdminAccount()) return;
+      try {
+        adminDashboardData = await apiFetch('/api/admin/dashboard');
+        renderAdminDashboard(adminDashboardData);
+      } catch (error) {
+        console.error('Không thể tải dashboard admin:', error.message);
+      }
+    }
+
+    async function saveAdminSettings() {
+      const message = document.getElementById('adminSettingsMessage');
+      try {
+        const plan = (adminDashboardData?.plans || []).find(item => item.id === 'chatbox_ai') || adminDashboardData?.plans?.[0];
+        const result = await apiFetch('/api/admin/settings', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            id: plan?.id || 'chatbox_ai',
+            price_vnd: Number(document.getElementById('adminPlanPrice').value),
+            duration_days: Number(document.getElementById('adminPlanDuration').value),
+            daily_ai_limit: Number(document.getElementById('adminPlanLimit').value)
+          })
+        });
+        const index = adminDashboardData.plans.findIndex(item => item.id === result.plan.id);
+        if (index >= 0) adminDashboardData.plans[index] = result.plan;
+        renderAdminDashboard(adminDashboardData);
+        message.textContent = 'Đã lưu cấu hình thật vào Supabase.';
+        message.className = 'vip-message success';
+      } catch (error) {
+        message.textContent = error.message || 'Không thể lưu cấu hình.';
+        message.className = 'vip-message error';
+      }
+    }
+
+    function exportAdminUsers() {
+      const users = adminDashboardData?.users || [];
+      const lines = [['Tên', 'Email', 'Vai trò', 'VIP', 'Ngày hết hạn'], ...users.map(user => [
+        user.name, user.email, user.role, user.is_vip ? 'Có' : 'Không', formatPortalDate(user.subscription?.expires_at, '')
+      ])];
+      const csv = lines.map(line => line.map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = `nguoi-dung-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    async function changePortalPassword(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const passwordFields = [...form.querySelectorAll('input[type="password"]')];
+      const nextPassword = passwordFields[passwordFields.length - 2]?.value || '';
+      const confirmPassword = passwordFields[passwordFields.length - 1]?.value || '';
+      const message = document.getElementById('portalPasswordMessage');
+      if (nextPassword !== confirmPassword) {
+        if (message) {
+          message.textContent = 'Mật khẩu xác nhận chưa khớp.';
+          message.className = 'vip-message error';
+        }
+        return;
+      }
+      const { error } = await db.auth.updateUser({ password: nextPassword });
+      if (message) {
+        message.textContent = error ? error.message : 'Đã cập nhật mật khẩu.';
+        message.className = `vip-message ${error ? 'error' : 'success'}`;
+      }
+      if (!error) form.reset();
     }
 
     async function refreshAccount() {
@@ -1783,25 +2689,36 @@
         button.innerHTML = '<i class="fas fa-user"></i> Đăng nhập';
         document.getElementById('chat-access-note').style.display = 'block';
       }
-      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
-      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+      const recovering = passwordRecoveryActive || passwordRecoveryRequested;
+      document.getElementById('authView').style.display = recovering || !currentSession ? 'block' : 'none';
+      document.getElementById('accountView').style.display = currentSession && !recovering ? 'block' : 'none';
     }
 
     async function initAuth() {
       const { data } = await db.auth.getSession();
       currentSession = data.session;
       updateAuthUi();
-      if (currentSession) await refreshAccount();
+      passwordRecoveryRequested = passwordRecoveryRequested
+        || new URL(location.href).searchParams.get('recovery') === '1'
+        || new URL(location.href).searchParams.get('type') === 'recovery'
+        || new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
+      if (currentSession && passwordRecoveryRequested) {
+        showPasswordRecovery();
+      } else if (currentSession) {
+        await refreshAccount();
+      } else if (passwordRecoveryRequested) {
+        openUserModal(true);
+        setAuthMode('login');
+        setUserMessage('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới.', 'error');
+      }
       db.auth.onAuthStateChange((event, session) => {
         currentSession = session;
         if (event === 'SIGNED_OUT' || event === 'USER_DELETED') currentAccount = null;
         setTimeout(async () => {
           updateAuthUi();
           if (event === 'PASSWORD_RECOVERY') {
-            openUserModal();
-            document.getElementById('authForm').style.display = 'none';
-            document.getElementById('resetView').style.display = 'grid';
-          } else if (event === 'SIGNED_IN' && session) {
+            showPasswordRecovery();
+          } else if (event === 'SIGNED_IN' && session && !passwordRecoveryActive && !passwordRecoveryRequested) {
             currentAccount = null;
             await refreshAccount();
             document.getElementById('authView').style.display = 'none';
@@ -1838,6 +2755,10 @@
             document.getElementById('paymentQr').removeAttribute('src');
             setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
             await refreshAccount();
+            renderPortalTables();
+            renderPortalCharts();
+            if (isAdminAccount()) void loadAdminDashboard();
+            closeUserModal();
             return;
           }
         } catch (_) {}
@@ -1851,6 +2772,19 @@
       try {
         const order = await apiFetch('/api/orders', { method: 'POST', body: '{}' });
         activePaymentCode = order.code;
+        currentAccount = currentAccount || { user: currentSession?.user, payments: [] };
+        currentAccount.payments = currentAccount.payments || [];
+        if (!currentAccount.payments.some(payment => payment.payment_code === order.code)) {
+          currentAccount.payments.unshift({
+            id: order.id,
+            payment_code: order.code,
+            amount_vnd: order.amount,
+            status: order.status || 'pending',
+            created_at: new Date().toISOString(),
+            expires_at: order.expires_at
+          });
+        }
+        renderPortalTables();
         document.getElementById('paymentQr').src = order.qr_url;
         document.getElementById('paymentCode').textContent = order.code;
         document.getElementById('paymentAmount').textContent = new Intl.NumberFormat('vi-VN', {
@@ -2242,7 +3176,7 @@
       }
       const account = currentAccount || await refreshAccount();
       if (!account?.is_vip) {
-        openUserModal();
+        openUserModal(true);
         setUserMessage('Tài khoản chưa có VIP. Bạn có thể thanh toán 25.000đ để dùng AI trong 30 ngày.');
         return;
       }

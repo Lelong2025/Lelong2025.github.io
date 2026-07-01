@@ -25,6 +25,12 @@ export default {
     if (path === "/api/account" && request.method === "GET") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleAccount(req, env, ctx, apiCors));
     }
+    if (path === "/api/admin/dashboard" && request.method === "GET") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminDashboard(req, env, ctx, apiCors));
+    }
+    if (path === "/api/admin/settings" && request.method === "PATCH") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminSettings(req, env, ctx, apiCors));
+    }
     if (path === "/api/orders" && request.method === "POST") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleCreateOrder(req, env, ctx, apiCors));
     }
@@ -72,10 +78,21 @@ async function withUserAuth(request, env, cors, handler) {
       return jsonResponse({ error: "Invalid or expired session" }, 401, cors.headers);
     }
 
+    const supabaseAdmin = getAdminClient(env);
+    let role = user.app_metadata?.role || "user";
+    if (role !== "admin" && user.email) {
+      const { data: adminUser, error: adminError } = await supabaseAdmin.from("admin_users")
+        .select("email")
+        .ilike("email", user.email)
+        .maybeSingle();
+      if (adminError) console.error("Admin role lookup failed", adminError.message);
+      if (adminUser) role = "admin";
+    }
+
     return handler(request, {
-      userClaims: { id: user.id, email: user.email },
+      userClaims: { id: user.id, email: user.email, role },
       supabase,
-      supabaseAdmin: getAdminClient(env)
+      supabaseAdmin
     });
   } catch (error) {
     console.error("User authentication error", error.message);
@@ -301,7 +318,7 @@ function buildCorsHeaders(request, env) {
     originAllowed,
     headers: {
       ...(originAllowed ? { "Access-Control-Allow-Origin": origin } : {}),
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Max-Age": "86400",
       "Vary": "Origin",
@@ -335,7 +352,9 @@ async function handleAccount(request, env, ctx, cors) {
     if (!userId) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
 
     const today = new Date().toISOString().slice(0, 10);
-    const [subRes, usageRes] = await Promise.all([
+    const weekStart = new Date();
+    weekStart.setUTCDate(weekStart.getUTCDate() - 29);
+    const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
         .select("status, expires_at, plan_id, vip_plans(name, price_vnd, duration_days, daily_ai_limit)")
         .eq("user_id", userId)
@@ -344,25 +363,211 @@ async function handleAccount(request, env, ctx, cors) {
         .select("message_count")
         .eq("user_id", userId)
         .eq("usage_date", today)
-        .maybeSingle()
+        .maybeSingle(),
+      ctx.supabase.from("payments")
+        .select("id, plan_id, amount_vnd, payment_code, status, created_at, paid_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      ctx.supabase.from("ai_usage")
+        .select("usage_date, message_count")
+        .eq("user_id", userId)
+        .gte("usage_date", weekStart.toISOString().slice(0, 10))
+        .order("usage_date", { ascending: true })
     ]);
 
     if (subRes.error) throw subRes.error;
     if (usageRes.error) throw usageRes.error;
+    if (paymentsRes.error) throw paymentsRes.error;
+    if (usageHistoryRes.error) throw usageHistoryRes.error;
 
     const subscription = subRes.data || null;
+    const expectedExpiry = calculatePaidExpiry(
+      paymentsRes.data || [],
+      () => subscription?.vip_plans?.duration_days
+    );
+    const currentExpiry = subscription?.expires_at ? new Date(subscription.expires_at) : null;
+    if (subscription && expectedExpiry
+      && (!currentExpiry || Number.isNaN(currentExpiry.getTime()) || expectedExpiry > currentExpiry)) {
+      const { error: reconcileError } = await ctx.supabaseAdmin.from("subscriptions")
+        .update({ expires_at: expectedExpiry.toISOString(), status: "active" })
+        .eq("user_id", userId);
+      if (reconcileError) throw reconcileError;
+      subscription.expires_at = expectedExpiry.toISOString();
+      subscription.status = "active";
+    }
     const isVip = Boolean(subscription?.status === "active"
       && subscription.expires_at && new Date(subscription.expires_at) > new Date());
 
     return jsonResponse({
       user: { id: userId, email: userEmail },
+      role: ctx.userClaims.role,
       subscription,
       is_vip: isVip,
-      usage_today: usageRes.data?.message_count || 0
+      usage_today: usageRes.data?.message_count || 0,
+      usage_history: usageHistoryRes.data || [],
+      payments: paymentsRes.data || []
     }, 200, cors.headers);
   } catch (error) {
     console.error("Account error", error.message);
     return jsonResponse({ error: "Unable to load account" }, 500, cors.headers);
+  }
+}
+
+function calculatePaidExpiry(payments, durationForPlan) {
+  let expiry = null;
+  const paid = payments
+    .filter(payment => payment.status === "paid" && (payment.paid_at || payment.created_at))
+    .sort((left, right) => new Date(left.paid_at || left.created_at) - new Date(right.paid_at || right.created_at));
+  for (const payment of paid) {
+    const paidAt = new Date(payment.paid_at || payment.created_at);
+    const durationDays = Number(durationForPlan(payment.plan_id) || 0);
+    if (Number.isNaN(paidAt.getTime()) || durationDays <= 0) continue;
+    const base = expiry && expiry > paidAt ? expiry : paidAt;
+    expiry = new Date(base.getTime() + durationDays * 86400000);
+  }
+  return expiry;
+}
+
+function requireAdmin(ctx, cors) {
+  if (ctx.userClaims?.role === "admin") return null;
+  return jsonResponse({ error: "Admin access required" }, 403, cors.headers);
+}
+
+async function listAllAuthUsers(admin) {
+  const users = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    users.push(...(data.users || []));
+    if ((data.users || []).length < 1000) break;
+  }
+  return users;
+}
+
+async function handleAdminDashboard(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const [users, paymentsRes, subscriptionsRes, usageRes, plansRes] = await Promise.all([
+      listAllAuthUsers(ctx.supabaseAdmin),
+      ctx.supabaseAdmin.from("payments")
+        .select("id, user_id, plan_id, amount_vnd, status, created_at, paid_at")
+        .order("created_at", { ascending: false }),
+      ctx.supabaseAdmin.from("subscriptions")
+        .select("user_id, status, expires_at, plan_id, vip_plans(name, price_vnd, duration_days, daily_ai_limit)"),
+      ctx.supabaseAdmin.from("ai_usage")
+        .select("user_id, usage_date, message_count")
+        .order("usage_date", { ascending: true }),
+      ctx.supabaseAdmin.from("vip_plans")
+        .select("id, name, price_vnd, duration_days, daily_ai_limit, active")
+        .order("price_vnd", { ascending: true })
+    ]);
+    for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes]) {
+      if (result.error) throw result.error;
+    }
+
+    const now = new Date();
+    const paidPayments = (paymentsRes.data || []).filter(row => row.status === "paid");
+    const planById = new Map((plansRes.data || []).map(plan => [plan.id, plan]));
+    const paymentsByUser = new Map();
+    for (const payment of paidPayments) {
+      if (!paymentsByUser.has(payment.user_id)) paymentsByUser.set(payment.user_id, []);
+      paymentsByUser.get(payment.user_id).push(payment);
+    }
+    const subscriptionByUser = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
+    const reconciliationUpdates = [];
+    for (const [userId, userPayments] of paymentsByUser) {
+      const subscription = subscriptionByUser.get(userId);
+      if (!subscription) continue;
+      const expectedExpiry = calculatePaidExpiry(
+        userPayments,
+        planId => planById.get(planId)?.duration_days || subscription.vip_plans?.duration_days
+      );
+      const currentExpiry = subscription.expires_at ? new Date(subscription.expires_at) : null;
+      if (expectedExpiry && (!currentExpiry || Number.isNaN(currentExpiry.getTime()) || expectedExpiry > currentExpiry)) {
+        subscription.expires_at = expectedExpiry.toISOString();
+        subscription.status = "active";
+        reconciliationUpdates.push(
+          ctx.supabaseAdmin.from("subscriptions")
+            .update({ expires_at: expectedExpiry.toISOString(), status: "active" })
+            .eq("user_id", userId)
+        );
+      }
+    }
+    if (reconciliationUpdates.length) {
+      const updates = await Promise.all(reconciliationUpdates);
+      const failedUpdate = updates.find(update => update.error);
+      if (failedUpdate?.error) throw failedUpdate.error;
+    }
+    const activeSubscriptions = (subscriptionsRes.data || []).filter(row =>
+      row.status === "active" && row.expires_at && new Date(row.expires_at) > now
+    );
+    const userById = new Map(users.map(user => [user.id, user]));
+    const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
+    const rows = users.map(user => {
+      const subscription = subscriptionById.get(user.id) || null;
+      const active = Boolean(subscription && subscription.status === "active"
+        && subscription.expires_at && new Date(subscription.expires_at) > now);
+      return {
+        id: user.id,
+        email: user.email || "",
+        name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Người dùng",
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        role: user.app_metadata?.role || "user",
+        is_vip: active,
+        subscription
+      };
+    });
+    const payments = paidPayments.map(payment => ({
+      ...payment,
+      email: userById.get(payment.user_id)?.email || "",
+      name: userById.get(payment.user_id)?.user_metadata?.display_name
+        || userById.get(payment.user_id)?.email?.split("@")[0] || "Người dùng"
+    }));
+
+    return jsonResponse({
+      metrics: {
+        revenue_vnd: paidPayments.reduce((sum, row) => sum + Number(row.amount_vnd || 0), 0),
+        vip_users: activeSubscriptions.length,
+        ai_uses: (usageRes.data || []).reduce((sum, row) => sum + Number(row.message_count || 0), 0),
+        total_users: users.length
+      },
+      users: rows,
+      payments,
+      usage: usageRes.data || [],
+      plans: plansRes.data || []
+    }, 200, cors.headers);
+  } catch (error) {
+    console.error("Admin dashboard error", error.message);
+    return jsonResponse({ error: "Unable to load admin dashboard" }, 500, cors.headers);
+  }
+}
+
+async function handleAdminSettings(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const body = await request.json();
+    const id = String(body.id || "chatbox_ai");
+    const price = Number(body.price_vnd);
+    const duration = Number(body.duration_days);
+    const limit = Number(body.daily_ai_limit);
+    if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(duration) || duration < 1
+      || !Number.isSafeInteger(limit) || limit < 1) {
+      return jsonResponse({ error: "Invalid plan settings" }, 400, cors.headers);
+    }
+    const { data, error } = await ctx.supabaseAdmin.from("vip_plans")
+      .update({ price_vnd: price, duration_days: duration, daily_ai_limit: limit })
+      .eq("id", id)
+      .select("id, name, price_vnd, duration_days, daily_ai_limit, active")
+      .single();
+    if (error) throw error;
+    return jsonResponse({ plan: data }, 200, cors.headers);
+  } catch (error) {
+    console.error("Admin settings error", error.message);
+    return jsonResponse({ error: "Unable to save admin settings" }, 500, cors.headers);
   }
 }
 
@@ -590,6 +795,33 @@ async function handleSepayWebhook(request, env) {
 
     // Dùng admin client trực tiếp (bypass RLS) để gọi RPC
     const supabaseAdmin = getAdminClient(env);
+    const { data: payment, error: paymentLookupError } = await supabaseAdmin.from("payments")
+      .select("user_id, plan_id")
+      .eq("payment_code", paymentCode)
+      .maybeSingle();
+    if (paymentLookupError) throw paymentLookupError;
+
+    let renewal = null;
+    if (payment) {
+      const [planRes, subscriptionRes] = await Promise.all([
+        supabaseAdmin.from("vip_plans")
+          .select("duration_days")
+          .eq("id", payment.plan_id)
+          .maybeSingle(),
+        supabaseAdmin.from("subscriptions")
+          .select("expires_at")
+          .eq("user_id", payment.user_id)
+          .maybeSingle()
+      ]);
+      if (planRes.error) throw planRes.error;
+      if (subscriptionRes.error) throw subscriptionRes.error;
+      renewal = {
+        userId: payment.user_id,
+        previousExpiry: subscriptionRes.data?.expires_at || null,
+        durationDays: Number(planRes.data?.duration_days || 0)
+      };
+    }
+
     const { data: result, error } = await supabaseAdmin.rpc("process_sepay_payment", {
       p_payment_code: paymentCode,
       p_transaction_id: transactionId,
@@ -601,6 +833,19 @@ async function handleSepayWebhook(request, env) {
     if (!result?.ok) {
       console.warn("SePay payment was not processed", result?.reason || "unknown_reason");
       return jsonResponse({ success: false, processed: false, error: result?.reason || "Payment not processed" }, 422, secureHeaders);
+    }
+
+    if (renewal?.userId && renewal.durationDays > 0) {
+      const now = new Date();
+      const previousExpiry = renewal.previousExpiry ? new Date(renewal.previousExpiry) : null;
+      const base = previousExpiry && !Number.isNaN(previousExpiry.getTime()) && previousExpiry > now
+        ? previousExpiry
+        : now;
+      const cumulativeExpiry = new Date(base.getTime() + renewal.durationDays * 86400000).toISOString();
+      const { error: renewalError } = await supabaseAdmin.from("subscriptions")
+        .update({ expires_at: cumulativeExpiry, status: "active" })
+        .eq("user_id", renewal.userId);
+      if (renewalError) throw renewalError;
     }
     return jsonResponse({ success: true, processed: true }, 200, secureHeaders);
   } catch (error) {
