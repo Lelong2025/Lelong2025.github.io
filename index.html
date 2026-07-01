@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="vi" data-theme="dark">
 
@@ -3473,3 +3474,2562 @@
 </body>
 
 </html>
+=======
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+
+<head>
+  <script>
+    // Some third-party analytics code installs a document.onkeydown handler and
+    // assumes every synthetic event has a string `key`. Ignore malformed events
+    // and consume rejected async handlers so they cannot become unhandled errors.
+    (function guardDocumentKeydown() {
+      let handler = null;
+      Object.defineProperty(document, 'onkeydown', {
+        get() { return handler; },
+        set(fn) {
+          handler = typeof fn === 'function' ? function(event) {
+            if (typeof event?.key !== 'string') return;
+            try {
+              const result = fn.call(this, event);
+              if (result && typeof result.catch === 'function') result.catch(() => {});
+              return result;
+            } catch (_) {
+              return undefined;
+            }
+          } : fn;
+        },
+        configurable: true
+      });
+    })();
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XKNM5RRLQW"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-XKNM5RRLQW');
+  </script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://duycstnptwojisioeosk.supabase.co https://old-band-adb5.vonhacphuoc.workers.dev; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+  
+  <!-- SEO Meta Tags -->
+  <title>Tra Cứu Thông Tin Tạp Chí</title>
+  <meta name="description" content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Hỗ trợ tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, trạng thái danh mục Scopus nhanh chóng, chính xác." />
+  <meta name="keywords" content="tra cứu tạp chí, điểm khung hdgsnn 2025, jcr impact factor, phân hạng Q, danh mục scopus, tạp chí khoa học" />
+  <meta name="author" content="Lelong2025" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lelong2025.github.io/" />
+  <meta property="og:title" content="Tra Cứu Thông Tin Tạp Chí" />
+  <meta property="og:description" content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, danh mục Scopus." />
+  <meta property="og:image" content="https://lelong2025.github.io/logo_dung_vi.png" />
+
+  <!-- Google Search Console Verification Code Placeholder -->
+  <!-- Thay thế content bằng mã xác minh của bạn từ Google Search Console nếu cần -->
+  <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />
+
+  <link rel="canonical" href="https://lelong2025.github.io/" />
+
+  <!-- Schema.org JSON-LD Structured Data for Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Tra Cứu Thông Tin Tạp Chí",
+    "url": "https://lelong2025.github.io/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://lelong2025.github.io/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
+  <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg-color: #f4f7f6;
+      --text-color: #333333;
+      --primary-color: #0d6efd;
+      --primary-hover: #0b5ed7;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.1);
+      --input-bg: rgba(255, 255, 255, 0.8);
+      --input-border: #ccc;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --header-bg: rgba(255, 255, 255, 0.7);
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --text-color: #e2e8f0;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(15, 23, 42, 0.8);
+      --input-border: #475569;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --header-bg: rgba(15, 23, 42, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden; /* Ngăn tràn ngang toàn trang */
+    }
+
+    .header-container {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--header-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-align: center;
+      flex: 1;
+      min-width: 0; /* Cho phép co lại */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(128, 128, 128, 0.2);
+    }
+
+    .main-content {
+      padding: 40px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    #searchBox {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 40px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #searchInput {
+      flex: 1;
+      padding: 16px 24px;
+      border-radius: 50px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 16px;
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+
+    #searchInput:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    #searchBox button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    #searchBox button:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    #excelInfo {
+      display: none;
+    }
+
+    #excelInfo h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+      font-size: 26px;
+      border-bottom: 2px solid var(--card-border);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+
+    #excelInfo ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    #excelInfo li {
+      padding: 16px 20px;
+      background: rgba(128, 128, 128, 0.1);
+      border-radius: 12px;
+      font-size: 18px;
+    }
+
+    #excelInfo b {
+      color: var(--primary-color);
+      margin-right: 5px;
+    }
+
+    #externalLinks {
+      display: none;
+      text-align: center;
+    }
+
+    #externalLinks strong {
+      display: block;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .links-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    #externalLinks a {
+      color: white;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 18px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    #externalLinks a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+      text-decoration: none;
+    }
+
+    #iframes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .iframe-block {
+      flex: 1 1 calc(33.333% - 20px);
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+    }
+
+    .iframe-block p {
+      margin: 0;
+      padding: 18px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid var(--card-border);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    .iframe-block iframe {
+      width: 100%;
+      height: 900px;
+      border: none;
+      background: white;
+      /* Keep iframe background white for external content readability */
+    }
+
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: row !important;
+        padding: 8px 12px;
+        gap: 8px;
+      }
+
+      .header-container img {
+        height: 36px !important;
+        flex-shrink: 0;
+      }
+
+      .header-title {
+        font-size: 16px;
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .theme-toggle {
+        flex-shrink: 0;
+      }
+
+      #searchBox {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 25px;
+      }
+
+      #searchBox button {
+        width: 100%;
+        padding: 14px 24px;
+      }
+
+      #searchInput {
+        padding: 14px 20px;
+      }
+
+      .main-content {
+        padding: 20px 12px;
+      }
+
+      .result-section {
+        padding: 14px;
+      }
+
+      .result-section h4 {
+        font-size: 16px;
+      }
+
+      .result-item {
+        font-size: 13px;
+      }
+
+      .result-item-title {
+        font-size: 14px;
+      }
+
+      .info-card {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-title {
+        font-size: 14px;
+      }
+      
+      .header-container img {
+        height: 32px !important;
+      }
+
+      .theme-toggle {
+        font-size: 18px;
+        width: 32px;
+        height: 32px;
+      }
+      
+      /* Tối ưu chữ trên nút thông báo khi xuống dòng */
+      .info-card a {
+        font-size: 14px !important;
+        padding: 10px 16px !important;
+        display: block;
+        width: auto;
+      }
+    }
+
+    /* CSS cho trạng thái tải Excel và kết quả tìm kiếm */
+    .loading-status-msg {
+      font-size: 14px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: -25px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .loading-status-msg.success {
+      color: #10b981;
+    }
+
+    .loading-status-msg.error {
+      color: #ef4444;
+    }
+
+    .search-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-top: 15px;
+    }
+
+    .result-section {
+      background: rgba(128, 128, 128, 0.05);
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid var(--card-border);
+    }
+
+    .result-section h4 {
+      color: var(--primary-color);
+      font-size: 20px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .result-item {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    .result-item-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text-color);
+    }
+
+    .result-item-detail {
+      margin-bottom: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .result-item-detail b {
+      color: #64748b;
+      flex-shrink: 0;
+      margin-right: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      max-width: 100%;
+      overflow-wrap: break-word;
+      word-break: break-all;
+    }
+
+    .badge-points {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+    }
+
+    .badge-active {
+      background: #10b981;
+    }
+
+    .badge-inactive {
+      background: #64748b;
+    }
+
+    .badge-oa {
+      background: #8b5cf6;
+    }
+
+    .badge-discontinued {
+      background: #ef4444;
+    }
+
+    /* ===== AI CHATBOX ===== */
+    #ai-chat-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10a37f 0%, #0d7a60 50%, #059669 100%);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(16,163,127,0.5), 0 0 0 0 rgba(16,163,127,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      z-index: 9999;
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
+      animation: chatPulse 3s infinite;
+    }
+    #ai-chat-btn:hover {
+      transform: scale(1.13) rotate(-5deg);
+      box-shadow: 0 14px 44px rgba(16,163,127,0.75);
+    }
+    @keyframes chatPulse {
+      0%, 100% { box-shadow: 0 8px 32px rgba(16,163,127,0.5), 0 0 0 0 rgba(16,163,127,0.3); }
+      50% { box-shadow: 0 8px 48px rgba(16,163,127,0.8), 0 0 0 10px rgba(16,163,127,0); }
+    }
+    #ai-chat-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(239,68,68,0.5);
+      animation: badgePop 0.4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes badgePop {
+      from { transform: scale(0) rotate(-180deg); }
+      to   { transform: scale(1) rotate(0deg); }
+    }
+    #ai-chat-panel {
+      position: fixed;
+      bottom: 104px; right: 28px;
+      width: 430px; height: 600px;
+      max-height: calc(100vh - 130px);
+      background: rgba(10,18,35,0.97);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(16,163,127,0.2);
+      border-radius: 28px;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.65), 0 0 0 1px rgba(16,163,127,0.1), inset 0 1px 0 rgba(255,255,255,0.07);
+      display: flex; flex-direction: column;
+      z-index: 9998; overflow: hidden;
+      transform: translateY(40px) scale(0.92);
+      opacity: 0; pointer-events: none;
+      transition: transform 0.4s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease;
+    }
+    #ai-chat-panel.open {
+      transform: translateY(0) scale(1);
+      opacity: 1; pointer-events: all;
+    }
+    [data-theme="light"] #ai-chat-panel {
+      background: rgba(252,253,255,0.98);
+      border-color: rgba(16,163,127,0.15);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.12), 0 0 0 1px rgba(16,163,127,0.08);
+    }
+    #ai-chat-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, #0d8f6f 0%, #10a37f 40%, #059669 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0; position: relative; overflow: hidden;
+    }
+    #ai-chat-header::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    #ai-chat-header .ai-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 2px solid rgba(255,255,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    #ai-chat-header .ai-info { flex: 1; min-width: 0; }
+    #ai-chat-header .ai-name { font-weight: 800; color: #fff; font-size: 15px; margin: 0; letter-spacing: -0.01em; }
+    #ai-chat-header .ai-status { font-size: 11.5px; color: rgba(255,255,255,0.82); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 6px #4ade80;
+      animation: statusBlink 2.5s infinite;
+    }
+    @keyframes statusBlink {
+      0%,100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }
+      50% { opacity: 0.5; box-shadow: 0 0 2px #4ade80; }
+    }
+    .chat-header-actions { display: flex; gap: 6px; align-items: center; }
+    #ai-chat-header .btn-action {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white; cursor: pointer;
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; transition: background 0.2s, transform 0.2s; flex-shrink: 0;
+    }
+    #ai-chat-header .btn-action:hover { background: rgba(255,255,255,0.28); transform: scale(1.08); }
+    #ai-chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      scroll-behavior: smooth;
+    }
+    #ai-chat-messages::-webkit-scrollbar { width: 3px; }
+    #ai-chat-messages::-webkit-scrollbar-thumb { background: rgba(16,163,127,0.3); border-radius: 3px; }
+    .chat-msg { display: flex; gap: 10px; align-items: flex-end; animation: msgSlide 0.35s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes msgSlide {
+      from { transform: translateY(16px) scale(0.95); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .chat-msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .chat-msg.ai .msg-avatar { background: linear-gradient(135deg, #10a37f, #059669); color: white; box-shadow: 0 4px 12px rgba(16,163,127,0.35); }
+    .chat-msg.user .msg-avatar { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 4px 12px rgba(99,102,241,0.35); }
+    .msg-wrap { display: flex; flex-direction: column; max-width: 80%; }
+    .chat-msg.user .msg-wrap { align-items: flex-end; }
+    .msg-bubble {
+      padding: 12px 16px; border-radius: 20px;
+      font-size: 14px; line-height: 1.6;
+      word-break: break-word; position: relative;
+    }
+    .chat-msg.ai .msg-bubble {
+      background: rgba(22,30,54,0.9); color: #e2e8f0;
+      border-bottom-left-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    [data-theme="light"] .chat-msg.ai .msg-bubble {
+      background: rgba(241,245,249,0.95); color: #1e293b;
+      border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .chat-msg.user .msg-bubble {
+      background: linear-gradient(135deg, #10a37f, #059669); color: white;
+      border-bottom-right-radius: 5px; box-shadow: 0 4px 16px rgba(16,163,127,0.35);
+    }
+    .msg-bubble strong { color: #34d399; }
+    .chat-msg.user .msg-bubble strong { color: rgba(255,255,255,0.95); }
+    .msg-bubble pre { background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin: 6px 0 0; }
+    .msg-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 0 2px; }
+    .msg-time { font-size: 10.5px; color: rgba(148,163,184,0.6); }
+    .msg-copy {
+      background: none; border: none; cursor: pointer;
+      color: rgba(148,163,184,0.4); font-size: 11px; padding: 0 3px;
+      transition: color 0.2s; display: flex; align-items: center; gap: 3px; border-radius: 4px;
+    }
+    .msg-copy:hover { color: #10a37f; }
+    .msg-copy.copied { color: #4ade80; }
+    .typing-indicator { display: flex; gap: 5px; padding: 6px 4px; align-items: center; }
+    .typing-indicator span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: linear-gradient(135deg, #10a37f, #34d399);
+      animation: typingBounce 1.4s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.18s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes typingBounce {
+      0%,60%,100% { transform: translateY(0) scale(1); opacity: 0.4; }
+      30%          { transform: translateY(-8px) scale(1.1); opacity: 1; }
+    }
+    #ai-chat-footer {
+      padding: 12px 14px 14px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10,18,35,0.7); flex-shrink: 0;
+    }
+    [data-theme="light"] #ai-chat-footer { background: rgba(248,250,252,0.95); border-top-color: rgba(0,0,0,0.06); }
+    #ai-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    #ai-chat-input {
+      flex: 1; background: rgba(30,40,60,0.8);
+      border: 1.5px solid rgba(255,255,255,0.08); color: #e2e8f0;
+      border-radius: 16px; padding: 11px 15px; font-size: 14px;
+      font-family: 'Inter', sans-serif; resize: none; outline: none;
+      max-height: 120px; min-height: 44px; line-height: 1.5;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    [data-theme="light"] #ai-chat-input { background: rgba(241,245,249,0.9); color: #1e293b; border-color: rgba(0,0,0,0.1); }
+    #ai-chat-input:focus { border-color: #10a37f; box-shadow: 0 0 0 3px rgba(16,163,127,0.15); }
+    #ai-chat-input::placeholder { color: rgba(148,163,184,0.55); }
+    #ai-send-btn {
+      width: 44px; height: 44px; border-radius: 14px; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+      background: linear-gradient(135deg, #10a37f, #059669); color: white;
+      box-shadow: 0 4px 16px rgba(16,163,127,0.45); transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #ai-send-btn:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 6px 24px rgba(16,163,127,0.65); }
+    #ai-send-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .chat-footer-hint {
+      font-size: 11px; color: rgba(100,116,139,0.7); text-align: center;
+      margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    [data-theme="light"] .chat-footer-hint { color: rgba(100,116,139,0.9); }
+    #ai-settings-modal {
+      display: none; position: absolute; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(10px);
+      z-index: 10; align-items: center; justify-content: center; border-radius: 28px;
+    }
+    #ai-settings-modal.open { display: flex; }
+    .settings-box {
+      background: linear-gradient(160deg, #1a2540, #0f172a);
+      border: 1px solid rgba(16,163,127,0.2); border-radius: 22px;
+      padding: 28px; width: 90%; box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    [data-theme="light"] .settings-box { background: linear-gradient(160deg, #fff, #f8fafc); border-color: rgba(16,163,127,0.15); }
+    .settings-box h4 { margin: 0 0 14px; color: #10a37f; font-size: 17px; display: flex; align-items: center; gap: 9px; font-weight: 800; }
+    .settings-box p { font-size: 13.5px; color: #94a3b8; line-height: 1.75; margin: 0 0 18px; }
+    [data-theme="light"] .settings-box p { color: #475569; }
+    .settings-btn-row { display: flex; gap: 10px; }
+    .settings-btn-row button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-save-settings { background: linear-gradient(135deg, #10a37f, #059669); color: white; box-shadow: 0 4px 16px rgba(16,163,127,0.4); }
+    .btn-save-settings:hover { transform: scale(1.03); box-shadow: 0 6px 24px rgba(16,163,127,0.55); }
+    @media(max-width:480px) {
+      #ai-chat-panel { width: calc(100vw - 16px); right: 8px; bottom: 88px; }
+      #ai-chat-btn { right: 14px; bottom: 14px; }
+    }
+    .account-button {
+      border: 1px solid rgba(16,163,127,.35); background: rgba(16,163,127,.12);
+      color: #10a37f; border-radius: 999px; padding: 9px 15px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .account-button:hover { background: rgba(16,163,127,.22); }
+    .vip-modal {
+      position: fixed; inset: 0; z-index: 100000; display: none; align-items: center;
+      justify-content: center; padding: 20px; background: rgba(2,6,23,.72); backdrop-filter: blur(14px);
+    }
+    .vip-modal.open { display: flex; }
+    .vip-card {
+      width: min(100%, 480px); max-height: min(760px, calc(100vh - 40px)); overflow-y: auto;
+      background:#ffffff; color:#1e293b; border:1px solid #e2e8f0;
+      border-radius:26px; padding:25px; box-shadow:0 30px 90px rgba(2,6,23,.42), 0 0 0 1px rgba(255,255,255,.7);
+      scrollbar-width:none; -ms-overflow-style:none;
+    }
+    [data-theme="dark"] .vip-card { background:#111827; color:#f1f5f9; border-color:#334155; box-shadow:0 30px 90px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04); }
+    .vip-card::-webkit-scrollbar { display:none; width:0; height:0; }
+    .vip-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+    .vip-card-head h2 { margin:0; font-size:21px; color:#10a37f; letter-spacing:-.02em; }
+    .vip-close { width:38px; height:38px; display:grid; place-items:center; border:1px solid #e2e8f0; border-radius:50%; background:#f8fafc; color:#475569; font-size:25px; line-height:1; cursor:pointer; transition:.2s; }
+    [data-theme="dark"] .vip-close { background:#1e293b; border-color:#334155; color:#cbd5e1; }
+    .vip-close:hover { color:#ef4444; border-color:rgba(239,68,68,.25); background:rgba(239,68,68,.08); transform:rotate(5deg); }
+    .auth-welcome { text-align:center; margin:-4px 0 20px; }
+    .auth-welcome-icon { width:52px; height:52px; display:grid; place-items:center; margin:0 auto 10px; border-radius:16px; background:linear-gradient(135deg,#d1fae5,#ccfbf1); color:#059669; font-size:21px; box-shadow:0 10px 26px rgba(16,163,127,.15); }
+    [data-theme="dark"] .auth-welcome-icon { background:linear-gradient(135deg,#164e3f,#134e4a); color:#5eead4; }
+    .auth-welcome h3 { margin:0 0 5px; font-size:21px; letter-spacing:-.02em; }
+    .auth-welcome p { margin:0; color:#64748b; font-size:13px; line-height:1.5; }
+    [data-theme="dark"] .auth-welcome p { color:#94a3b8; }
+    .vip-tabs { display:flex; gap:5px; margin-bottom:18px; padding:5px; border-radius:14px; background:#f1f5f9; }
+    [data-theme="dark"] .vip-tabs { background:#0f172a; }
+    .vip-tabs button { flex:1; border:0; border-radius:10px; padding:10px; cursor:pointer; background:transparent; color:#64748b; font-weight:750; transition:.2s; }
+    [data-theme="dark"] .vip-tabs button { color:#94a3b8; }
+    .vip-tabs button.active { background:#fff; color:#059669; box-shadow:0 3px 12px rgba(15,23,42,.09); }
+    [data-theme="dark"] .vip-tabs button.active { background:#1e293b; color:#5eead4; box-shadow:0 3px 12px rgba(0,0,0,.28); }
+    .vip-form { display:grid; gap:14px; }
+    .auth-field { display:grid; gap:7px; }
+    .auth-field label { color:#475569; font-size:12px; font-weight:750; }
+    [data-theme="dark"] .auth-field label { color:#cbd5e1; }
+    .auth-input-wrap { position:relative; display:flex; align-items:center; }
+    .auth-input-wrap > i { position:absolute; left:14px; color:#94a3b8; font-size:14px; pointer-events:none; transition:.2s; }
+    .auth-input-wrap input { width:100%; box-sizing:border-box; border:1.5px solid #dbe3ec; border-radius:13px; padding:13px 43px 13px 40px; background:#f8fafc; color:#1e293b; font:inherit; outline:none; transition:border-color .2s, box-shadow .2s, background .2s; }
+    [data-theme="dark"] .auth-input-wrap input { border-color:#334155; background:#0f172a; color:#f1f5f9; }
+    .auth-input-wrap input::placeholder { color:#94a3b8; }
+    .auth-input-wrap:focus-within input { border-color:#10a37f; background:#fff; box-shadow:0 0 0 4px rgba(16,163,127,.12); }
+    [data-theme="dark"] .auth-input-wrap:focus-within input { background:#111827; }
+    .auth-input-wrap:focus-within > i { color:#10a37f; }
+    .vip-form > input { width:100%; box-sizing:border-box; border:1.5px solid #dbe3ec; border-radius:13px; padding:13px 14px; background:#f8fafc; color:#1e293b; font:inherit; outline:none; }
+    [data-theme="dark"] .vip-form > input { border-color:#334155; background:#0f172a; color:#f1f5f9; }
+    .vip-form > input:focus { border-color:#10a37f; box-shadow:0 0 0 4px rgba(16,163,127,.12); }
+    .password-toggle { position:absolute; right:8px; width:34px; height:34px; display:grid; place-items:center; border:0; border-radius:9px; background:transparent; color:#94a3b8; cursor:pointer; }
+    .password-toggle:hover { color:#10a37f; background:rgba(16,163,127,.08); }
+    .auth-submit { width:100%; margin-top:2px; min-height:48px; font-size:15px; }
+    .auth-submit:disabled { opacity:.65; cursor:wait; transform:none; }
+    .auth-form-footer { display:flex; justify-content:center; margin-top:-2px; }
+    .vip-primary, .vip-secondary { border:0; border-radius:13px; padding:13px 16px; font-weight:800; cursor:pointer; transition:transform .2s, box-shadow .2s, background .2s; }
+    .vip-primary { background:linear-gradient(135deg,#10a37f,#059669); color:white; box-shadow:0 8px 22px rgba(16,163,127,.22); }
+    .vip-primary:hover { transform:translateY(-1px); box-shadow:0 11px 28px rgba(16,163,127,.32); }
+    .vip-secondary { background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; }
+    [data-theme="dark"] .vip-secondary { background:#1e293b; color:#cbd5e1; border-color:#334155; }
+    .vip-secondary:hover { color:#ef4444; background:rgba(239,68,68,.07); }
+    .vip-link { border:0; background:transparent; color:#10a37f; cursor:pointer; padding:4px; }
+    .vip-message { min-height:20px; font-size:13px; margin-top:10px; color:#94a3b8; }
+    .vip-message.error { color:#ef4444; }
+    .vip-message.success { color:#10b981; }
+    .vip-status-box { border-radius:18px; padding:16px 17px; background:#f0fdfa; border:1px solid #99f6e4; margin-bottom:14px; }
+    [data-theme="dark"] .vip-status-box { background:#172b2a; border-color:#285e55; }
+    .vip-account-email { display:flex; align-items:center; gap:9px; padding-bottom:12px; margin-bottom:10px; border-bottom:1px solid rgba(148,163,184,.13); font-size:15px; overflow-wrap:anywhere; }
+    .vip-account-email i { color:#10a37f; }
+    .vip-detail-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:5px 0; font-size:14px; color:#475569; }
+    [data-theme="dark"] .vip-detail-row { color:#cbd5e1; }
+    .vip-detail-row strong, .vip-detail-row span { text-align:right; }
+    .vip-active { color:#10b981; font-weight:800; }
+    .vip-inactive { color:#f59e0b; font-weight:800; }
+    .payment-box { display:none; text-align:center; margin-top:18px; padding:20px; border:1px solid #dbe5e3; border-radius:20px; background:#f8fafc; animation:paymentReveal .28s ease-out; }
+    [data-theme="dark"] .payment-box { background:#0f172a; border-color:#334155; }
+    .payment-box.open { display:block; }
+    @keyframes paymentReveal { from { opacity:0; transform:translateY(8px); } }
+    .payment-box h3 { margin:0 0 4px; font-size:19px; }
+    .payment-subtitle { margin:0 0 15px; color:#64748b; font-size:13px; }
+    [data-theme="dark"] .payment-subtitle, [data-theme="dark"] .payment-label, [data-theme="dark"] .payment-note { color:#94a3b8; }
+    .payment-qr-wrap { width:224px; max-width:100%; margin:0 auto 13px; padding:10px; border-radius:18px; background:#fff; box-shadow:0 12px 34px rgba(15,23,42,.16); }
+    .payment-box img { display:block; width:100%; border-radius:10px; background:white; }
+    .payment-amount { margin:8px 0 14px; font-size:21px; color:#10a37f; }
+    .payment-label { margin:0 0 7px; color:#64748b; font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .payment-code { display:block; margin:0; padding:10px 12px; border:1px dashed rgba(16,163,127,.4); border-radius:11px; background:rgba(16,163,127,.08); font:800 16px/1.3 monospace; color:#10a37f; overflow-wrap:anywhere; user-select:all; }
+    .payment-note { margin:8px 0 0; font-size:12px; color:#64748b; }
+    .vip-actions { display:grid; grid-template-columns:1fr auto; gap:10px; }
+    .vip-actions .vip-secondary { min-width:112px; }
+    #chat-access-note { display:none; padding:10px 14px; font-size:12px; text-align:center; color:#f59e0b; background:rgba(245,158,11,.1); }
+    @media(max-width:640px) {
+      .header-container { flex-wrap:wrap; }
+      .header-title { order:3; width:100%; }
+      .account-button { margin-left:auto; }
+      .vip-modal { align-items:flex-end; padding:0; }
+      .vip-card { width:100%; max-height:92vh; border-radius:26px 26px 0 0; padding:21px 18px; }
+      .vip-actions { grid-template-columns:1fr; }
+      .payment-box { padding:17px 14px; }
+    }
+    .quick-replies { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0 10px; }
+    .quick-btn {
+      background: rgba(16,163,127,0.1); border: 1px solid rgba(16,163,127,0.28);
+      color: #10a37f; border-radius: 22px; padding: 7px 14px;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all 0.2s; white-space: nowrap;
+    }
+    .quick-btn:hover { background: rgba(16,163,127,0.22); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,163,127,0.2); }
+    .clear-confirm {
+      position: absolute; top: 70px; right: 16px;
+      background: #1e293b; border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 12px; padding: 10px 14px; font-size: 12.5px; color: #e2e8f0;
+      z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; gap: 8px; min-width: 180px;
+    }
+    .clear-confirm button { padding: 6px 12px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .clear-yes { background: #ef4444; color: white; }
+    .clear-no  { background: rgba(100,116,139,0.2); color: #94a3b8; }
+    /* ===== LOADING SPLASH SCREEN ===== */
+    #loading-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      gap: 28px;
+      padding: 30px 20px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    #loading-splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      animation: splashPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes splashPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(59,130,246,0.5)); }
+      50% { transform: scale(1.06); filter: drop-shadow(0 0 24px rgba(139,92,246,0.7)); }
+    }
+
+    .splash-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-align: center;
+      margin: 0;
+    }
+
+    .splash-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      margin: -16px 0 0;
+    }
+
+    .splash-progress-wrap {
+      width: min(380px, 90vw);
+    }
+
+    .splash-progress-bar-bg {
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .splash-progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10a37f);
+      background-size: 200% 100%;
+      width: 5%;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      animation: shimmer 2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    .splash-status {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 20px;
+      transition: color 0.3s;
+    }
+
+    .splash-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(380px, 90vw);
+    }
+
+    .splash-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #475569;
+      transition: color 0.3s;
+    }
+
+    .splash-step.active {
+      color: #94a3b8;
+    }
+
+    .splash-step.done {
+      color: #10b981;
+    }
+
+    .step-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .splash-step.active .step-icon {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    .splash-step.done .step-icon {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
+    /* Nút liên kết xem trực quan */
+    .iframe-buttons-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .iframe-btn {
+      color: white;
+      background: linear-gradient(135deg, #10a37f, #059669);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(16, 163, 127, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .iframe-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 163, 127, 0.5);
+    }
+    
+    .iframe-btn.noapc-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    .iframe-btn.noapc-btn:hover {
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+
+    .iframe-btn.resurchify-btn {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    .iframe-btn.resurchify-btn:hover {
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+    }
+
+    .iframe-btn.wos-btn {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+    }
+    .iframe-btn.wos-btn:hover {
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+    }
+
+    /* Modal Iframe Popup */
+    .iframe-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .iframe-modal.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .iframe-modal-content {
+      background: var(--bg-color);
+      border: 1px solid var(--card-border);
+      width: 90%;
+      height: 85%;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .iframe-modal.open .iframe-modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .iframe-modal-header {
+      padding: 15px 24px;
+      background: rgba(128, 128, 128, 0.05);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .iframe-modal-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .iframe-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .iframe-modal-close:hover {
+      color: #ef4444;
+    }
+
+    .iframe-modal-body {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: white;
+    }
+
+    .iframe-modal-body iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+    }
+
+    @media (max-width: 768px) {
+      .iframe-modal-content {
+        width: 95%;
+        height: 90%;
+        border-radius: 16px;
+      }
+      .iframe-modal-header {
+        padding: 12px 18px;
+      }
+      .iframe-modal-title {
+        font-size: 16px;
+      }
+      .iframe-buttons-grid {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .iframe-btn {
+        justify-content: center;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== LOADING SPLASH SCREEN ===== -->
+  <div id="loading-splash">
+    <img src="logo_dung_vi.png" alt="Logo" class="splash-logo">
+    <h1 class="splash-title">Tra cứu Thông tin Tạp chí</h1>
+    <p class="splash-subtitle">Hệ thống &mdash; Lelong 2025</p>
+
+    <div class="splash-progress-wrap">
+      <div class="splash-progress-bar-bg">
+        <div id="splashProgressFill" class="splash-progress-bar-fill"></div>
+      </div>
+      <div id="splashStatus" class="splash-status">Khởi động hệ thống...</div>
+    </div>
+
+    <div class="splash-steps">
+      <div id="step-jcr" class="splash-step">
+        <div class="step-icon"><i class="fas fa-chart-line"></i></div>
+        <span>Dữ liệu JCR Impact Factor</span>
+      </div>
+      <div id="step-hdgsnn" class="splash-step">
+        <div class="step-icon"><i class="fas fa-university"></i></div>
+        <span>Danh mục HĐGSNN 2025</span>
+      </div>
+      <div id="step-scopus" class="splash-step">
+        <div class="step-icon"><i class="fas fa-globe"></i></div>
+        <span>Scopus May 2026 (48k tạp chí)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Khối header -->
+  <div class="header-container">
+    <img src="LHU&ASU-ENG 2@.png" alt="Logo" style="height: 60px;">
+    <h1 class="header-title">Tra cứu thông tin tạp chí</h1>
+    <button class="theme-toggle" id="themeToggleBtn" title="Chuyển đổi giao diện Sáng/Tối">
+      <i class="fas fa-moon"></i>
+    </button>
+    <button id="accountButton" class="account-button" onclick="openUserModal()">
+      <i class="fas fa-user"></i> Đăng nhập
+    </button>
+
+  </div>
+
+  <!-- ===== ĐĂNG NHẬP / TÀI KHOẢN VIP ===== -->
+  <div id="userModal" class="vip-modal" onclick="if(event.target === this) closeUserModal()">
+    <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <div class="vip-card-head">
+        <h2 id="userModalTitle"><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
+        <button class="vip-close" onclick="closeUserModal()" aria-label="Đóng">&times;</button>
+      </div>
+
+      <div id="authView">
+        <div class="auth-welcome">
+          <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
+          <h3 id="authHeading">Chào mừng trở lại</h3>
+          <p id="authLead">Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.</p>
+        </div>
+        <div class="vip-tabs">
+          <button id="loginTab" class="active" type="button" onclick="setAuthMode('login')"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
+          <button id="registerTab" type="button" onclick="setAuthMode('register')"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
+        </div>
+        <form id="authForm" class="vip-form" onsubmit="submitAuth(event)">
+          <div id="authNameField" class="auth-field" style="display:none">
+            <label for="authName">Tên hiển thị</label>
+            <div class="auth-input-wrap"><i class="fas fa-user"></i><input id="authName" type="text" maxlength="80" autocomplete="name" placeholder="Tên của bạn"></div>
+          </div>
+          <div class="auth-field">
+            <label for="authEmail">Địa chỉ email</label>
+            <div class="auth-input-wrap"><i class="fas fa-envelope"></i><input id="authEmail" type="email" required autocomplete="email" placeholder="name@example.com"></div>
+          </div>
+          <div class="auth-field">
+            <label for="authPassword">Mật khẩu</label>
+            <div class="auth-input-wrap">
+              <i class="fas fa-lock"></i>
+              <input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="Ít nhất 8 ký tự">
+              <button class="password-toggle" type="button" onclick="togglePasswordVisibility('authPassword', this)" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <button id="authSubmit" class="vip-primary auth-submit" type="submit"><i class="fas fa-arrow-right"></i>&nbsp; <span id="authSubmitLabel">Đăng nhập</span></button>
+          <div class="auth-form-footer"><button class="vip-link" type="button" onclick="requestPasswordReset()">Quên mật khẩu?</button></div>
+        </form>
+        <form id="resetView" class="vip-form" style="display:none" onsubmit="saveNewPassword(event)">
+          <p>Nhập mật khẩu mới cho tài khoản của bạn.</p>
+          <input id="newPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Mật khẩu mới">
+          <button class="vip-primary" type="submit">Lưu mật khẩu mới</button>
+        </form>
+      </div>
+
+      <div id="accountView" style="display:none">
+        <div class="vip-status-box">
+          <div class="vip-account-email"><i class="fas fa-user-circle"></i><strong id="accountEmail"></strong></div>
+          <div class="vip-detail-row"><span>Trạng thái</span><span id="vipStatus" class="vip-inactive">Chưa kích hoạt VIP</span></div>
+          <div id="vipExpiryRow" class="vip-detail-row" style="display:none"><span>Hết hạn</span><strong id="vipExpiry"></strong></div>
+          <div class="vip-detail-row"><span>Lượt AI hôm nay</span><strong id="vipUsage">0/30</strong></div>
+        </div>
+        <div class="vip-actions">
+          <button class="vip-primary" type="button" onclick="createVipOrder()"><i class="fas fa-crown"></i>&nbsp; Mua/Gia hạn 30 ngày · 25.000đ</button>
+          <button class="vip-secondary" type="button" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i>&nbsp; Đăng xuất</button>
+        </div>
+        <div id="paymentBox" class="payment-box">
+          <h3>Quét QR để thanh toán</h3>
+          <p class="payment-subtitle">Mở ứng dụng ngân hàng và quét mã bên dưới</p>
+          <div class="payment-qr-wrap"><img id="paymentQr" alt="Mã QR thanh toán Chatbox AI"></div>
+          <p class="payment-amount"><strong id="paymentAmount">25.000đ</strong></p>
+          <p class="payment-label">Nội dung chuyển khoản</p>
+          <p id="paymentCode" class="payment-code"></p>
+          <p id="paymentCountdown" class="vip-message"></p>
+          <p class="payment-note"><i class="fas fa-shield-alt"></i> Giữ nguyên số tiền và nội dung chuyển khoản.</p>
+        </div>
+      </div>
+      <div id="authMessage" class="vip-message" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <div class="main-content">
+    <div id="searchBox">
+      <input id="searchInput" placeholder="Nhập ISSN hoặc tên tạp chí..." />
+      <button onclick="search()"><i class="fas fa-search"></i> Tìm kiếm</button>
+    </div>
+
+    <div id="dbLoadingStatus" class="loading-status-msg">
+      <i class="fas fa-circle-notch fa-spin"></i> Đang khởi tạo cơ sở dữ liệu...
+    </div>
+
+    <div class="info-card" style="text-align: center;">
+      <h3 style="color: var(--primary-color); margin-top: 0; font-size: 22px; margin-bottom: 20px;">
+        <i class="fas fa-bullhorn"></i> Thông báo
+      </h3>
+      <a href="https://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/"
+        target="_blank" rel="noopener noreferrer"
+        style="color: white; background: linear-gradient(135deg, #f59e0b, #ea580c); text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; font-size: 18px; display: inline-block; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); transition: transform 0.2s, box-shadow 0.2s;">
+        Hội đồng giáo sư nhà nước 2025
+      </a>
+    </div>
+
+    <div id="excelInfo" class="info-card"></div>
+
+    <div id="externalLinks" class="info-card">
+      <strong><i class="fas fa-link"></i> Liên kết hệ thống ngoài:</strong>
+      <div class="links-grid">
+        <a id="clarivateLink" href="#" target="_blank" rel="noopener noreferrer">Clarivate Master Journal List</a>
+        <a id="Non-APC" href="https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/"
+          target="_blank" rel="noopener noreferrer">Danh sách Non-APC</a>
+        <a id="scopusLink" href="#" target="_blank" rel="noopener noreferrer">Scopus Preview</a>
+        <a id="scimagoLink" href="#" target="_blank" rel="noopener noreferrer">SCImago Journal & Country Rank</a>
+      </div>
+    </div>
+
+    <!-- Khối nút mở popup hệ thống ngoài -->
+    <div id="iframeLinksSection" class="info-card" style="display: none; text-align: center; margin-top: 30px;">
+      <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color);">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div class="iframe-buttons-grid">
+        <button onclick="openIframeInModal('noapc')" class="iframe-btn noapc-btn">
+          <i class="fas fa-file-invoice-dollar"></i> Xem Non-APC
+        </button>
+        <button onclick="openIframeInModal('resurchify')" class="iframe-btn resurchify-btn">
+          <i class="fas fa-chart-line"></i> Xem Resurchify
+        </button>
+        <button onclick="openIframeInModal('wos')" class="iframe-btn wos-btn">
+          <i class="fas fa-globe"></i> Xem Web Of Science
+        </button>
+      </div>
+    </div>
+
+    <!-- Khối nhúng trực tiếp iframes trên PC -->
+    <div id="iframeInlineSection" class="info-card" style="display: none; margin-top: 30px;">
+      <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color); text-align: center;">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div id="iframes">
+        <div class="iframe-block">
+          <p><i class="fas fa-file-invoice-dollar"></i> Non-APC</p>
+          <iframe id="noapcFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-chart-line"></i> Resurchify</p>
+          <iframe id="resurchifyFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-globe"></i> Web Of Science</p>
+          <iframe id="wosFrame" src=""></iframe>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Modal Iframe Popup -->
+    <div id="iframeModal" class="iframe-modal" onclick="if(event.target === this) closeIframeModal()">
+      <div class="iframe-modal-content">
+        <div class="iframe-modal-header">
+          <span id="modalTitle" class="iframe-modal-title">Hệ thống tích hợp</span>
+          <button class="iframe-modal-close" onclick="closeIframeModal()">&times;</button>
+        </div>
+        <div class="iframe-modal-body">
+          <iframe id="modalIframe" src="" title="Nội dung nguồn bên ngoài" loading="lazy"
+            sandbox="allow-scripts allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AI CHATBOX ===== -->
+  <button id="ai-chat-btn" title="Hỏi về tạp chí" onclick="toggleChat()">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z" fill="white"/>
+      <circle cx="8" cy="11" r="1.3" fill="#10a37f"/>
+      <circle cx="12" cy="11" r="1.3" fill="#10a37f"/>
+      <circle cx="16" cy="11" r="1.3" fill="#10a37f"/>
+    </svg>
+    <span id="ai-chat-badge" style="display:none;">1</span>
+  </button>
+
+  <div id="ai-chat-panel">
+    <!-- Intro Modal -->
+    <div id="ai-settings-modal">
+      <div class="settings-box">
+        <h4><i class="fas fa-robot"></i> Trợ lý Tạp chí AI</h4>
+        <p>
+          Chào! Tôi có thể hỗ trợ bạn:<br>
+          📊 <strong style="color:#10a37f;">JCR Impact Factor &amp; Phân hạng Q</strong><br>
+          🇻🇳 <strong style="color:#10a37f;">Điểm HĐGSNN 2025</strong> theo ngành<br>
+          🌍 <strong style="color:#10a37f;">Scopus — Trạng thái, Publisher</strong><br>
+          💡 <strong style="color:#10a37f;">Tư vấn</strong> xuất bản khoa học
+        </p>
+        <div class="settings-btn-row">
+          <button class="btn-save-settings" onclick="closeSettings();showWelcomeMsg();">🚀 Bắt đầu ngay!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div id="ai-chat-header">
+      <div class="ai-avatar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z" fill="white"/>
+          <circle cx="8" cy="11" r="1.3" fill="#10a37f"/>
+          <circle cx="12" cy="11" r="1.3" fill="#10a37f"/>
+          <circle cx="16" cy="11" r="1.3" fill="#10a37f"/>
+        </svg>
+      </div>
+      <div class="ai-info">
+        <p class="ai-name">Trợ lý Tạp chí</p>
+        <span class="ai-status"><span class="status-dot"></span> Powered by Supabase + AI</span>
+      </div>
+      <div class="chat-header-actions">
+        <button class="btn-action" title="Xóa lịch sử" onclick="confirmClearHistory()" style="font-size:12px;"><i class="fas fa-trash-alt"></i></button>
+        <button class="btn-action" title="Giới thiệu" onclick="openSettings()"><i class="fas fa-info-circle"></i></button>
+        <button class="btn-action" title="Đóng" onclick="toggleChat()"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="ai-chat-messages"></div>
+
+    <!-- Input -->
+    <div id="chat-access-note">Cần tài khoản VIP đang hoạt động để sử dụng AI.</div>
+    <div id="ai-chat-footer">
+      <div id="ai-input-row">
+        <textarea id="ai-chat-input" placeholder="Nhập tên tạp chí, ISSN, hoặc câu hỏi..." rows="1"
+          onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+        <button id="ai-send-btn" onclick="sendChatMessage()" title="Gửi (Enter)">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="chat-footer-hint">
+        <i class="fas fa-database" style="color:#10a37f;font-size:10px;"></i>
+        22k JCR &middot; 48k Scopus &middot; HĐGSNN 2025
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Logic đổi Sáng/Tối
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+
+    // Xem system pref hoặc localStorage
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    htmlEl.setAttribute('data-theme', savedTheme);
+    updateToggleIcon(savedTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = htmlEl.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      htmlEl.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateToggleIcon(newTheme);
+    });
+
+    function updateToggleIcon(theme) {
+      if (theme === 'dark') {
+        themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+      } else {
+        themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+      }
+    }
+
+    // Lưu trữ URL của iframe được tạo từ lượt tìm kiếm
+    let currentIframeUrls = {
+      noapc: "",
+      resurchify: "",
+      wos: ""
+    };
+
+    function openIframeInModal(type) {
+      const modal = document.getElementById("iframeModal");
+      const iframe = document.getElementById("modalIframe");
+      const title = document.getElementById("modalTitle");
+      
+      let url = currentIframeUrls[type];
+      let displayTitle = "";
+      
+      switch(type) {
+        case 'noapc':
+          displayTitle = '<i class="fas fa-file-invoice-dollar"></i> Non-APC';
+          break;
+        case 'resurchify':
+          displayTitle = '<i class="fas fa-chart-line"></i> Resurchify';
+          break;
+        case 'wos':
+          displayTitle = '<i class="fas fa-globe"></i> Web Of Science';
+          break;
+      }
+      
+      if (!url) return;
+      
+      title.innerHTML = displayTitle;
+      iframe.src = url;
+      modal.classList.add("open");
+      
+      // GA Event tracking
+      if (typeof gtag === 'function') {
+        gtag('event', 'integration_click', {
+          integration_type: type,
+          url: url
+        });
+      }
+    }
+
+    function closeIframeModal() {
+      const modal = document.getElementById("iframeModal");
+      const iframe = document.getElementById("modalIframe");
+      modal.classList.remove("open");
+      iframe.src = ""; // Xoá src để giải phóng tài nguyên trình duyệt và tắt các video/nhạc nền nếu có
+    }
+
+    // ---- Dữ liệu nhúng sẵn từ HDGSNN2025.xlsx ----
+    let hdgsnnData = [{ "STT": 1, "Tên tạp chí": "Các tạp chí khoa học quốc tế và Việt Nam (thuộc ISI)", "Cơ quan xuất bản": "ISI", "Khung điểm quy định": "0 - 2,0• IF≥2: tối đa 3,0• IF<2: tối đa 2,0" }, { "STT": 2, "Tên tạp chí": "Các tạp chí khoa học quốc tế khác (Scopus, PubMed)", "Cơ quan xuất bản": "Scopus, PubMed", "Khung điểm quy định": "0 - 1,5• Bản online: tối đa 1,0• Không online: tối đa 0,75" }, { "STT": 3, "Tên tạp chí": "Bài báo khoa học tại hội nghị quốc tế", "Cơ quan xuất bản": "Kỷ yếu (có phản biện, chủ biên, có ISBN)", "Khung điểm quy định": "0 - 1,0" }, { "STT": 4, "Tên tạp chí": "Bài báo khoa học tại hội nghị quốc gia", "Cơ quan xuất bản": "Kỷ yếu (có phản biện, chủ biên, có ISBN từ 2017)", "Khung điểm quy định": "0 - 0,5" }, { "STT": 5, "Tên tạp chí": "Bảo hộ lao động", "Chỉ số ISSN": "0866-8515", "Cơ quan xuất bản": "Tổng Liên đoàn Lao động Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 6, "Tên tạp chí": "Châm cứu Việt Nam", "Chỉ số ISSN": "1859-0705", "Cơ quan xuất bản": "Hội Châm cứu Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0-0,5 (trước 2020)• 0-0,25 (2020)• 0 (2021-2024)" }, { "STT": 7, "Tên tạp chí": "Chấn thương Chỉnh hình Việt Nam", "Chỉ số ISSN": "0866-7624", "Cơ quan xuất bản": "Hội Chấn thương - Chỉnh hình", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 8, "Tên tạp chí": "Công nghệ sinh học", "Chỉ số ISSN": "1811-4989", "Cơ quan xuất bản": "Viện Hàn lâm Khoa học và Công nghệ VN", "Khung điểm quy định": "0 (từ 2025)• 0-1,0 (trước 2025)" }, { "STT": 9, "Tên tạp chí": "Da liễu học Việt Nam", "Chỉ số ISSN": "1859-4824", "Cơ quan xuất bản": "Hội Da liễu", "Khung điểm quy định": "0 - 0,75 (từ 2020)• 0-0,5 (trước 2020)" }, { "STT": 10, "Tên tạp chí": "Điện quang và Y học hạt nhân", "Chỉ số ISSN": "1859-4832", "Cơ quan xuất bản": "Hội Điện quang và Y học hạt nhân VN", "Khung điểm quy định": "0 - 0,5 (từ 2024)• Thay đổi tăng giảm theo các mốc 2020, 2021, 2022" }, { "STT": 11, "Tên tạp chí": "Điều dưỡng Việt Nam", "Chỉ số ISSN": "2354-0737", "Cơ quan xuất bản": "Hội Điều dưỡng Việt Nam", "Khung điểm quy định": "0 (từ 2022)• 0-0,5 (trước 2020), 0-0,25 (từ 2020)" }, { "STT": 12, "Tên tạp chí": "Dinh dưỡng và Thực phẩm", "Chỉ số ISSN": "1859-0381", "Cơ quan xuất bản": "Hội Dinh dưỡng Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• 0-0,75 (từ 2017), biến động 2020-2021" }, { "STT": 13, "Tên tạp chí": "Độc học", "Chỉ số ISSN": "1859-1140", "Cơ quan xuất bản": "Văn phòng Ban chỉ đạo 33, Bộ TN&MT", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 14, "Tên tạp chí": "Dược liệu", "Chỉ số ISSN": "1859-4735", "Cơ quan xuất bản": "Viện Dược liệu", "Khung điểm quy định": "0 - 0,25 (từ 2022)• 0-0,5 (trước 2022)" }, { "STT": 15, "Tên tạp chí": "Dược học", "Chỉ số ISSN": "0866-7861", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 (từ 2021)• 0-0,5 (trước 2020), 0-0,25 (từ 2020)" }, { "STT": 16, "Tên tạp chí": "Gan Mật Việt Nam", "Chỉ số ISSN": "1859-431X", "Cơ quan xuất bản": "Hội Gan mật Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2020)" }, { "STT": 17, "Tên tạp chí": "Hậu môn - Trực tràng", "Chỉ số ISSN": "1859-235X", "Cơ quan xuất bản": "Hội Hậu môn - Trực tràng", "Khung điểm quy định": "0 - 0,5 (trước 2020)" }, { "STT": 18, "Tên tạp chí": "Khoa học: Khoa học Y Dược", "Chỉ số ISSN": "2588-1132", "Cơ quan xuất bản": "Đại học Quốc gia Hà Nội", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (trước 2024)" }, { "STT": 19, "Tên tạp chí": "Khoa học (ĐH Sư phạm TP.HCM)", "Chỉ số ISSN": "2734-9918", "Cơ quan xuất bản": "Trường Đại học Sư phạm TP Hồ Chí Minh", "Khung điểm quy định": "0 (từ 2025)• 0-0,5 (từ 2021)" }, { "STT": 20, "Tên tạp chí": "Khoa học (ĐH Tây Nguyên)", "Chỉ số ISSN": "1859-4611", "Cơ quan xuất bản": "Trường Đại học Tây Nguyên", "Khung điểm quy định": "0 (từ 2021)• 0-0,5 (trước 2021)" }, { "STT": 21, "Tên tạp chí": "Khoa học & Công nghệ Việt Nam", "Chỉ số ISSN": "2615-9929", "Cơ quan xuất bản": "Bộ Khoa học và Công nghệ", "Khung điểm quy định": "0 - 1,0 (từ 2017)• 0-0,75 (trước 2017)" }, { "STT": 22, "Tên tạp chí": "Khoa học ĐH Huế: Khoa học tự nhiên", "Chỉ số ISSN": "2615-9678", "Cơ quan xuất bản": "Đại học Huế", "Khung điểm quy định": "0 (từ 2025)• 0-0,5 (2021-2022)" }, { "STT": 23, "Tên tạp chí": "Khoa học Nghiên cứu Sức khỏe và Phát triển", "Chỉ số ISSN": "2588-1442", "Cơ quan xuất bản": "Trường Đại học Y tế Công cộng", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-0,75 (từ 2022), 0-0,5 (từ 2020)" }, { "STT": 24, "Tên tạp chí": "Khoa học Tiêu hóa Việt Nam", "Chỉ số ISSN": "1859-0640", "Cơ quan xuất bản": "Hội Khoa học Tiêu hóa Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• Biến động giảm dần qua các năm từ mốc 0-0,75" }, { "STT": 25, "Tên tạp chí": "Khoa học và Công nghệ (ĐH Thái Nguyên)", "Chỉ số ISSN": "2615-9562", "Cơ quan xuất bản": "Đại học Thái Nguyên", "Khung điểm quy định": "0 - 0,5 (từ 2021)• 0-0,25 (năm 2020)" }, { "STT": 26, "Tên tạp chí": "Khoa học và Công nghệ Nhiệt đới", "Chỉ số ISSN": "0866-7535", "Cơ quan xuất bản": "Trung tâm Nhiệt đới Việt - Nga, Bộ QP", "Khung điểm quy định": "0 - 0,25 (từ 2022)• 0-0,5 (trước 2022)" }, { "STT": 27, "Tên tạp chí": "Lao và Bệnh phổi", "Chỉ số ISSN": "1859-3925", "Cơ quan xuất bản": "Hội Lao và Bệnh phổi Việt Nam", "Khung điểm quy định": "0 (từ 2022)• 0-0,25 (từ 2021), 0-0,5 (trước 2020)" }, { "STT": 28, "Tên tạp chí": "MedPharmRes", "Chỉ số ISSN": "2615-9139", "Cơ quan xuất bản": "Đại học Y Dược TP Hồ Chí Minh", "Khung điểm quy định": "0 - 1,0" }, { "STT": 29, "Tên tạp chí": "Nghiên cứu và Thực hành Nhi khoa", "Chỉ số ISSN": "2615-9198", "Cơ quan xuất bản": "Viện NC Sức khỏe trẻ em, BV Nhi TW", "Khung điểm quy định": "0 (từ 2022)• 0-0,5 (từ 2021), 0-0,25 (từ 2020)" }, { "STT": 30, "Tên tạp chí": "Nghiên cứu Y học", "Chỉ số ISSN": "2354-080X", "Cơ quan xuất bản": "Trường Đại học Y Hà Nội", "Khung điểm quy định": "0 - 1,0 (từ 2001)• 0-0,5 (trước đó)" }, { "STT": 31, "Tên tạp chí": "Nghiên cứu Y học Cổ truyền Việt Nam", "Chỉ số ISSN": "1859-1752", "Cơ quan xuất bản": "Bệnh viện Y học Cổ truyền Trung ương", "Khung điểm quy định": "0 (từ 2022)• Giảm dần từ mốc tối đa 0-0,75" }, { "STT": 32, "Tên tạp chí": "Ngoại khoa Việt Nam", "Chỉ số ISSN": "1859-1876", "Cơ quan xuất bản": "Hội ngoại khoa, Tổng Hội Y học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 33, "Tên tạp chí": "Nhãn khoa Việt Nam", "Chỉ số ISSN": "1859-395X", "Cơ quan xuất bản": "Hội Nhãn khoa", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 34, "Tên tạp chí": "Nhi khoa", "Chỉ số ISSN": "1859-3860", "Cơ quan xuất bản": "Hội Nhi khoa Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2025)• 0-0,25 (từ 2022)" }, { "STT": 35, "Tên tạp chí": "Nội khoa", "Chỉ số ISSN": "1859-1884", "Cơ quan xuất bản": "Tổng Hội Y học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 36, "Tên tạp chí": "Nội khoa Việt Nam", "Chỉ số ISSN": "0868-3190", "Cơ quan xuất bản": "Hội Nội khoa Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 37, "Tên tạp chí": "Nội tiết và Đái tháo đường", "Chỉ số ISSN": "1859-4727", "Cơ quan xuất bản": "Hội Nội tiết - Đái tháo đường Việt Nam", "Khung điểm quy định": "0 - 0,5" }, { "STT": 38, "Tên tạp chí": "Ngoại khoa và Phẫu thuật nội soi Việt Nam", "Chỉ số ISSN": "1859-4506", "Cơ quan xuất bản": "Hội Ngoại khoa và Phẫu thuật nội soi VN", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (trước đó)" }, { "STT": 39, "Tên tạp chí": "Phẫu thuật Tim mạch và Lồng ngực Việt Nam", "Chỉ số ISSN": "0866-7551", "Cơ quan xuất bản": "Hội Phẫu thuật Tim mạch và Lồng ngực VN", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 40, "Tên tạp chí": "Phòng chống Sốt rét và các bệnh ký sinh trùng", "Chỉ số ISSN": "0868-3735", "Cơ quan xuất bản": "Viện Sốt rét - Ký sinh trùng - Côn trùng TW", "Khung điểm quy định": "0 - 0,25 (từ 2021)• 0-0,5 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 41, "Tên tạp chí": "Phụ sản", "Chỉ số ISSN": "1859-3844", "Cơ quan xuất bản": "Hội Phụ sản Việt Nam", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2023), 0-0,25 (từ 2022)" }, { "STT": 42, "Tên tạp chí": "Sinh lý học Việt Nam", "Chỉ số ISSN": "1859-2376", "Cơ quan xuất bản": "Hội Sinh lý học Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0-0,5 (từ 2022), 0-0,25 (từ 2021)" }, { "STT": 43, "Tên tạp chí": "Thông tin Y – Dược học", "Chỉ số ISSN": "0868-3891", "Cơ quan xuất bản": "Viện Thông tin thư viện Y học", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 44, "Tên tạp chí": "Tai Mũi Họng Việt Nam", "Chỉ số ISSN": "1859-3704", "Cơ quan xuất bản": "Hội Tai – Mũi – Họng Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (năm 2022-2023), trước đó 0-0,5 và 0-0,75" }, { "STT": 45, "Tên tạp chí": "Tim mạch học", "Chỉ số ISSN": "1859-2848", "Cơ quan xuất bản": "Hội Tim mạch học Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• Biến động qua các năm 2021, 2022, 2023" }, { "STT": 46, "Tên tạp chí": "Truyền nhiễm Việt Nam", "Chỉ số ISSN": "0866-7829", "Cơ quan xuất bản": "Hội Truyền nhiễm Việt Nam", "Khung điểm quy định": "0 - 0,5 (từ 2024)• 0-0,25 (từ 2021)" }, { "STT": 47, "Tên tạp chí": "Ung thư học Việt Nam", "Chỉ số ISSN": "1859-400X", "Cơ quan xuất bản": "Hội Phòng chống Ung thư Việt Nam", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,5 (trước đó)" }, { "STT": 48, "Tên tạp chí": "Vietnam Journal of Medicine & Pharmacy", "Chỉ số ISSN": "0866-7942", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 - 1,0 (trước 2020)" }, { "STT": 49, "Tên tạp chí": "Vietnam Journal of Science, Technology and Engineering", "Chỉ số ISSN": "2615-9937", "Cơ quan xuất bản": "Bộ Khoa học và Công nghệ", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-1,25 (từ 2019)" }, { "STT": 50, "Tên tạp chí": "Y Dược cổ truyền Việt Nam", "Chỉ số ISSN": "2354-1334", "Cơ quan xuất bản": "Học viện Y Dược học Cổ truyền Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (2021-2023), trước đó 0-0,25 và 0-0,5" }, { "STT": 51, "Tên tạp chí": "Y Dược học (ĐH Y Dược Huế)", "Chỉ số ISSN": "1859-3836", "Cơ quan xuất bản": "Trường Đại học Y Dược, Đại học Huế", "Khung điểm quy định": "0 - 1,0 (từ 2020)• 0-0,75 (từ 2013), 0-0,5 (trước đó)" }, { "STT": 52, "Tên tạp chí": "Y Dược học Cần Thơ", "Chỉ số ISSN": "2354-1210", "Cơ quan xuất bản": "Trường Đại học Y Dược Cần Thơ", "Khung điểm quy định": "0 - 0,5 (từ 2023)• 0-0,25 (từ 2022), 0-0,5 (trước đó)" }, { "STT": 53, "Tên tạp chí": "Y Dược học Cổ truyền Quân sự", "Chỉ số ISSN": "1859-3755", "Cơ quan xuất bản": "Viện Y học Cổ truyền Quân đội", "Khung điểm quy định": "0 - 0,25 (từ 2025)• 0 (2021-2024), trước đó 0-0,25 và 0-0,5" }, { "STT": 54, "Tên tạp chí": "Y Dược học Lâm sàng 108", "Chỉ số ISSN": "1859-2872", "Cơ quan xuất bản": "Viện NCKH Y dược Lâm sàng 108", "Khung điểm quy định": "0 - 0,75 (từ 2020)• 0-1,0 (trước đó)" }, { "STT": 55, "Tên tạp chí": "Y Dược Thực hành 175", "Chỉ số ISSN": "2354-1024", "Cơ quan xuất bản": "Bệnh viện Quân y 175", "Khung điểm quy định": "0 - 0,25 (từ 2024)• 0 (2022-2023), trước đó biến động từ 0-1,0" }, { "STT": 56, "Tên tạp chí": "Y dược học Quân sự", "Chỉ số ISSN": "1859-0748", "Cơ quan xuất bản": "Học viện Quân y", "Khung điểm quy định": "0 - 1,0 (từ 2024)• Thay đổi liên tục qua các mốc 2001, 2021, 2022, 2023" }, { "STT": 57, "Tên tạp chí": "Y học cộng đồng", "Chỉ số ISSN": "2354-0613", "Cơ quan xuất bản": "Viện Sức khỏe cộng đồng", "Khung điểm quy định": "0 - 0,75 (từ 2021)• 0-0,5 (trước 2021)" }, { "STT": 58, "Tên tạp chí": "Y học dự phòng", "Chỉ số ISSN": "0868-2836", "Cơ quan xuất bản": "Hội Y học Dự phòng", "Khung điểm quy định": "0 - 1,0 (từ 2001)• 0-0,5 (trước 2001)" }, { "STT": 59, "Tên tạp chí": "Y học lâm sàng (BV Bạch Mai)", "Chỉ số ISSN": "1859-3593", "Cơ quan xuất bản": "Bệnh viện Bạch Mai", "Khung điểm quy định": "0 - 0,75 (từ 2024)• Biến động giảm về 0-0,5 rồi tăng lại" }, { "STT": 60, "Tên tạp chí": "Y học lâm sàng (BV TW Huế)", "Chỉ số ISSN": "1859-3895", "Cơ quan xuất bản": "Bệnh viện Trung ương Huế", "Khung điểm quy định": "0 - 1,0 (từ 2020)• 0-0,75 (trước 2020)" }, { "STT": 61, "Tên tạp chí": "Y học Thảm họa và Bỏng", "Chỉ số ISSN": "1859-3461", "Cơ quan xuất bản": "Viện Bỏng Quốc gia", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 62, "Tên tạp chí": "Y học Quân sự", "Chỉ số ISSN": "1859-1655", "Cơ quan xuất bản": "Cục Quân y", "Khung điểm quy định": "0 - 0,75 (từ 2024)• 0-0,5 (từ 2023), 0-0,25 (từ 2021)" }, { "STT": 63, "Tên tạp chí": "Y học thực hành", "Chỉ số ISSN": "1859-1663", "Cơ quan xuất bản": "Bộ Y tế", "Khung điểm quy định": "0 (từ 2021)• 0-0,25 (từ 2020), 0-0,75 (trước đó)" }, { "STT": 64, "Tên tạp chí": "Y học TP. Hồ Chí Minh", "Chỉ số ISSN": "1859-1779", "Cơ quan xuất bản": "Đại học Y Dược TP Hồ Chí Minh", "Khung điểm quy định": "0 - 0,75 (từ 2025)• Biến động giảm về mốc 0-0,5 trước khi tăng lại" }, { "STT": 65, "Tên tạp chí": "Y học Việt Nam", "Chỉ số ISSN": "1859-1868", "Cơ quan xuất bản": "Tổng hội Y học Việt Nam", "Khung điểm quy định": "0 - 1,0 (từ 2021)• 0-0,75 (từ 2020), 0-1,0 (trước đó)" }, { "STT": 66, "Tên tạp chí": "Y tế công cộng", "Chỉ số ISSN": "1859-1132", "Cơ quan xuất bản": "Hội Y tế Công cộng Việt Nam", "Khung điểm quy định": "0 - 1,0 (từ 2024)• 0-0,75 (từ 2021), 0-1,0 (từ 2013)" }, { "STT": 67, "Tên tạp chí": "Khoa học Điều dưỡng", "Chỉ số ISSN": "2734-9632", "Cơ quan xuất bản": "Trường Đại học Điều dưỡng Nam Định", "Khung điểm quy định": "0 - 0,5 (từ 2025)• 0-0,25 (từ 2022)" }, { "STT": 68, "Tên tạp chí": "Đông y", "Chỉ số ISSN": "1859-3933", "Cơ quan xuất bản": "Hội Đông y Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 69, "Tên tạp chí": "Tâm thần học", "Cơ quan xuất bản": "Hội Tâm thần học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 70, "Tên tạp chí": "Phẫu thuật thần kinh", "Cơ quan xuất bản": "Hội Thần kinh Nội khoa", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 71, "Tên tạp chí": "Hình thái học", "Cơ quan xuất bản": "Hội Hình thái học Việt Nam", "Khung điểm quy định": "0 - 0,5 (trước 2009)" }, { "STT": 72, "Tên tạp chí": "Y dược Thái Bình", "Chỉ số ISSN": "2815-5548", "Cơ quan xuất bản": "Trường Đại học Y Dược Thái Bình", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 73, "Tên tạp chí": "Kiểm nghiệm và An toàn thực phẩm", "Chỉ số ISSN": "2734-9152", "Cơ quan xuất bản": "Viện Kiểm nghiệm ATVSTP Quốc gia", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 74, "Tên tạp chí": "Kiểm định Vắc xin và Sinh phẩm y tế", "Chỉ số ISSN": "2815-6269", "Cơ quan xuất bản": "Viện Kiểm định Quốc gia Vắc xin & SPMYT", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 75, "Tên tạp chí": "Y Dược học Phạm Ngọc Thạch", "Chỉ số ISSN": "2815-6366", "Cơ quan xuất bản": "Trường Đại học Y khoa Phạm Ngọc Thạch", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 76, "Tên tạp chí": "Phát triển KH&CN: Khoa học Sức khỏe", "Chỉ số ISSN": "2734-9446", "Cơ quan xuất bản": "ĐH Khoa học Sức khoẻ, ĐHQG TP.HCM", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 77, "Tên tạp chí": "Sức khỏe nội tiết", "Chỉ số ISSN": "3030-4032", "Cơ quan xuất bản": "Hội Người Giáo dục Bệnh Đái tháo đường VN", "Khung điểm quy định": "0 - 0,25 (từ 2024)" }, { "STT": 78, "Tên tạp chí": "Khoa học Trường Đại học Hồng Bàng", "Chỉ số ISSN": "2615-9686", "Cơ quan xuất bản": "Trường Đại học Quốc tế Hồng Bàng", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }, { "STT": 79, "Tên tạp chí": "Sinh học (Academia Journal of Biology)", "Chỉ số ISSN": "2615-9023", "Cơ quan xuất bản": "Viện Khoa học sự sống - Viện HLKH&CN VN", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }, { "STT": 80, "Tên tạp chí": "Thần kinh học Việt Nam", "Chỉ số ISSN": "2354-0931", "Cơ quan xuất bản": "Hội Thần kinh học Việt Nam", "Khung điểm quy định": "0 - 0,25 (từ 2025)" }];
+
+    let pdfData = [{ "STT": 0, "Hội đồng Giáo sư ngành / Liên ngành": "Toàn văn Quyết định số 26/QĐ-HĐGSNN", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/QD%20so%2026%20phe%20duyet%20DMTCKH%20duoc%20tinh%20diem%20nam%202025_0001.pdf" }, { "STT": 1, "Hội đồng Giáo sư ngành / Liên ngành": "Chăn nuôi - Thú y - Thuỷ sản", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/1-HD%20CN-TY-TS-DMTC%202025_0001.pdf" }, { "STT": 2, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/2-HD%20Co%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 3, "Hội đồng Giáo sư ngành / Liên ngành": "Cơ khí - Động lực", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/3-HD%20CK-DL-DMTC%202025_0001.pdf" }, { "STT": 4, "Hội đồng Giáo sư ngành / Liên ngành": "Công nghệ thông tin", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/4-HD%20CNTT-DMTC%202025_0001.pdf" }, { "STT": 5, "Hội đồng Giáo sư ngành / Liên ngành": "Dược học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/5-HD%20Duoc%20hoc-DMTC%202025_0001.pdf" }, { "STT": 6, "Hội đồng Giáo sư ngành / Liên ngành": "Điện - Điện tử - Tự động hoá", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/6-HD%20Dien-DT-TDH-DMTC%202025_0001.pdf" }, { "STT": 7, "Hội đồng Giáo sư ngành / Liên ngành": "Giao thông vận tải", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/7-HD%20GTVT-DMTC%202025_0001.pdf" }, { "STT": 8, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Giáo dục", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/8-HD%20KH%20Giao%20duc-DMTC%202025_0001(1).pdf" }, { "STT": 9, "Hội đồng Giáo sư ngành / Liên ngành": "Hoá học - Công nghệ thực phẩm", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/9-HD%20Hoa%20hoc-CNTP-DMTC%202025_0001(2).pdf" }, { "STT": 10, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học An ninh", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/10-HD%20KH%20An%20ninh-DMTC%202025_0001(1).pdf" }, { "STT": 11, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Quân sự", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/11-HD%20KH%20Quan%20su-DMTC%202025_0001.pdf" }, { "STT": 12, "Hội đồng Giáo sư ngành / Liên ngành": "Khoa học Trái đất - Mỏ", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/12-HD%20KHTD-Mo-DMTC%202025_0001.pdf" }, { "STT": 13, "Hội đồng Giáo sư ngành / Liên ngành": "Kinh tế", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/13-HD%20Kinh%20te-DMTC%202025_0001(4).pdf" }, { "STT": 14, "Hội đồng Giáo sư ngành / Liên ngành": "Luật học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/14-HD%20Luat%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 15, "Hội đồng Giáo sư ngành / Liên ngành": "Luyện kim", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/15-HD%20Luyen%20kim-DMTC%202025_0001(1).pdf" }, { "STT": 16, "Hội đồng Giáo sư ngành / Liên ngành": "Ngôn ngữ học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/16-HD%20Ngon%20ngu%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 17, "Hội đồng Giáo sư ngành / Liên ngành": "Nông nghiệp - Lâm nghiệp", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/17-HD%20Nong%20nghiep-LN-DMTC%202025_0001(1).pdf" }, { "STT": 18, "Hội đồng Giáo sư ngành / Liên ngành": "Sinh học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/18-HD%20Sinh%20hoc-DMTC%202025_0001.pdf" }, { "STT": 19, "Hội đồng Giáo sư ngành / Liên ngành": "Sử học - Khảo cổ học - Dân tộc học / Nhân học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/19-HD%20Su%20hoc-KCH-DTH-NH-DMTC%202025_0001(1).pdf" }, { "STT": 20, "Hội đồng Giáo sư ngành / Liên ngành": "Tâm lý học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/20-HD%20Tam%20ly%20hoc-DMTC%202025_0001(1).pdf" }, { "STT": 21, "Hội đồng Giáo sư ngành / Liên ngành": "Thuỷ lợi", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/21-HD%20Thuy%20loi-DMTC%202025_0001.pdf" }, { "STT": 22, "Hội đồng Giáo sư ngành / Liên ngành": "Toán học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/22-HD%20Toan%20hoc-DMTC%202025_0001.pdf" }, { "STT": 23, "Hội đồng Giáo sư ngành / Liên ngành": "Triết học - Xã hội học - Chính trị học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/23-HD%20Triet%20hoc-CTH-XHH-DMTC%202025_0001(3).pdf" }, { "STT": 24, "Hội đồng Giáo sư ngành / Liên ngành": "Văn hoá - Nghệ thuật - Thể dục thể thao", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/24-HD%20VH-NT-TDTT-DMTC%202025_0001(1).pdf" }, { "STT": 25, "Hội đồng Giáo sư ngành / Liên ngành": "Văn học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/25-HD%20Van%20hoc-DMTC%202025_0001.pdf" }, { "STT": 26, "Hội đồng Giáo sư ngành / Liên ngành": "Vật lý", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/26-HD%20Vat%20ly-DMTC%202025_0001.pdf" }, { "STT": 27, "Hội đồng Giáo sư ngành / Liên ngành": "Xây dựng - Kiến trúc", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/27-HD%20XD-KT-DMTC%202025_0001.pdf" }, { "STT": 28, "Hội đồng Giáo sư ngành / Liên ngành": "Y học", "Bản gốc chi tiết (Tải về/Xem)": "https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC%202025/28-HD%20Y%20hoc-DMTC%202025_0001(2).pdf" }];
+
+    // ─── SUPABASE CLIENT ────────────────────────────────────────────
+    const { createClient: _sbCreate } = window.supabase;
+    const SUPABASE_URL = 'https://duycstnptwojisioeosk.supabase.co';
+    const SUPABASE_PUBLIC_KEY = 'sb_publishable_Jb7uRmyy59sLy4sW6caCAQ_pDNdMxDe';
+    const db = _sbCreate(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage
+        }
+      }
+    );
+    const publicDb = _sbCreate(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
+    const API_BASE = 'https://old-band-adb5.vonhacphuoc.workers.dev';
+    let currentSession = null;
+    let currentAccount = null;
+    let currentAuthMode = 'login';
+    let paymentPollTimer = null;
+    let activePaymentCode = null;
+
+    function setUserMessage(message = '', type = '') {
+      const element = document.getElementById('authMessage');
+      element.textContent = message;
+      element.className = `vip-message ${type}`.trim();
+    }
+
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const registering = mode === 'register';
+      document.getElementById('loginTab').classList.toggle('active', !registering);
+      document.getElementById('registerTab').classList.toggle('active', registering);
+      document.getElementById('authNameField').style.display = registering ? 'grid' : 'none';
+      document.getElementById('authName').required = registering;
+      document.getElementById('authPassword').autocomplete = registering ? 'new-password' : 'current-password';
+      document.getElementById('authHeading').textContent = registering ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
+      document.getElementById('authLead').textContent = registering
+        ? 'Đăng ký để kích hoạt VIP và bắt đầu trò chuyện cùng AI.'
+        : 'Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.';
+      document.getElementById('authSubmitLabel').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
+      document.getElementById('authForm').style.display = 'grid';
+      document.getElementById('resetView').style.display = 'none';
+      setUserMessage();
+    }
+
+    function togglePasswordVisibility(inputId, button) {
+      const input = document.getElementById(inputId);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      button.innerHTML = `<i class="fas fa-${showing ? 'eye' : 'eye-slash'}"></i>`;
+      button.setAttribute('aria-label', showing ? 'Hiện mật khẩu' : 'Ẩn mật khẩu');
+    }
+
+    function openUserModal() {
+      document.getElementById('userModal').classList.add('open');
+      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
+      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+      if (currentSession) refreshAccount();
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').classList.remove('open');
+      void cancelPendingPayment();
+    }
+
+    async function submitAuth(event) {
+      event.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const displayName = document.getElementById('authName').value.trim();
+      const submit = document.getElementById('authSubmit');
+      submit.disabled = true;
+      setUserMessage('Đang xử lý...');
+      try {
+        if (currentAuthMode === 'register') {
+          const { data, error } = await db.auth.signUp({
+            email, password,
+            options: {
+              data: { display_name: displayName },
+              emailRedirectTo: `${location.origin}${location.pathname}`
+            }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setUserMessage('Đăng ký thành công. Hãy kiểm tra email để xác minh tài khoản.', 'success');
+          } else {
+            setUserMessage('Tạo tài khoản thành công.', 'success');
+          }
+        } else {
+          const { error } = await db.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          setUserMessage('Đăng nhập thành công.', 'success');
+        }
+      } catch (error) {
+        setUserMessage(error.message || 'Không thể xác thực tài khoản.', 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    async function requestPasswordReset() {
+      const email = document.getElementById('authEmail').value.trim();
+      if (!email) {
+        setUserMessage('Nhập email trước khi yêu cầu đặt lại mật khẩu.', 'error');
+        return;
+      }
+      const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}${location.pathname}`
+      });
+      setUserMessage(error ? error.message : 'Đã gửi liên kết đặt lại mật khẩu vào email.', error ? 'error' : 'success');
+    }
+
+    async function saveNewPassword(event) {
+      event.preventDefault();
+      const password = document.getElementById('newPassword').value;
+      const { error } = await db.auth.updateUser({ password });
+      if (error) {
+        setUserMessage(error.message, 'error');
+        return;
+      }
+      setUserMessage('Đã cập nhật mật khẩu mới.', 'success');
+      document.getElementById('resetView').style.display = 'none';
+    }
+
+    async function signOutUser() {
+      await cancelPendingPayment();
+      await db.auth.signOut();
+      currentAccount = null;
+      closeUserModal();
+    }
+
+    async function apiFetch(path, options = {}) {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session?.access_token) throw new Error('Bạn cần đăng nhập.');
+      currentSession = session;
+
+      // getSession() already refreshes an expired token when needed. Do not call
+      // refreshSession() after a Worker 401: TOKEN_REFRESHED would trigger another
+      // account request and create an unbounded refresh loop.
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.error || 'Yêu cầu không thành công.');
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    }
+
+    async function cancelPendingPayment() {
+      const code = activePaymentCode;
+      if (!code) return;
+
+      activePaymentCode = null;
+      stopPaymentPolling();
+      document.getElementById('paymentBox').classList.remove('open');
+      document.getElementById('paymentQr').removeAttribute('src');
+      try {
+        await apiFetch(`/api/orders/${encodeURIComponent(code)}`, { method: 'DELETE' });
+      } catch (error) {
+        console.warn('Không thể hủy đơn thanh toán đang chờ:', error.message);
+      }
+    }
+
+    function renderAccount(account) {
+      if (!account) return;
+      document.getElementById('accountEmail').textContent = account.user.email || '';
+      const status = document.getElementById('vipStatus');
+      status.textContent = account.is_vip ? 'VIP đang hoạt động' : 'Chưa kích hoạt VIP';
+      status.className = account.is_vip ? 'vip-active' : 'vip-inactive';
+      const expiryRow = document.getElementById('vipExpiryRow');
+      const expiry = account.subscription?.expires_at;
+      expiryRow.style.display = expiry ? 'flex' : 'none';
+      if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleString('vi-VN');
+      const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
+      document.getElementById('vipUsage').textContent = `${account.usage_today || 0}/${limit}`;
+      document.getElementById('chat-access-note').style.display = account.is_vip ? 'none' : 'block';
+    }
+
+    async function refreshAccount() {
+      if (!currentSession) return null;
+      try {
+        currentAccount = await apiFetch('/api/account');
+        renderAccount(currentAccount);
+        return currentAccount;
+      } catch (error) {
+        // 401 = token đang được gia hạn tự động, không hiện lỗi cho người dùng
+        if (error.status !== 401) setUserMessage(error.message, 'error');
+        return null;
+      }
+    }
+
+    function updateAuthUi() {
+      const button = document.getElementById('accountButton');
+      if (currentSession?.user) {
+        button.innerHTML = '<i class="fas fa-user-check"></i> Tài khoản';
+      } else {
+        button.innerHTML = '<i class="fas fa-user"></i> Đăng nhập';
+        document.getElementById('chat-access-note').style.display = 'block';
+      }
+      document.getElementById('authView').style.display = currentSession ? 'none' : 'block';
+      document.getElementById('accountView').style.display = currentSession ? 'block' : 'none';
+    }
+
+    async function initAuth() {
+      const { data } = await db.auth.getSession();
+      currentSession = data.session;
+      updateAuthUi();
+      if (currentSession) await refreshAccount();
+      db.auth.onAuthStateChange((event, session) => {
+        currentSession = session;
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') currentAccount = null;
+        setTimeout(async () => {
+          updateAuthUi();
+          if (event === 'PASSWORD_RECOVERY') {
+            openUserModal();
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('resetView').style.display = 'grid';
+          } else if (event === 'SIGNED_IN' && session) {
+            currentAccount = null;
+            await refreshAccount();
+            document.getElementById('authView').style.display = 'none';
+            document.getElementById('accountView').style.display = 'block';
+          }
+        }, 0);
+      });
+    }
+
+    function stopPaymentPolling() {
+      if (paymentPollTimer) clearTimeout(paymentPollTimer);
+      paymentPollTimer = null;
+    }
+
+    async function pollPayment(code, expiresAt) {
+      stopPaymentPolling();
+      const countdown = document.getElementById('paymentCountdown');
+      const tick = async () => {
+        const remaining = new Date(expiresAt).getTime() - Date.now();
+        if (remaining <= 0) {
+          countdown.textContent = 'Đơn thanh toán đã hết hạn.';
+          countdown.className = 'vip-message error';
+          return;
+        }
+        const minutes = String(Math.floor(remaining / 60000)).padStart(2, '0');
+        const seconds = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+        countdown.textContent = `Đang chờ thanh toán · ${minutes}:${seconds}`;
+        try {
+          const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`);
+          if (order.status === 'paid') {
+            activePaymentCode = null;
+            stopPaymentPolling();
+            document.getElementById('paymentBox').classList.remove('open');
+            document.getElementById('paymentQr').removeAttribute('src');
+            setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
+            await refreshAccount();
+            return;
+          }
+        } catch (_) {}
+        paymentPollTimer = setTimeout(tick, 4000);
+      };
+      tick();
+    }
+
+    async function createVipOrder() {
+      setUserMessage('Đang tạo mã thanh toán...');
+      try {
+        const order = await apiFetch('/api/orders', { method: 'POST', body: '{}' });
+        activePaymentCode = order.code;
+        document.getElementById('paymentQr').src = order.qr_url;
+        document.getElementById('paymentCode').textContent = order.code;
+        document.getElementById('paymentAmount').textContent = new Intl.NumberFormat('vi-VN', {
+          style: 'currency', currency: 'VND'
+        }).format(order.amount);
+        document.getElementById('paymentBox').classList.add('open');
+        setUserMessage('Quét QR và giữ nguyên nội dung chuyển khoản.', 'success');
+        pollPayment(order.code, order.expires_at);
+      } catch (error) {
+        setUserMessage(error.message, 'error');
+      }
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatISSN(issn) {
+      if (!issn) return 'N/A';
+      const s = String(issn).replace(/[^0-9xX]/gi, '');
+      return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4)}` : (issn || 'N/A');
+    }
+
+    function updateLoadingStatus(msg, success = false, error = false) {
+      // Cập nhật cả splash screen lẫn status bar nhỏ phía dưới
+      const el = document.getElementById("dbLoadingStatus");
+      const splashStatus = document.getElementById("splashStatus");
+      if (!el) return;
+      let icon = '<i class="fas fa-circle-notch fa-spin"></i> ';
+      el.className = "loading-status-msg";
+      if (success) {
+        icon = '<i class="fas fa-check-circle"></i> ';
+        el.className = "loading-status-msg success";
+        if (splashStatus) { splashStatus.style.color = '#10b981'; }
+      } else if (error) {
+        icon = '<i class="fas fa-exclamation-circle"></i> ';
+        el.className = "loading-status-msg error";
+        if (splashStatus) { splashStatus.style.color = '#ef4444'; }
+      } else {
+        if (splashStatus) { splashStatus.style.color = ''; }
+      }
+      el.innerHTML = icon + msg;
+      if (splashStatus) splashStatus.textContent = msg;
+    }
+
+    function setSplashStep(stepId, state) {
+      // state: 'active' | 'done'
+      const el = document.getElementById(stepId);
+      if (!el) return;
+      el.classList.remove('active', 'done');
+      el.classList.add(state);
+      if (state === 'done') {
+        el.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+      } else if (state === 'active') {
+        el.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+      }
+    }
+
+    function setSplashProgress(pct) {
+      const fill = document.getElementById('splashProgressFill');
+      if (fill) fill.style.width = pct + '%';
+    }
+
+    function hideSplash() {
+      const splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.classList.add('hidden');
+        // Xóa khỏi DOM sau khi transition kết thúc
+        setTimeout(() => splash.remove(), 700);
+      }
+    }
+
+    function updateIframeSources() {
+      if (window.innerWidth >= 1024) {
+        document.getElementById('noapcFrame').src = currentIframeUrls.noapc;
+        document.getElementById('resurchifyFrame').src = currentIframeUrls.resurchify;
+        document.getElementById('wosFrame').src = currentIframeUrls.wos;
+        document.getElementById('iframeInlineSection').style.display = 'block';
+        document.getElementById('iframeLinksSection').style.display = 'none';
+      } else {
+        document.getElementById('iframeInlineSection').style.display = 'none';
+        document.getElementById('iframeLinksSection').style.display = 'block';
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (!document.getElementById("iframeModal").classList.contains("open")) {
+        updateIframeSources();
+      }
+    });
+
+    async function initApp() {
+
+      await initAuth();
+
+      // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
+      setSplashStep('step-jcr', 'active');
+      setSplashStep('step-hdgsnn', 'active');
+      setSplashStep('step-scopus', 'active');
+      setSplashProgress(30);
+      try {
+        updateLoadingStatus('Đang kết nối cơ sở dữ liệu Supabase...');
+        // Ping kiểm tra kết nối Supabase
+        const { error } = await publicDb.from('jcr_data').select('id').limit(1);
+        if (error) throw error;
+        setSplashStep('step-jcr', 'done');
+        setSplashStep('step-hdgsnn', 'done');
+        setSplashStep('step-scopus', 'done');
+        setSplashProgress(100);
+        updateLoadingStatus('Đã kết nối! 22k JCR · 25 HĐGSNN · 48k Scopus sẵn sàng.', true);
+      } catch (e) {
+        updateLoadingStatus('Lỗi kết nối cơ sở dữ liệu!', false, true);
+      }
+
+      // Hoàn thành — tắt Splash Screen
+      setSplashProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      hideSplash();
+
+      // Mặc định nạp URL ban đầu cho các iframe
+      currentIframeUrls.noapc = 'https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/';
+      currentIframeUrls.resurchify = 'https://www.resurchify.com/';
+      currentIframeUrls.wos = 'https://wos-journal.info/';
+      updateIframeSources();
+
+
+      // Hỗ trợ tự động tìm kiếm từ tham số URL (?q=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryParam = urlParams.get('q') || urlParams.get('query');
+      if (queryParam) {
+        const inputEl = document.getElementById("searchInput");
+        if (inputEl) {
+          inputEl.value = queryParam;
+          search();
+        }
+      }
+
+    }
+
+    function cleanISSN(issn) {
+      if (!issn) return "";
+      return String(issn).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    }
+
+    function normalizeStr(str) {
+      if (!str) return "";
+      return str.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .trim();
+    }
+
+    async function search() {
+      const input = document.getElementById("searchInput");
+      const query = input.value.trim();
+      if (!query) return;
+      if (query.length > 150) {
+        input.setCustomValidity('Từ khóa không được vượt quá 150 ký tự.');
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity('');
+
+      const normQuery = normalizeStr(query).replace(/[%,()]/g, '');
+      const cleanedQuery = cleanISSN(query);
+      const isIssnSearch = cleanedQuery.length >= 7;
+
+      const excelInfoDiv = document.getElementById("excelInfo");
+      excelInfoDiv.style.display = "block";
+      excelInfoDiv.innerHTML = `<p style="text-align:center;color:#94a3b8;padding:30px;font-size:16px;"><i class="fas fa-circle-notch fa-spin"></i> Đang tìm kiếm...</p>`;
+
+      try {
+        const [jcrRes, hdgsnnRes, scopusRes] = await Promise.all([
+          isIssnSearch
+            ? publicDb.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : publicDb.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(50),
+          isIssnSearch
+            ? publicDb.from('hdgsnn_list').select('*').eq('issn', cleanedQuery)
+            : publicDb.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`),
+          isIssnSearch
+            ? publicDb.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(50)
+            : publicDb.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(50),
+        ]);
+
+        const jcrMatches = jcrRes.data || [];
+        const hdgsnnMatches = hdgsnnRes.data || [];
+        const scopusMatches = scopusRes.data || [];
+
+        if (hdgsnnMatches.length === 0 && scopusMatches.length === 0 && jcrMatches.length === 0) {
+          excelInfoDiv.innerHTML = `<p style="color: #ef4444; font-weight: bold; text-align: center; font-size: 18px; padding: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> Không tìm thấy kết quả phù hợp trong danh mục HDGSNN, JCR và Scopus.
+          </p>`;
+          const encoded = encodeURIComponent(query);
+          document.getElementById('externalLinks').style.display = 'block';
+          document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
+          document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
+          document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
+          currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
+          currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
+          currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
+          updateIframeSources();
+
+          if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: 0 });
+          return;
+        }
+
+        // HTML HDGSNN
+        let hdgsnnHTML = `<div class="result-section">
+          <h4><i class="fas fa-university"></i> Danh mục HDGSNN (${hdgsnnMatches.length})</h4>`;
+        if (hdgsnnMatches.length === 0) {
+          hdgsnnHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục HĐGSNN.</p>`;
+        } else {
+          hdgsnnHTML += `<ul class="result-list">`;
+          hdgsnnMatches.forEach(item => {
+            hdgsnnHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${escapeHTML(item.ten_tap_chi || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>Điểm HĐGSNN:</b> <span class="badge badge-points">${escapeHTML(item.diem_hdgsnn !== null ? item.diem_hdgsnn : "N/A")}</span></div>
+              </li>`;
+          });
+          hdgsnnHTML += `</ul>`;
+        }
+        hdgsnnHTML += `</div>`;
+
+        // HTML JCR
+        let jcrHTML = `<div class="result-section">
+          <h4><i class="fas fa-chart-line"></i> Chỉ số JCR (Impact Factor) (${jcrMatches.length})</h4>`;
+        if (jcrMatches.length === 0) {
+          jcrHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong dữ liệu JCR.</p>`;
+        } else {
+          jcrHTML += `<ul class="result-list">`;
+          jcrMatches.forEach(item => {
+            jcrHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${escapeHTML(item.journal_name || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>eISSN:</b> <span>${escapeHTML(formatISSN(item.eissn))}</span></div>
+                <div class="result-item-detail"><b>Ngành:</b> <span>${escapeHTML(item.category || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2023:</b> <span class="badge badge-points">${escapeHTML(item.jcr_2024 || 'N/A')}</span></div>
+                <div class="result-item-detail"><b>Impact Factor 2024:</b> <span class="badge badge-points">${escapeHTML(item.jcr_2025 || 'N/A')}</span></div>
+                <div class="result-item-detail"><b>Phân hạng Q:</b> <span class="badge badge-oa">${escapeHTML(item.jif_quartile || 'N/A')}</span></div>
+              </li>`;
+          });
+          jcrHTML += `</ul>`;
+        }
+        jcrHTML += `</div>`;
+
+        // HTML Scopus
+        let scopusHTML = `<div class="result-section">
+          <h4><i class="fas fa-globe"></i> Danh mục Scopus (May 2026) (${scopusMatches.length})</h4>`;
+        if (scopusMatches.length === 0) {
+          scopusHTML += `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy tạp chí nào trong danh mục Scopus.</p>`;
+        } else {
+          scopusHTML += `<ul class="result-list">`;
+          scopusMatches.forEach(item => {
+            const isDiscontinued = !!item.discontinued;
+            const isActive = String(item.active_or_inactive || "").trim().toLowerCase() === "active" && !isDiscontinued;
+            const activeBadge = isActive
+              ? `<span class="badge badge-active">Active</span>`
+              : `<span class="badge badge-inactive">Inactive</span>`;
+            const oaStatus = item.open_access_status ? `<span class="badge badge-oa">${escapeHTML(item.open_access_status)}</span>` : "";
+            const discontinued = item.discontinued ? `<span class="badge badge-discontinued">Discontinued</span>` : "";
+
+            scopusHTML += `
+              <li class="result-item">
+                <div class="result-item-title">${escapeHTML(item.source_title || "N/A")}</div>
+                <div class="result-item-detail"><b>ISSN:</b> <span>${escapeHTML(formatISSN(item.issn))}</span></div>
+                <div class="result-item-detail"><b>EISSN:</b> <span>${escapeHTML(formatISSN(item.eissn))}</span></div>
+                <div class="result-item-detail"><b>Publisher:</b> <span>${escapeHTML(item.publisher || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Coverage:</b> <span>${escapeHTML(item.coverage || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Source Type:</b> <span>${escapeHTML(item.source_type || "N/A")}</span></div>
+                <div class="result-item-detail"><b>Trạng thái:</b> <span>${activeBadge} ${discontinued} ${oaStatus}</span></div>
+              </li>`;
+          });
+          scopusHTML += `</ul>`;
+        }
+        scopusHTML += `</div>`;
+
+        // Đưa HTML vào giao diện
+        excelInfoDiv.innerHTML = `
+          <h3><i class="fas fa-info-circle"></i> Kết quả tìm kiếm cho: "${escapeHTML(query)}"</h3>
+          <div class="search-results-grid">
+            ${hdgsnnHTML}
+            ${jcrHTML}
+            ${scopusHTML}
+          </div>`;
+
+        const firstMatch = scopusMatches[0] || jcrMatches[0] || hdgsnnMatches[0];
+        const firstMatchName = firstMatch ? (firstMatch.source_title || firstMatch.journal_name || firstMatch.ten_tap_chi || query) : query;
+        const firstMatchIssnRaw = firstMatch ? (firstMatch.issn || '') : '';
+        const firstMatchIssn = formatISSN(firstMatchIssnRaw) !== 'N/A' ? formatISSN(firstMatchIssnRaw) : query;
+        const encodedName = encodeURIComponent(firstMatchName);
+        const encodedIssn = encodeURIComponent(firstMatchIssn);
+
+        document.getElementById('externalLinks').style.display = 'block';
+        document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encodedIssn}`;
+        document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
+        document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
+        currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
+        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${encodeURIComponent(firstMatchIssnRaw)}#search_results`;
+        currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
+        updateIframeSources();
+
+        if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length });
+
+      } catch (err) {
+        excelInfoDiv.innerHTML = `<p style="color: #ef4444; text-align: center; font-size: 16px; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ${escapeHTML(err.message)}</p>`;
+      }
+    }
+
+    document.getElementById("searchInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") search();
+    });
+
+    window.onload = initApp;
+
+    // ========== RULE-BASED CHATBOT (MIỄN PHÍ - KHÔNG CẦN API) ==========
+    let chatHistory = [];
+    let isChatOpen = false;
+
+    // ---- Dữ liệu 28 ngành từ QĐ 26/HĐGSNN 2025 ----
+    const DMTC_2025 = [
+      { id: 1, nganh: 'Chăn nuôi - Thú y - Thuỷ sản', key: ['chan nuoi', 'thu y', 'thuy san', 'chăn nuôi', 'thú y', 'thuỷ sản', 'nuôi trồng thủy sản'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/1-HD CN-TY-TS-DMTC 2025_0001.pdf' },
+      { id: 2, nganh: 'Cơ học', key: ['co hoc', 'cơ học', 'mechanics'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/2-HD Co hoc-DMTC 2025_0001(1).pdf' },
+      { id: 3, nganh: 'Cơ khí - Động lực', key: ['co khi', 'dong luc', 'cơ khí', 'động lực'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/3-HD CK-DL-DMTC 2025_0001.pdf' },
+      { id: 4, nganh: 'Công nghệ thông tin', key: ['cong nghe thong tin', 'cntt', 'công nghệ thông tin', 'khoa hoc may tinh', 'it '], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/4-HD CNTT-DMTC 2025_0001.pdf' },
+      { id: 5, nganh: 'Dược học', key: ['duoc hoc', 'duoc ', 'dược học', 'dược ', 'pharmacy'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/5-HD Duoc hoc-DMTC 2025_0001.pdf' },
+      { id: 6, nganh: 'Điện - Điện tử - Tự động hoá', key: ['dien tu', 'tu dong', 'điện tử', 'tự động', 'dien '], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/6-HD Dien-DT-TDH-DMTC 2025_0001.pdf' },
+      { id: 7, nganh: 'Giao thông vận tải', key: ['giao thong', 'van tai', 'giao thông', 'vận tải', 'gtvt'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/7-HD GTVT-DMTC 2025_0001.pdf' },
+      { id: 8, nganh: 'Khoa học Giáo dục', key: ['giao duc', 'giáo dục', 'khoa hoc giao duc', 'education'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/8-HD KH Giao duc-DMTC 2025_0001(1).pdf' },
+      { id: 9, nganh: 'Hoá học - Công nghệ thực phẩm', key: ['hoa hoc', 'thuc pham', 'hoá học', 'thực phẩm', 'chemistry', 'food'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/9-HD Hoa hoc-CNTP-DMTC 2025_0001(2).pdf' },
+      { id: 10, nganh: 'Khoa học An ninh', key: ['an ninh', 'khoa hoc an ninh'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/10-HD KH An ninh-DMTC 2025_0001(1).pdf' },
+      { id: 11, nganh: 'Khoa học Quân sự', key: ['quan su', 'quân sự', 'military'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/11-HD KH Quan su-DMTC 2025_0001.pdf' },
+      { id: 12, nganh: 'Khoa học Trái đất - Mỏ', key: ['trai dat', 'mo ', 'trái đất', 'địa chất', 'dia chat', 'earth'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/12-HD KHTD-Mo-DMTC 2025_0001.pdf' },
+      { id: 13, nganh: 'Kinh tế', key: ['kinh te', 'kinh tế', 'economics', 'kinh doanh', 'quan tri'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/13-HD Kinh te-DMTC 2025_0001(4).pdf' },
+      { id: 14, nganh: 'Luật học', key: ['luat', 'luật', 'phap luat', 'pháp luật', 'law'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/14-HD Luat hoc-DMTC 2025_0001(1).pdf' },
+      { id: 15, nganh: 'Luyện kim', key: ['luyen kim', 'luyện kim', 'metallurgy', 'kim loai'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/15-HD Luyen kim-DMTC 2025_0001(1).pdf' },
+      { id: 16, nganh: 'Ngôn ngữ học', key: ['ngon ngu', 'ngôn ngữ', 'ngoai ngu', 'ngoại ngữ', 'linguistics', 'language'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/16-HD Ngon ngu hoc-DMTC 2025_0001(1).pdf' },
+      { id: 17, nganh: 'Nông nghiệp - Lâm nghiệp', key: ['nong nghiep', 'lam nghiep', 'nông nghiệp', 'lâm nghiệp', 'agriculture', 'forestry'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/17-HD Nong nghiep-LN-DMTC 2025_0001(1).pdf' },
+      { id: 18, nganh: 'Sinh học', key: ['sinh hoc', 'sinh học', 'biology', 'vi sinh'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/18-HD Sinh hoc-DMTC 2025_0001.pdf' },
+      { id: 19, nganh: 'Sử học - Khảo cổ học - Dân tộc học', key: ['su hoc', 'khao co', 'dan toc', 'sử học', 'khảo cổ', 'dân tộc', 'history'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/19-HD Su hoc-KCH-DTH-NH-DMTC 2025_0001(1).pdf' },
+      { id: 20, nganh: 'Tâm lý học', key: ['tam ly', 'tâm lý', 'psychology'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/20-HD Tam ly hoc-DMTC 2025_0001(1).pdf' },
+      { id: 21, nganh: 'Thuỷ lợi', key: ['thuy loi', 'thuỷ lợi', 'water resources'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/21-HD Thuy loi-DMTC 2025_0001.pdf' },
+      { id: 22, nganh: 'Toán học', key: ['toan', 'toán', 'mathematics', 'math'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/22-HD Toan hoc-DMTC 2025_0001.pdf' },
+      { id: 23, nganh: 'Triết học - Xã hội học - Chính trị học', key: ['triet', 'xa hoi', 'chinh tri', 'triết', 'xã hội', 'chính trị', 'philosophy'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/23-HD Triet hoc-CTH-XHH-DMTC 2025_0001(3).pdf' },
+      { id: 24, nganh: 'Văn hoá - Nghệ thuật - Thể dục thể thao', key: ['van hoa', 'nghe thuat', 'the duc', 'the thao', 'văn hoá', 'nghệ thuật', 'thể thao', 'sports'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/24-HD VH-NT-TDTT-DMTC 2025_0001(1).pdf' },
+      { id: 25, nganh: 'Văn học', key: ['van hoc', 'văn học', 'literature'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/25-HD Van hoc-DMTC 2025_0001.pdf' },
+      { id: 26, nganh: 'Vật lý', key: ['vat ly', 'vật lý', 'physics'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/26-HD Vat ly-DMTC 2025_0001.pdf' },
+      { id: 27, nganh: 'Xây dựng - Kiến trúc', key: ['xay dung', 'kien truc', 'xây dựng', 'kiến trúc', 'civil', 'architecture'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/27-HD XD-KT-DMTC 2025_0001.pdf' },
+      { id: 28, nganh: 'Y học', key: ['y hoc', 'y học', 'y khoa', 'medicine', 'benh vien', 'bệnh viện'], pdf: 'https://hdgsnn.gov.vn/files/anhbaiviet/files/DMTC 2025/28-HD Y hoc-DMTC 2025_0001(2).pdf' },
+    ];
+
+    const QUICK_QUESTIONS = [
+      '🔍 Tra ISSN 2525-2186',
+      '📊 Tạp chí Nature',
+      '🏛️ Danh mục 28 ngành',
+      '📋 Quyết định 26/2025',
+      '💡 Tạp chí Q1 miễn phí',
+    ];
+
+    // Normalize Vietnamese text
+    function norm(s) {
+      return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    }
+
+    async function toggleChat() {
+      // Luôn cho phép đóng ngay, kể cả khi phiên đăng nhập vừa hết hạn.
+      if (isChatOpen) {
+        isChatOpen = false;
+        document.getElementById('ai-chat-panel').classList.remove('open');
+        if (typeof gtag === 'function') {
+          gtag('event', 'chat_toggle', { status: 'close' });
+        }
+        return;
+      }
+
+      if (!currentSession) {
+        setAuthMode('login');
+        openUserModal();
+        setUserMessage('Đăng nhập và kích hoạt VIP để sử dụng Chatbox AI.');
+        return;
+      }
+      const account = currentAccount || await refreshAccount();
+      if (!account?.is_vip) {
+        openUserModal();
+        setUserMessage('Tài khoản chưa có VIP. Bạn có thể thanh toán 25.000đ để dùng AI trong 30 ngày.');
+        return;
+      }
+      isChatOpen = true;
+      document.getElementById('ai-chat-panel').classList.add('open');
+      document.getElementById('ai-chat-badge').style.display = 'none';
+      if (isChatOpen && chatHistory.length === 0) setTimeout(openSettings, 300);
+      if (isChatOpen) setTimeout(() => document.getElementById('ai-chat-input').focus(), 400);
+
+      // Google Analytics Chat Toggle Event
+      if (typeof gtag === 'function') {
+        gtag('event', 'chat_toggle', {
+          status: isChatOpen ? 'open' : 'close'
+        });
+      }
+    }
+
+    function showWelcomeMsg() {
+      if (chatHistory.length > 0) return;
+      addMessage('ai',
+        `Xin chào! 👋 Tôi là <strong>Trợ lý Tạp chí</strong>, chuyên gia giải đáp các câu hỏi liên quan đến tạp chí khoa học trong và ngoài nước.<br><br>` +
+        `Tôi hỗ trợ bạn tra cứu:<br>` +
+        `• 🇻🇳 Điểm số tạp chí trong danh mục <strong>HĐGSNN 2025</strong><br>` +
+        `• 🌍 Chỉ số <strong>JCR Impact Factor, Phân hạng Q</strong><br>` +
+        `• 📊 Trạng thái <strong>Scopus, Open Access, Nhà xuất bản</strong><br>` +
+        `• 📄 Link đọc trực tiếp PDF của từng ngành<br><br>` +
+        `Bạn có thể gõ câu hỏi hoặc nhập ISSN (ví dụ: <em>"Tạp chí khoa học lạc hồng issn 2525-2186"</em> hoặc <em>"Tạp chí Nature"</em>).`, true
+      );
+      addQuickReplies();
+    }
+
+    function addQuickReplies() {
+      const msgs = document.getElementById('ai-chat-messages');
+      const d = document.createElement('div');
+      d.id = 'quick-replies-container'; d.className = 'quick-replies';
+      d.innerHTML = QUICK_QUESTIONS.map(q =>
+        `<button class="quick-btn" onclick="quickSend('${q.replace(/'/g, "\\'")}')">${q}</button>`
+      ).join('');
+      msgs.appendChild(d);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function quickSend(text) {
+      document.getElementById('quick-replies-container')?.remove();
+      document.getElementById('ai-chat-input').value = text;
+      sendChatMessage();
+    }
+
+    function openSettings() { document.getElementById('ai-settings-modal').classList.add('open'); }
+    function closeSettings() { document.getElementById('ai-settings-modal').classList.remove('open'); }
+
+    // ---- Search Supabase database to provide context for AI ----
+    async function searchLocalDatabase(queryText) {
+      const cleanISSN = (issn) => issn ? String(issn).replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "";
+      const normalizeStr = (str) => {
+        if (!str) return "";
+        return str.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .trim();
+      };
+
+      const issnMatch = queryText.match(/\b\d{4}-\d{3}[\dX]\b/i) || queryText.match(/\b\d{8}\b/);
+      let cleanedQuery = "";
+      if (issnMatch) {
+        cleanedQuery = cleanISSN(issnMatch[0]);
+      }
+
+      let nameQuery = queryText.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+        .replace(/tim|tra cuu|xem|cho toi|biet|ve|thong tin|tap chi|issn|eissn|diem|cua/g, "")
+        .trim();
+
+      const normQuery = normalizeStr(nameQuery).replace(/[%,()]/g, '').slice(0, 150);
+
+      try {
+        const isIssnSearch = cleanedQuery.length >= 7;
+        const [hdgsnnRes, jcrRes, scopusRes] = await Promise.all([
+          isIssnSearch
+            ? publicDb.from('hdgsnn_list').select('*').eq('issn', cleanedQuery).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('hdgsnn_list').select('*').ilike('ten_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+          isIssnSearch
+            ? publicDb.from('jcr_data').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('jcr_data').select('*').ilike('journal_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+          isIssnSearch
+            ? publicDb.from('scopus_list').select('*').or(`issn.eq.${cleanedQuery},eissn.eq.${cleanedQuery}`).limit(10)
+            : (normQuery.length > 3 ? publicDb.from('scopus_list').select('*').ilike('source_title_norm', `%${normQuery}%`).limit(10) : Promise.resolve({ data: [] })),
+        ]);
+
+        // Map Supabase fields → format cho chatbot Worker
+        const hdgsnnMatches = (hdgsnnRes.data || []).map(r => ({
+          "Tên Tạp chí": r.ten_tap_chi, "ISSN": formatISSN(r.issn), "Điểm HDDGSNN": r.diem_hdgsnn
+        }));
+        const jcrMatches = (jcrRes.data || []).map(r => ({
+          "journal_name": r.journal_name, "issn": formatISSN(r.issn), "eissn": formatISSN(r.eissn),
+          "category": r.category, "2024_JCR": r.jcr_2024, "2025_JCR": r.jcr_2025, "JIF Quartile": r.jif_quartile
+        }));
+        const scopusMatches = (scopusRes.data || []).map(r => ({
+          "Source Title": r.source_title, "ISSN": formatISSN(r.issn), "EISSN": formatISSN(r.eissn),
+          "Publisher": r.publisher, "Coverage": r.coverage, "Source Type": r.source_type,
+          "Active or Inactive": r.active_or_inactive,
+          "Titles Discontinued by Scopus": r.discontinued, "Open Access Status": r.open_access_status
+        }));
+
+        // Bổ sung inline hdgsnnData (điểm khung quy định) cho chatbot
+        if (typeof hdgsnnData !== "undefined" && hdgsnnData.length > 0) {
+          hdgsnnData.filter(row => {
+            const name = normalizeStr(row["Tên tạp chí"] || "");
+            const issn = cleanISSN(row["Chỉ số ISSN"] || "");
+            if (cleanedQuery.length >= 7 && issn === cleanedQuery) return true;
+            return normQuery.length > 3 && name.includes(normQuery);
+          }).forEach(item => {
+            const exists = hdgsnnMatches.some(m => cleanISSN(m["ISSN"]) === cleanISSN(item["Chỉ số ISSN"]));
+            if (!exists) hdgsnnMatches.push({
+              "Tên Tạp chí": item["Tên tạp chí"], "ISSN": item["Chỉ số ISSN"] || "N/A",
+              "Điểm HDDGSNN": item["Khung điểm quy định"] || "N/A"
+            });
+          });
+        }
+        return { hdgsnnMatches, jcrMatches, scopusMatches };
+      } catch (e) {
+        console.warn('searchLocalDatabase error:', e.message);
+        return { hdgsnnMatches: [], jcrMatches: [], scopusMatches: [] };
+      }
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('ai-chat-input');
+      const userText = input.value.trim();
+      if (!userText) return;
+      if (userText.length > 2000) {
+        input.setCustomValidity('Tin nhắn không được vượt quá 2.000 ký tự.');
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity('');
+
+      document.getElementById('quick-replies-container')?.remove();
+      addMessage('user', userText, false);
+      
+      // Đưa lịch sử trò chuyện theo định dạng OpenAI
+      chatHistory.push({ role: 'user', content: userText });
+      input.value = ''; 
+      input.style.height = 'auto';
+
+      // Google Analytics Chat Message Sent Event
+      if (typeof gtag === 'function') {
+        gtag('event', 'chat_message_sent', {
+          message_length: userText.length
+        });
+      }
+
+      const tid = showTyping();
+      document.getElementById('ai-send-btn').disabled = true;
+
+      try {
+        // Tra cứu dữ liệu cục bộ làm ngữ cảnh hỗ trợ
+        const contextData = await searchLocalDatabase(userText);
+
+        // Gọi Cloudflare Worker bằng session mới nhất; apiFetch tự làm mới token
+        // và thử lại một lần nếu máy chủ trả về 401.
+        const data = await apiFetch('/api/chat', {
+          method: "POST",
+          body: JSON.stringify({
+            messages: chatHistory.slice(-12),
+            contextData: contextData
+          })
+        });
+
+        removeTyping(tid);
+        const replyText = data.result || "Không có phản hồi từ Trợ lý AI.";
+
+        if (data.usage && currentAccount) {
+          currentAccount.usage_today = data.usage.used;
+          renderAccount(currentAccount);
+        }
+
+        addMessage('ai', replyText, false);
+        chatHistory.push({ role: 'assistant', content: replyText });
+
+      } catch (err) {
+        if (err.status === 403) currentAccount = null;
+        removeTyping(tid);
+        const message = err.data?.error === 'vip_required'
+          ? 'Tài khoản VIP đã hết hạn.'
+          : err.data?.error === 'daily_limit'
+            ? 'Bạn đã dùng hết lượt AI hôm nay.'
+            : err.status === 401
+              ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+              : err.message;
+        addMessage('ai', `⚠️ Đã xảy ra lỗi: ${message}. Vui lòng thử lại sau.`, false);
+      } finally {
+        document.getElementById('ai-send-btn').disabled = false;
+      }
+    }
+
+    function addMessage(role, text, isHTML) {
+      const msgs = document.getElementById('ai-chat-messages');
+      const div = document.createElement('div');
+      div.className = `chat-msg ${role}`;
+      const avatar = role === 'ai'
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z" fill="white"/><circle cx="8" cy="11" r="1.2" fill="#10a37f"/><circle cx="12" cy="11" r="1.2" fill="#10a37f"/><circle cx="16" cy="11" r="1.2" fill="#10a37f"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="white"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const msgContent = isHTML ? text : formatMessage(text);
+      const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+      div.innerHTML = `
+        <div class="msg-avatar">${avatar}</div>
+        <div class="msg-wrap">
+          <div class="msg-bubble" id="${msgId}">${msgContent}</div>
+          <div class="msg-meta">
+            <span class="msg-time">${timeStr}</span>
+            ${role === 'ai' ? `<button class="msg-copy" onclick="copyMsg('${msgId}', this)" title="Sao chép"><i class="fas fa-copy"></i></button>` : ''}
+          </div>
+        </div>`;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function copyMsg(id, btn) {
+      const el = document.getElementById(id);
+      const text = el ? el.innerText : '';
+      navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i>'; btn.classList.remove('copied'); }, 1800);
+      }).catch(() => {});
+    }
+
+    function confirmClearHistory() {
+      document.getElementById('clear-confirm-box')?.remove();
+      const box = document.createElement('div');
+      box.className = 'clear-confirm';
+      box.id = 'clear-confirm-box';
+      box.innerHTML = `
+        <span>🗑️ Xóa toàn bộ lịch sử chat?</span>
+        <div style="display:flex;gap:8px;">
+          <button class="clear-yes" onclick="clearHistory()">Xóa</button>
+          <button class="clear-no" onclick="document.getElementById('clear-confirm-box').remove()">Hủy</button>
+        </div>`;
+      document.getElementById('ai-chat-panel').appendChild(box);
+    }
+
+    function clearHistory() {
+      document.getElementById('clear-confirm-box')?.remove();
+      document.getElementById('ai-chat-messages').innerHTML = '';
+      chatHistory = [];
+      showWelcomeMsg();
+    }
+
+    function formatMessage(text) {
+      // Escape HTML
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      
+      // Bold **text**
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      // Italic *text*
+      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+      // Inline code `code`
+      html = html.replace(/`(.+?)`/g, '<code style="background:rgba(128,128,128,0.2);padding:2px 4px;border-radius:4px;font-family:monospace;">$1</code>');
+      
+      // Convert list items: start of line with "- " or "* " or "• "
+      html = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+          return `<li style="margin-left: 20px; list-style-type: disc;">${trimmed.substring(2)}</li>`;
+        }
+        return line;
+      }).join('\n');
+
+      // Replace newlines with <br>
+      html = html.replace(/\n/g, '<br>');
+      
+      return html;
+    }
+
+    function showTyping() {
+      const msgs = document.getElementById('ai-chat-messages');
+      const id = 'typing_' + Date.now();
+      const d = document.createElement('div');
+      d.className = 'chat-msg ai'; d.id = id;
+      d.innerHTML = `<div class="msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z" fill="white"/><circle cx="8" cy="11" r="1.2" fill="#10a37f"/><circle cx="12" cy="11" r="1.2" fill="#10a37f"/><circle cx="16" cy="11" r="1.2" fill="#10a37f"/></svg></div><div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+      msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+      return id;
+    }
+
+    function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+    function handleChatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    setTimeout(() => {
+      if (!isChatOpen) document.getElementById('ai-chat-badge').style.display = 'flex';
+    }, 3000);
+
+  </script>
+</body>
+
+</html>
+>>>>>>> main

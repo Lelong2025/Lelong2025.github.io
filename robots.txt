@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://lelong2025.github.io/sitemap.xml
