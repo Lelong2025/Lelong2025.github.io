@@ -357,12 +357,18 @@ async function handleAccount(request, env, ctx, cors) {
     const userEmail = ctx.userClaims?.email;
     if (!userId) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
 
+    const { error: trialError } = await ctx.supabaseAdmin.rpc("activate_free_trial", { p_user_id: userId });
+    if (trialError) {
+      console.error("Free trial activation failed", trialError.message);
+      return jsonResponse({ error: "Account subscription is unavailable" }, 503, cors.headers);
+    }
+
     const today = new Date().toISOString().slice(0, 10);
     const weekStart = new Date();
     weekStart.setUTCDate(weekStart.getUTCDate() - 29);
     const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
-        .select("status, expires_at, plan_id, vip_plans(name, price_vnd, duration_days, daily_ai_limit)")
+        .select("status, expires_at, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, duration_days, trial_days, daily_ai_limit)")
         .eq("user_id", userId)
         .maybeSingle(),
       ctx.supabase.from("ai_usage")
@@ -404,12 +410,16 @@ async function handleAccount(request, env, ctx, cors) {
     }
     const isVip = Boolean(subscription?.status === "active"
       && subscription.expires_at && new Date(subscription.expires_at) > new Date());
+    const hasPaid = (paymentsRes.data || []).some(payment => payment.status === "paid");
+    const isTrial = Boolean(isVip && !hasPaid && subscription?.trial_ends_at
+      && new Date(subscription.trial_ends_at) > new Date());
 
     return jsonResponse({
       user: { id: userId, email: userEmail },
       role: ctx.userClaims.role,
       subscription,
       is_vip: isVip,
+      is_trial: isTrial,
       usage_today: usageRes.data?.message_count || 0,
       usage_history: usageHistoryRes.data || [],
       payments: paymentsRes.data || []
@@ -461,12 +471,12 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         .select("id, user_id, plan_id, amount_vnd, status, created_at, paid_at")
         .order("created_at", { ascending: false }),
       ctx.supabaseAdmin.from("subscriptions")
-        .select("user_id, status, expires_at, plan_id, vip_plans(name, price_vnd, duration_days, daily_ai_limit)"),
+        .select("user_id, status, expires_at, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, duration_days, trial_days, daily_ai_limit)"),
       ctx.supabaseAdmin.from("ai_usage")
         .select("user_id, usage_date, message_count")
         .order("usage_date", { ascending: true }),
       ctx.supabaseAdmin.from("vip_plans")
-        .select("id, name, price_vnd, duration_days, daily_ai_limit, active")
+        .select("id, name, price_vnd, duration_days, trial_days, daily_ai_limit, active")
         .order("price_vnd", { ascending: true })
     ]);
     for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes]) {
@@ -506,8 +516,9 @@ async function handleAdminDashboard(request, env, ctx, cors) {
       const failedUpdate = updates.find(update => update.error);
       if (failedUpdate?.error) throw failedUpdate.error;
     }
-    const activeSubscriptions = (subscriptionsRes.data || []).filter(row =>
+    const activePaidSubscriptions = (subscriptionsRes.data || []).filter(row =>
       row.status === "active" && row.expires_at && new Date(row.expires_at) > now
+      && paymentsByUser.has(row.user_id)
     );
     const userById = new Map(users.map(user => [user.id, user]));
     const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
@@ -515,6 +526,8 @@ async function handleAdminDashboard(request, env, ctx, cors) {
       const subscription = subscriptionById.get(user.id) || null;
       const active = Boolean(subscription && subscription.status === "active"
         && subscription.expires_at && new Date(subscription.expires_at) > now);
+      const isTrial = Boolean(active && !paymentsByUser.has(user.id)
+        && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) > now);
       return {
         id: user.id,
         email: user.email || "",
@@ -522,7 +535,8 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
         role: user.app_metadata?.role || "user",
-        is_vip: active,
+        is_vip: active && !isTrial,
+        is_trial: isTrial,
         subscription
       };
     });
@@ -536,7 +550,7 @@ async function handleAdminDashboard(request, env, ctx, cors) {
     return jsonResponse({
       metrics: {
         revenue_vnd: paidPayments.reduce((sum, row) => sum + Number(row.amount_vnd || 0), 0),
-        vip_users: activeSubscriptions.length,
+        vip_users: activePaidSubscriptions.length,
         ai_uses: (usageRes.data || []).reduce((sum, row) => sum + Number(row.message_count || 0), 0),
         total_users: users.length
       },
@@ -559,15 +573,17 @@ async function handleAdminSettings(request, env, ctx, cors) {
     const id = String(body.id || "chatbox_ai");
     const price = Number(body.price_vnd);
     const duration = Number(body.duration_days);
+    const trialDays = Number(body.trial_days);
     const limit = Number(body.daily_ai_limit);
     if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(duration) || duration < 1
+      || !Number.isSafeInteger(trialDays) || trialDays < 1 || trialDays > 365
       || !Number.isSafeInteger(limit) || limit < 1) {
       return jsonResponse({ error: "Invalid plan settings" }, 400, cors.headers);
     }
     const { data, error } = await ctx.supabaseAdmin.from("vip_plans")
-      .update({ price_vnd: price, duration_days: duration, daily_ai_limit: limit })
+      .update({ price_vnd: price, duration_days: duration, trial_days: trialDays, daily_ai_limit: limit })
       .eq("id", id)
-      .select("id, name, price_vnd, duration_days, daily_ai_limit, active")
+      .select("id, name, price_vnd, duration_days, trial_days, daily_ai_limit, active")
       .single();
     if (error) throw error;
     return jsonResponse({ plan: data }, 200, cors.headers);
