@@ -4452,14 +4452,11 @@
       closeUserModal();
     }
 
-    async function apiFetch(path, options = {}) {
+    async function apiFetch(path, options = {}, _isRetry = false) {
       const { data: { session } } = await db.auth.getSession();
       if (!session?.access_token) throw new Error('Bạn cần đăng nhập.');
       currentSession = session;
 
-      // getSession() already refreshes an expired token when needed. Do not call
-      // refreshSession() after a Worker 401: TOKEN_REFRESHED would trigger another
-      // account request and create an unbounded refresh loop.
       const response = await fetch(`${API_BASE}${path}`, {
         ...options,
         headers: {
@@ -4470,6 +4467,12 @@
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        // Nếu nhận 401 lần đầu: Supabase có thể đang refresh token.
+        // Chờ 800ms rồi thử lại một lần với session mới (tránh vòng lặp vô hạn).
+        if (response.status === 401 && !_isRetry) {
+          await new Promise(resolve => setTimeout(resolve, 800));
+          return apiFetch(path, options, true);
+        }
         const error = new Error(data.error || 'Yêu cầu không thành công.');
         error.status = response.status;
         error.data = data;
@@ -4933,6 +4936,10 @@
             await refreshAccount();
             document.getElementById('authView').style.display = 'none';
             document.getElementById('accountView').style.display = 'block';
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            // Token được làm mới tự động: chỉ cập nhật account nếu đang ở trạng thái đã đăng nhập
+            // mà chưa có account data (tránh gọi lặp khi không cần thiết)
+            if (!currentAccount) await refreshAccount();
           }
         }, 0);
       });
