@@ -196,9 +196,13 @@ async function handleChat(request, env, ctx) {
       return jsonResponse({ error: "Authentication required" }, 401, corsHeaders);
     }
 
-    // Kiểm tra và trừ lượt sử dụng bằng admin client (vượt qua RLS)
-    const { data: usage, error: rpcError } = await ctx.supabaseAdmin.rpc("consume_ai_message", { p_user_id: userId });
-    if (rpcError) throw rpcError;
+    let usage = { allowed: true, limit: 99999, usage_today: 0 };
+    if (ctx.userClaims?.role !== "admin") {
+      // Kiểm tra và trừ lượt sử dụng bằng admin client (vượt qua RLS)
+      const { data: dbUsage, error: rpcError } = await ctx.supabaseAdmin.rpc("consume_ai_message", { p_user_id: userId });
+      if (rpcError) throw rpcError;
+      usage = dbUsage;
+    }
 
     if (!usage?.allowed) {
       const status = usage?.reason === "daily_limit" ? 429 : 403;
@@ -393,7 +397,7 @@ async function handleAccount(request, env, ctx, cors) {
     if (paymentsRes.error) throw paymentsRes.error;
     if (usageHistoryRes.error) throw usageHistoryRes.error;
 
-    const subscription = subRes.data || null;
+    let subscription = subRes.data || null;
     const expectedExpiry = calculatePaidExpiry(
       paymentsRes.data || [],
       () => subscription?.vip_plans?.duration_days
@@ -408,11 +412,35 @@ async function handleAccount(request, env, ctx, cors) {
       subscription.expires_at = expectedExpiry.toISOString();
       subscription.status = "active";
     }
-    const isVip = Boolean(subscription?.status === "active"
+    let isVip = Boolean(subscription?.status === "active"
       && subscription.expires_at && new Date(subscription.expires_at) > new Date());
     const hasPaid = (paymentsRes.data || []).some(payment => payment.status === "paid");
-    const isTrial = Boolean(isVip && !hasPaid && subscription?.trial_ends_at
+    let isTrial = Boolean(isVip && !hasPaid && subscription?.trial_ends_at
       && new Date(subscription.trial_ends_at) > new Date());
+
+    if (ctx.userClaims?.role === "admin") {
+      isVip = true;
+      isTrial = false;
+      if (!subscription) {
+        subscription = {
+          status: "active",
+          expires_at: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+          vip_plans: {
+            name: "Vô hạn (Admin)",
+            daily_ai_limit: 99999,
+            trial_days: 0
+          }
+        };
+      } else {
+        subscription.status = "active";
+        subscription.expires_at = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
+        subscription.vip_plans = {
+          ...subscription.vip_plans,
+          name: "Vô hạn (Admin)",
+          daily_ai_limit: 99999
+        };
+      }
+    }
 
     return jsonResponse({
       user: { id: userId, email: userEmail },

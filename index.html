@@ -4505,16 +4505,19 @@
       document.getElementById('accountEmail').textContent = account.user.email || '';
       const status = document.getElementById('vipStatus');
       const trialDays = Number(account.subscription?.vip_plans?.trial_days || 30);
-      status.textContent = account.is_trial
-        ? `Đang dùng thử miễn phí ${trialDays} ngày`
-        : account.is_vip ? 'VIP đang hoạt động' : 'Dùng thử đã hết hạn';
+      const isAdmin = account.role === 'admin' || isAdminAccount();
+      status.textContent = isAdmin
+        ? 'VIP Vĩnh viễn (Admin)'
+        : account.is_trial
+          ? `Đang dùng thử miễn phí ${trialDays} ngày`
+          : account.is_vip ? 'VIP đang hoạt động' : 'Dùng thử đã hết hạn';
       status.className = account.is_vip ? 'vip-active' : 'vip-inactive';
       const expiryRow = document.getElementById('vipExpiryRow');
       const expiry = account.subscription?.expires_at;
-      expiryRow.style.display = expiry ? 'flex' : 'none';
-      if (expiry) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleDateString('vi-VN');
+      expiryRow.style.display = expiry && !isAdmin ? 'flex' : 'none';
+      if (expiry && !isAdmin) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleDateString('vi-VN');
       const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
-      document.getElementById('vipUsage').textContent = `${account.usage_today || 0}/${limit}`;
+      document.getElementById('vipUsage').textContent = isAdmin ? 'Vô hạn' : `${account.usage_today || 0}/${limit}`;
       document.getElementById('chat-access-note').style.display = account.is_vip ? 'none' : 'block';
       renderPortalAccount(account);
     }
@@ -4555,25 +4558,29 @@
       const limit = account?.subscription?.vip_plans?.daily_ai_limit || 30;
       const trialDays = Number(account?.subscription?.vip_plans?.trial_days || 30);
       const used = Number(account?.usage_today || 0);
-      const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+      const percent = admin ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
 
       document.getElementById('accountPortal').classList.toggle('admin-enabled', admin);
       document.getElementById('portalRoleLabel').textContent = admin ? 'Hệ thống quản trị' : 'Tài khoản người dùng';
       document.getElementById('portalProfileName').textContent = name;
       document.getElementById('portalAvatar').textContent = firstLetter;
-      document.getElementById('portalVipPlan').textContent = account?.is_trial
-        ? `DÙNG THỬ ${trialDays} NGÀY`
-        : account?.is_vip ? String(account.subscription?.vip_plans?.name || 'PREMIUM VIP').toUpperCase()
-          : 'TÀI KHOẢN STANDARD';
-      document.getElementById('portalVipBadge').innerHTML = account?.is_trial
-        ? '<i class="fas fa-hourglass-half"></i>&nbsp; FREE TRIAL'
-        : account?.is_vip ? '<i class="fas fa-circle-check"></i>&nbsp; ACTIVE'
-          : '<i class="fas fa-clock"></i>&nbsp; INACTIVE';
-      document.getElementById('portalVipStart').textContent = formatPortalDate(start);
-      document.getElementById('portalVipEnd').textContent = formatPortalDate(expiry, 'Chưa có');
-      document.getElementById('portalVipPercent').textContent = `${percent}%`;
-      document.getElementById('portalVipProgress').style.width = `${percent}%`;
-      document.getElementById('portalVipProgressLabel').textContent = `Lượt dùng hôm nay (${used}/${limit})`;
+      document.getElementById('portalVipPlan').textContent = admin
+        ? 'VIP VĨNH VIỄN (ADMIN)'
+        : account?.is_trial
+          ? `DÙNG THỬ ${trialDays} NGÀY`
+          : account?.is_vip ? String(account.subscription?.vip_plans?.name || 'PREMIUM VIP').toUpperCase()
+            : 'TÀI KHOẢN STANDARD';
+      document.getElementById('portalVipBadge').innerHTML = admin
+        ? '<i class="fas fa-crown"></i>&nbsp; ADMIN VIP'
+        : account?.is_trial
+          ? '<i class="fas fa-hourglass-half"></i>&nbsp; FREE TRIAL'
+          : account?.is_vip ? '<i class="fas fa-circle-check"></i>&nbsp; ACTIVE'
+            : '<i class="fas fa-clock"></i>&nbsp; INACTIVE';
+      document.getElementById('portalVipStart').textContent = admin ? 'Hệ thống' : formatPortalDate(start);
+      document.getElementById('portalVipEnd').textContent = admin ? 'Vô hạn (Vĩnh viễn)' : formatPortalDate(expiry, 'Chưa có');
+      document.getElementById('portalVipPercent').textContent = admin ? 'Vô hạn' : `${percent}%`;
+      document.getElementById('portalVipProgress').style.width = admin ? '100%' : `${percent}%`;
+      document.getElementById('portalVipProgressLabel').textContent = admin ? 'Lượt dùng hôm nay: Vô hạn' : `Lượt dùng hôm nay (${used}/${limit})`;
     }
 
     function openAccountPortal(page = 'userOverview') {
