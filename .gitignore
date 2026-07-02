@@ -7,3 +7,7 @@ config.js
 !config.example.js
 design/
 supabase/
+database/
+!database/
+database/*
+!database/security-hardening.sql

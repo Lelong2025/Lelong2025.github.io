@@ -16,4 +16,11 @@ Trong Actions Variables, tạo `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE
 
 Sao chép `.env.example` thành `.env.local`, điền cấu hình public rồi chạy `npm run build:config`. Với backend, tạo `tapchi-worker/.env`, sau đó chạy `cd tapchi-worker`, `npm install`, `npm start`.
 
-Không đặt `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY` hoặc secret SePay trong biến `NEXT_PUBLIC_*`. `ALLOWED_ORIGINS` trên Render phải chứa chính xác origin GitHub Pages. Bật RLS cho mọi bảng Supabase public. Webhook SePay là `https://<render-domain>/hooks/sepay-payment`.
+Không đặt `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY` hoặc secret SePay trong biến `NEXT_PUBLIC_*`. `ALLOWED_ORIGINS` trên Render phải chứa chính xác origin GitHub Pages. Webhook SePay là `https://<render-domain>/hooks/sepay-payment`.
+
+## Hardening production
+
+1. Chạy `database/security-hardening.sql` một lần trong Supabase SQL Editor để bật/siết RLS và loại bỏ cơ chế cấp VIP theo email.
+2. Trong SePay Webhook > Security, chọn HMAC-SHA256 và tạo secret ngẫu nhiên 32–64 ký tự.
+3. Trên Render đặt `SEPAY_WEBHOOK_AUTH=hmac`, `SEPAY_WEBHOOK_SECRET=<cùng secret>`, và xóa `SEPAY_WEBHOOK_API_KEY` cũ.
+4. Chạy `cd tapchi-worker && npm test` trước khi deploy.

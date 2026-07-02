@@ -108,6 +108,18 @@ function validateEnvironment() {
     console.error(`Missing required environment variables: ${missing.join(", ")}`);
     process.exit(1);
   }
+  const webhookAuth = String(process.env.SEPAY_WEBHOOK_AUTH || "hmac").trim().toLowerCase();
+  if (!['hmac', 'api_key'].includes(webhookAuth)) {
+    console.error("SEPAY_WEBHOOK_AUTH must be hmac or api_key");
+    process.exit(1);
+  }
+  const webhookCredential = webhookAuth === "hmac"
+    ? process.env.SEPAY_WEBHOOK_SECRET
+    : process.env.SEPAY_WEBHOOK_API_KEY;
+  if (!webhookCredential || webhookCredential.length < 32) {
+    console.error(`Missing or weak SePay ${webhookAuth} credential (minimum 32 characters)`);
+    process.exit(1);
+  }
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
     console.error("PORT must be a valid TCP port");
     process.exit(1);

@@ -20,6 +20,8 @@ services:
         sync: false
       - key: SEPAY_WEBHOOK_SECRET
         sync: false
+      - key: SEPAY_WEBHOOK_AUTH
+        value: hmac
       - key: SEPAY_WEBHOOK_API_KEY
         sync: false
       - key: SEPAY_BANK

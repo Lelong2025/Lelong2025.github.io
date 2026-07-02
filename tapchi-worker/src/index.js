@@ -328,7 +328,9 @@ function buildCorsHeaders(request, env) {
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
       "X-Frame-Options": "DENY",
-      "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'"
     }
   };
 }
@@ -714,7 +716,7 @@ function safeEqual(left, right) {
   return difference === 0;
 }
 
-async function verifySepaySignature(rawBody, request, secret) {
+export async function verifySepaySignature(rawBody, request, secret) {
   const signature = request.headers.get("X-SePay-Signature") || "";
   const timestamp = request.headers.get("X-SePay-Timestamp") || "";
   const timestampNumber = Number(timestamp);
@@ -734,16 +736,19 @@ async function verifySepaySignature(rawBody, request, secret) {
 }
 
 async function verifySepayRequest(rawBody, request, env) {
+  const authMode = String(env.SEPAY_WEBHOOK_AUTH || "hmac").trim().toLowerCase();
   const signature = request.headers.get("X-SePay-Signature");
   const timestamp = request.headers.get("X-SePay-Timestamp");
-  if (signature || timestamp) {
+  if (authMode === "hmac") {
     return Boolean(env.SEPAY_WEBHOOK_SECRET)
+      && Boolean(signature && timestamp)
       && await verifySepaySignature(rawBody, request, env.SEPAY_WEBHOOK_SECRET);
   }
 
+  if (authMode !== "api_key") return false;
   const authorization = request.headers.get("Authorization") || "";
   const apiKeyMatch = authorization.match(/^Apikey\s+(.+)$/i);
-  const expectedApiKey = env.SEPAY_WEBHOOK_API_KEY || env.SEPAY_WEBHOOK_SECRET;
+  const expectedApiKey = env.SEPAY_WEBHOOK_API_KEY;
   return Boolean(apiKeyMatch && expectedApiKey)
     && safeEqual(apiKeyMatch[1].trim(), expectedApiKey);
 }
@@ -762,12 +767,18 @@ async function handleSepayWebhook(request, env) {
   const secureHeaders = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
-    "X-Content-Type-Options": "nosniff"
+    "X-Content-Type-Options": "nosniff",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'"
   };
   if (request.method !== "POST") return jsonResponse({ success: false }, 405, secureHeaders);
 
   const serviceKey = env.SUPABASE_SECRET_KEY;
-  if ((!env.SEPAY_WEBHOOK_SECRET && !env.SEPAY_WEBHOOK_API_KEY) || !env.SUPABASE_URL || !serviceKey) {
+  const authMode = String(env.SEPAY_WEBHOOK_AUTH || "hmac").trim().toLowerCase();
+  const hasWebhookCredential = authMode === "hmac"
+    ? Boolean(env.SEPAY_WEBHOOK_SECRET)
+    : authMode === "api_key" && Boolean(env.SEPAY_WEBHOOK_API_KEY);
+  if (!hasWebhookCredential || !env.SUPABASE_URL || !serviceKey) {
     console.error("SePay webhook configuration is missing");
     return jsonResponse({ success: false }, 503, secureHeaders);
   }
@@ -799,33 +810,6 @@ async function handleSepayWebhook(request, env) {
 
     // Dùng admin client trực tiếp (bypass RLS) để gọi RPC
     const supabaseAdmin = getAdminClient(env);
-    const { data: payment, error: paymentLookupError } = await supabaseAdmin.from("payments")
-      .select("user_id, plan_id")
-      .eq("payment_code", paymentCode)
-      .maybeSingle();
-    if (paymentLookupError) throw paymentLookupError;
-
-    let renewal = null;
-    if (payment) {
-      const [planRes, subscriptionRes] = await Promise.all([
-        supabaseAdmin.from("vip_plans")
-          .select("duration_days")
-          .eq("id", payment.plan_id)
-          .maybeSingle(),
-        supabaseAdmin.from("subscriptions")
-          .select("expires_at")
-          .eq("user_id", payment.user_id)
-          .maybeSingle()
-      ]);
-      if (planRes.error) throw planRes.error;
-      if (subscriptionRes.error) throw subscriptionRes.error;
-      renewal = {
-        userId: payment.user_id,
-        previousExpiry: subscriptionRes.data?.expires_at || null,
-        durationDays: Number(planRes.data?.duration_days || 0)
-      };
-    }
-
     const { data: result, error } = await supabaseAdmin.rpc("process_sepay_payment", {
       p_payment_code: paymentCode,
       p_transaction_id: transactionId,
@@ -839,18 +823,6 @@ async function handleSepayWebhook(request, env) {
       return jsonResponse({ success: false, processed: false, error: result?.reason || "Payment not processed" }, 422, secureHeaders);
     }
 
-    if (renewal?.userId && renewal.durationDays > 0) {
-      const now = new Date();
-      const previousExpiry = renewal.previousExpiry ? new Date(renewal.previousExpiry) : null;
-      const base = previousExpiry && !Number.isNaN(previousExpiry.getTime()) && previousExpiry > now
-        ? previousExpiry
-        : now;
-      const cumulativeExpiry = new Date(base.getTime() + renewal.durationDays * 86400000).toISOString();
-      const { error: renewalError } = await supabaseAdmin.from("subscriptions")
-        .update({ expires_at: cumulativeExpiry, status: "active" })
-        .eq("user_id", renewal.userId);
-      if (renewalError) throw renewalError;
-    }
     return jsonResponse({ success: true, processed: true }, 200, secureHeaders);
   } catch (error) {
     console.error("SePay webhook error", error.message);
