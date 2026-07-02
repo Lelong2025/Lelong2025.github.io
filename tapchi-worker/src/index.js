@@ -586,7 +586,10 @@ async function handleAdminSettings(request, env, ctx, cors) {
       .select("id, name, price_vnd, duration_days, trial_days, daily_ai_limit, active")
       .single();
     if (error) throw error;
-    return jsonResponse({ plan: data }, 200, cors.headers);
+    const { data: syncedTrials, error: syncError } = await ctx.supabaseAdmin
+      .rpc("sync_active_trial_duration", { p_trial_days: trialDays });
+    if (syncError) throw syncError;
+    return jsonResponse({ plan: data, synced_trials: syncedTrials || 0 }, 200, cors.headers);
   } catch (error) {
     console.error("Admin settings error", error.message);
     return jsonResponse({ error: "Unable to save admin settings" }, 500, cors.headers);

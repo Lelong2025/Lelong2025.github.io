@@ -1041,9 +1041,18 @@
     .portal-page { display: none; }
     .portal-page.active { display: block; }
     @media(max-width:640px) {
-      .header-container { flex-wrap:wrap; }
-      .header-title { order:3; width:100%; }
-      .account-button { margin-left:auto; }
+      .header-container {
+        display:grid; grid-template-columns:auto minmax(0,1fr) auto;
+        grid-template-areas:"logo theme account" "title title title";
+        align-items:center; padding:8px 12px 10px; gap:6px 10px;
+      }
+      .header-container > img { grid-area:logo; height:36px !important; }
+      .header-title {
+        grid-area:title; width:100%; margin:0; font-size:14px; line-height:1.2;
+        text-align:center; white-space:normal; overflow:visible;
+      }
+      .theme-toggle { grid-area:theme; justify-self:end; }
+      .account-button { grid-area:account; margin:0; padding:8px 12px; }
       .vip-modal { align-items:flex-end; padding:0; }
       .vip-card { width:100%; max-height:92vh; border-radius:26px 26px 0 0; padding:21px 18px; }
       .vip-actions { grid-template-columns:1fr; }
@@ -2646,7 +2655,7 @@
         const index = adminDashboardData.plans.findIndex(item => item.id === result.plan.id);
         if (index >= 0) adminDashboardData.plans[index] = result.plan;
         renderAdminDashboard(adminDashboardData);
-        message.textContent = 'Đã lưu cấu hình thật vào Supabase.';
+        message.textContent = `Đã lưu cấu hình và đồng bộ ${Number(result.synced_trials || 0)} tài khoản trial.`;
         message.className = 'vip-message success';
       } catch (error) {
         message.textContent = error.message || 'Không thể lưu cấu hình.';
