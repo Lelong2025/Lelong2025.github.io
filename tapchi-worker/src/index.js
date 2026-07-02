@@ -799,6 +799,18 @@ async function handleSepayWebhook(request, env) {
     const expectedAccount = String(env.SEPAY_ACCOUNT_NUMBER || "").replace(/\s/g, "");
     const actualAccount = String(payload.accountNumber || "").replace(/\s/g, "");
 
+    // Dashboard "Gửi thử" uses mock transaction id 0. Authentication has
+    // already passed, so acknowledge it without touching payment state.
+    if (String(payload.id) === "0") {
+      return jsonResponse({ success: true }, 200, secureHeaders);
+    }
+
+    // Authenticated incoming transactions unrelated to a CHAT order are not
+    // errors and must not be retried by SePay.
+    if (incoming && !paymentCode) {
+      return jsonResponse({ success: true }, 200, secureHeaders);
+    }
+
     if (!transactionId || !paymentCode || !Number.isSafeInteger(amount) || amount <= 0
       || !incoming || (expectedAccount && actualAccount !== expectedAccount)) {
       console.warn("SePay webhook payload rejected", {
