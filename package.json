@@ -1,4 +1,8 @@
 {
+  "private": true,
+  "scripts": {
+    "build:config": "node scripts/generate-config.mjs"
+  },
   "dependencies": {
     "@supabase/server": "^1.2.0",
     "@supabase/supabase-js": "^2.109.0",

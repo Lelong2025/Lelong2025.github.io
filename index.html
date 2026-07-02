@@ -38,7 +38,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://duycstnptwojisioeosk.supabase.co https://old-band-adb5.vonhacphuoc.workers.dev; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://*.supabase.co https://*.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
   
@@ -76,6 +76,7 @@
   }
   </script>
 
+  <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1990,8 +1991,12 @@
 
     // ─── SUPABASE CLIENT ────────────────────────────────────────────
     const { createClient: _sbCreate } = window.supabase;
-    const SUPABASE_URL = 'https://duycstnptwojisioeosk.supabase.co';
-    const SUPABASE_PUBLIC_KEY = 'sb_publishable_Jb7uRmyy59sLy4sW6caCAQ_pDNdMxDe';
+    const APP_CONFIG = window.__APP_CONFIG__ || {};
+    const SUPABASE_URL = APP_CONFIG.SUPABASE_URL;
+    const SUPABASE_PUBLIC_KEY = APP_CONFIG.SUPABASE_PUBLISHABLE_KEY;
+    if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY || !APP_CONFIG.API_URL) {
+      throw new Error('Thiếu cấu hình ứng dụng. Hãy tạo config.js từ file .env.');
+    }
     const initialAuthUrl = new URL(location.href);
     const initialAuthHash = new URLSearchParams(initialAuthUrl.hash.slice(1));
     const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === '1'
@@ -2021,7 +2026,7 @@
         }
       }
     );
-    const API_BASE = 'https://old-band-adb5.vonhacphuoc.workers.dev';
+    const API_BASE = String(APP_CONFIG.API_URL).replace(/\/$/, '');
     let currentSession = null;
     let currentAccount = null;
     let currentAuthMode = 'login';

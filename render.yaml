@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: tapchi-api
+    runtime: node
+    region: singapore
+    rootDir: tapchi-worker
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SEPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SEPAY_WEBHOOK_API_KEY
+        sync: false
+      - key: SEPAY_BANK
+        sync: false
+      - key: SEPAY_ACCOUNT_NUMBER
+        sync: false
+      - key: SEPAY_ACCOUNT_NAME
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

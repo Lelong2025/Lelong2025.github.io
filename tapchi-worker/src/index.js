@@ -102,7 +102,7 @@ async function withUserAuth(request, env, cors, handler) {
 
 async function handleChat(request, env, ctx) {
   const allowedOrigins = new Set(
-    (env.ALLOWED_ORIGINS || "https://lelong2025.github.io,http://localhost:8787,http://127.0.0.1:5500")
+    (env.ALLOWED_ORIGINS || "")
       .split(",").map(value => value.trim()).filter(Boolean)
   );
   const origin = request.headers.get("Origin");
@@ -149,7 +149,9 @@ async function handleChat(request, env, ctx) {
   }
 
   if (env.AI_RATE_LIMITER) {
-    const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+    const clientIp = request.headers.get("CF-Connecting-IP")
+      || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim()
+      || "unknown";
     const { success } = await env.AI_RATE_LIMITER.limit({ key: clientIp });
     if (!success) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
@@ -309,7 +311,7 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
 
 function buildCorsHeaders(request, env) {
   const allowedOrigins = new Set(
-    (env.ALLOWED_ORIGINS || "https://lelong2025.github.io,http://localhost:8787,http://127.0.0.1:5500")
+    (env.ALLOWED_ORIGINS || "")
       .split(",").map(value => value.trim()).filter(Boolean)
   );
   const origin = request.headers.get("Origin");
@@ -324,7 +326,9 @@ function buildCorsHeaders(request, env) {
       "Vary": "Origin",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "no-referrer"
+      "Referrer-Policy": "no-referrer",
+      "X-Frame-Options": "DENY",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
     }
   };
 }
@@ -338,7 +342,7 @@ function jsonResponse(data, status = 200, headers = {}) {
 
 function getAdminClient(env) {
   const supabaseUrl = env.SUPABASE_URL;
-  const serviceKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = env.SUPABASE_SECRET_KEY;
   return createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
@@ -762,7 +766,7 @@ async function handleSepayWebhook(request, env) {
   };
   if (request.method !== "POST") return jsonResponse({ success: false }, 405, secureHeaders);
 
-  const serviceKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = env.SUPABASE_SECRET_KEY;
   if ((!env.SEPAY_WEBHOOK_SECRET && !env.SEPAY_WEBHOOK_API_KEY) || !env.SUPABASE_URL || !serviceKey) {
     console.error("SePay webhook configuration is missing");
     return jsonResponse({ success: false }, 503, secureHeaders);
