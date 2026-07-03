@@ -447,6 +447,35 @@ body.portal-open .lightbulb-container {
     z-index: 99999;
 }
 
+.theme-toggle-button {
+    grid-area: theme;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--indigo-light);
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle-button:hover {
+    transform: translateY(-1px);
+    background: rgba(59, 130, 246, 0.18);
+    border-color: var(--input-focus);
+}
+
+.theme-toggle-button:active { transform: scale(0.95); }
+.theme-toggle-button:focus-visible { outline: 2px solid var(--indigo-light); outline-offset: 3px; }
+.theme-toggle-button .fa-sun { display: none; }
+[data-theme="light"] .theme-toggle-button .fa-moon { display: none; }
+[data-theme="light"] .theme-toggle-button .fa-sun { display: inline-block; color: #d97706; }
+
 
 /* ══════════════════════════════════════════
    ACCOUNT BUTTON
@@ -3812,12 +3841,11 @@ body.portal-open .lightbulb-container {
   <div class="header-container">
     <img src="LHU&ASU-ENG 2@.png" alt="Logo" style="height: 60px;">
     <h1 class="header-title">Tra cứu thông tin tạp chí</h1>
-        <div class="lightbulb-container" id="themeToggleBtn" title="Kéo dây để Bật/Tắt đèn">
-      <div class="wire"></div>
-      <div class="fixture"></div>
-      <div class="bulb"></div>
-      <div class="pull-chain"></div>
-    </div>
+    <button class="theme-toggle-button" id="themeToggleBtn" type="button" title="Chuyển giao diện sáng/tối"
+      aria-label="Chuyển giao diện sáng/tối">
+      <i class="fas fa-moon" aria-hidden="true"></i>
+      <i class="fas fa-sun" aria-hidden="true"></i>
+    </button>
     <button id="accountButton" class="account-button" onclick="openUserModal()">
       <i class="fas fa-user"></i> Đăng nhập
     </button>
@@ -4400,7 +4428,7 @@ body.portal-open .lightbulb-container {
   </div>
 
   <script>
-    // Logic đổi Sáng/Tối với Bóng đèn kéo dây (Pull string lightbulb toggle)
+    // Nút chuyển giao diện sáng/tối
     const themeToggleBtn = document.getElementById('themeToggleBtn');
     const htmlEl = document.documentElement;
     const bodyEl = document.body;
@@ -4408,71 +4436,11 @@ body.portal-open .lightbulb-container {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     htmlEl.setAttribute('data-theme', savedTheme);
 
-    const pullChain = themeToggleBtn.querySelector('.pull-chain');
-    const bulb = themeToggleBtn.querySelector('.bulb');
-    const DEFAULT_ROPE_HEIGHT = 60;
-    const MAX_DRAG_DISTANCE = 60;
-    const TRIGGER_DISTANCE = 35;
-    let isDraggingRope = false;
-    let ropeStartY = 0;
-    let currentDragDistance = 0;
-    let themeTriggeredWhileDragging = false;
-
-    function toggleTheme() {
+    themeToggleBtn.addEventListener('click', () => {
       const currentTheme = htmlEl.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       htmlEl.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-    }
-
-    function restartRopeAnimation() {
-      themeToggleBtn.classList.remove('release', 'swing');
-      void themeToggleBtn.offsetWidth;
-      themeToggleBtn.classList.add('release', 'swing');
-    }
-
-    function startRopeDrag(event) {
-      isDraggingRope = true;
-      ropeStartY = event.clientY;
-      currentDragDistance = 0;
-      themeTriggeredWhileDragging = false;
-      themeToggleBtn.classList.remove('release', 'swing');
-      pullChain.setPointerCapture(event.pointerId);
-      event.preventDefault();
-    }
-
-    function moveRope(event) {
-      if (!isDraggingRope) return;
-      currentDragDistance = Math.min(Math.max(0, event.clientY - ropeStartY), MAX_DRAG_DISTANCE);
-      pullChain.style.height = `${DEFAULT_ROPE_HEIGHT + currentDragDistance}px`;
-
-      if (currentDragDistance >= TRIGGER_DISTANCE && !themeTriggeredWhileDragging) {
-        toggleTheme();
-        themeTriggeredWhileDragging = true;
-      }
-      event.preventDefault();
-    }
-
-    function endRopeDrag(event) {
-      if (!isDraggingRope) return;
-      isDraggingRope = false;
-      themeToggleBtn.style.setProperty('--last-height', `${DEFAULT_ROPE_HEIGHT + currentDragDistance}px`);
-      pullChain.style.height = '';
-
-      if (!themeTriggeredWhileDragging) toggleTheme();
-      if (pullChain.hasPointerCapture(event.pointerId)) pullChain.releasePointerCapture(event.pointerId);
-      restartRopeAnimation();
-      currentDragDistance = 0;
-    }
-
-    pullChain.addEventListener('pointerdown', startRopeDrag);
-    pullChain.addEventListener('pointermove', moveRope);
-    pullChain.addEventListener('pointerup', endRopeDrag);
-    pullChain.addEventListener('pointercancel', endRopeDrag);
-    bulb.addEventListener('click', () => {
-      if (isDraggingRope) return;
-      toggleTheme();
-      restartRopeAnimation();
     });
 
     // Lưu trữ URL của iframe được tạo từ lượt tìm kiếm
