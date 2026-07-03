@@ -211,29 +211,149 @@ body,
     background-clip: text;
 }
 
-.theme-toggle {
-    background: transparent;
-    border: 1px solid var(--card-border-soft);
-    color: var(--text-secondary);
-    font-size: 16px;
+/* ══════════════════════════════════════════
+   LIGHTBULB PULL SWITCH (Theme Toggle)
+══════════════════════════════════════════ */
+.lightbulb-container {
+    position: fixed;
+    top: 0;
+    right: 180px;
+    width: 50px;
+    height: 170px;
+    z-index: 2000;
     cursor: pointer;
-    padding: 0;
-    border-radius: 10px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
-    flex-shrink: 0;
+    transform-origin: top center;
+    transition: transform 0.15s ease;
 }
 
-.theme-toggle:hover {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: var(--indigo);
-    color: var(--indigo-light);
-    transform: rotate(15deg) scale(1.05);
+.lightbulb-container .wire {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -20px;
+    width: 2px;
+    height: 80px;
+    background: #64748b;
+    transition: background 0.3s;
 }
+
+[data-theme="light"] .lightbulb-container .wire {
+    background: #94a3b8;
+}
+
+.lightbulb-container .fixture {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 58px;
+    width: 14px;
+    height: 12px;
+    background: #475569;
+    border-radius: 2px 2px 0 0;
+    transition: background 0.3s;
+}
+
+[data-theme="light"] .lightbulb-container .fixture {
+    background: #64748b;
+}
+
+.lightbulb-container .bulb {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 68px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #64748b;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="light"] .lightbulb-container .bulb {
+    background: #fef08a;
+    border-color: #ca8a04;
+    box-shadow: 
+        0 0 30px #fef08a, 
+        0 0 60px rgba(254, 240, 138, 0.6), 
+        inset 0 -2px 5px rgba(202, 138, 4, 0.2);
+}
+
+.lightbulb-container .bulb::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 10px;
+    border: 1px solid #475569;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    opacity: 0.7;
+    transition: border-color 0.3s;
+}
+
+[data-theme="light"] .lightbulb-container .bulb::after {
+    border-color: #ca8a04;
+    opacity: 1;
+}
+
+.lightbulb-container .pull-chain {
+    position: absolute;
+    left: 50%;
+    top: 68px;
+    width: 1px;
+    height: 85px;
+    background: linear-gradient(to bottom, #64748b 70%, transparent 100%);
+    transition: background 0.3s;
+}
+
+[data-theme="light"] .lightbulb-container .pull-chain {
+    background: linear-gradient(to bottom, #94a3b8 70%, transparent 100%);
+}
+
+.lightbulb-container .pull-chain::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #475569;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: background 0.3s;
+}
+
+[data-theme="light"] .lightbulb-container .pull-chain::after {
+    background: #64748b;
+}
+
+@keyframes pullAnimation {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(16px); }
+    100% { transform: translateY(0); }
+}
+
+.lightbulb-container.pulling {
+    animation: pullAnimation 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.lightbulb-container:hover {
+    transform: scaleY(1.02);
+}
+
+.lightbulb-container:hover .pull-chain::after {
+    background: var(--indigo-light);
+}
+
+body.portal-open .lightbulb-container {
+    z-index: 99999;
+}
+
 
 /* ══════════════════════════════════════════
    ACCOUNT BUTTON
@@ -2976,15 +3096,57 @@ body,
         overflow: visible;
     }
 
-    .theme-toggle {
-        grid-area: theme;
-        justify-self: end;
+    .lightbulb-container {
+        right: 80px;
+        height: 120px;
+    }
+
+    .lightbulb-container .wire {
+        height: 40px;
+    }
+
+    .lightbulb-container .fixture {
+        top: 20px;
+    }
+
+    .lightbulb-container .bulb {
+        top: 30px;
+        width: 26px;
+        height: 26px;
+    }
+
+    .lightbulb-container .pull-chain {
+        top: 30px;
+        height: 60px;
+        left: 50%;
     }
 
     .account-button {
         grid-area: account;
         margin: 0;
         padding: 8px 12px;
+    }
+
+    .main-content {
+        padding-inline: 14px;
+    }
+
+    #searchBox {
+        width: 100%;
+        max-width: 100%;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 32px;
+    }
+
+    #searchInput,
+    #searchBox button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    #searchBox button {
+        justify-content: center;
     }
 
     .vip-modal {
@@ -3229,6 +3391,62 @@ body,
         min-width: 680px;
     }
 
+    #portalTransactionTable,
+    #portalTransactionFullTable {
+        display: block;
+        min-width: 0;
+    }
+
+    #portalTransactionTable thead,
+    #portalTransactionFullTable thead {
+        display: none;
+    }
+
+    #portalTransactionTable tbody,
+    #portalTransactionFullTable tbody {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 0 16px 16px;
+    }
+
+    #portalTransactionTable tr,
+    #portalTransactionFullTable tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 12px;
+        padding: 16px;
+        border: 1px solid rgba(59, 130, 246, .14);
+        border-radius: 14px;
+        background: rgba(59, 130, 246, .035);
+    }
+
+    #portalTransactionTable td,
+    #portalTransactionFullTable td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        overflow-wrap: anywhere;
+    }
+
+    #portalTransactionTable td::before,
+    #portalTransactionFullTable td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+    }
+
+    #portalTransactionTable td[colspan],
+    #portalTransactionFullTable td[colspan] {
+        grid-column: 1 / -1;
+    }
+
     .portal-vip-card {
         padding: 22px 18px;
         border-radius: 16px;
@@ -3366,6 +3584,31 @@ body,
     border: none;
     background: white;
 }
+
+.iframe-buttons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.iframe-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border: 0;
+    border-radius: 14px;
+    color: #fff;
+    font: 700 14px/1.2 inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(29, 78, 216, .22);
+}
+
+.iframe-btn.noapc-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.iframe-btn.resurchify-btn { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+.iframe-btn.wos-btn { background: linear-gradient(135deg, #0891b2, #0369a1); }
 
 @media (max-width: 768px) {
     .iframe-modal-content {

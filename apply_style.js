@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const indexPath = 'e:\\Lelong2025.github.io\\index.html';
-const cssPath = 'C:\\Users\\Nhac Phuoc\\.gemini\\antigravity-ide\\brain\\1c0ac9c4-1535-4cbc-9aff-cd5667992221\\scratch\\new_style.css';
+const cssPath = path.join(__dirname, 'new_style.css');
 
 try {
     let html = fs.readFileSync(indexPath, 'utf8');
