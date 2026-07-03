@@ -12,3 +12,4 @@ database/
 database/*
 !database/security-hardening.sql
 !database/free-trial.sql
+Testing/

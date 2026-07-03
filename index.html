@@ -308,19 +308,18 @@ body,
     position: fixed;
     top: 0;
     right: 180px;
-    width: 50px;
-    height: 170px;
+    width: 60px;
+    height: auto;
     z-index: 2000;
-    cursor: pointer;
     transform-origin: top center;
-    transition: transform 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+    touch-action: none;
 }
 
 .lightbulb-container .wire {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: -20px;
     width: 2px;
     height: 80px;
     background: #64748b;
@@ -332,14 +331,10 @@ body,
 }
 
 .lightbulb-container .fixture {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 58px;
     width: 14px;
-    height: 12px;
+    height: 6px;
     background: #475569;
-    border-radius: 2px 2px 0 0;
+    border-radius: 2px;
     transition: background 0.3s;
 }
 
@@ -348,13 +343,10 @@ body,
 }
 
 .lightbulb-container .bulb {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 68px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    position: relative;
+    width: 30px;
+    height: 40px;
+    border-radius: 50% 50% 45% 45%;
     border: 2px solid #64748b;
     background: rgba(255, 255, 255, 0.05);
     box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
@@ -391,17 +383,21 @@ body,
 }
 
 .lightbulb-container .pull-chain {
-    position: absolute;
-    left: 50%;
-    top: 68px;
-    width: 1px;
-    height: 85px;
-    background: linear-gradient(to bottom, #64748b 70%, transparent 100%);
+    position: relative;
+    width: 2px;
+    height: 60px;
+    flex: none;
+    background: #64748b;
+    cursor: grab;
+    transform-origin: top center;
+    will-change: height;
     transition: background 0.3s;
 }
 
+.lightbulb-container .pull-chain:active { cursor: grabbing; }
+
 [data-theme="light"] .lightbulb-container .pull-chain {
-    background: linear-gradient(to bottom, #94a3b8 70%, transparent 100%);
+    background: #94a3b8;
 }
 
 .lightbulb-container .pull-chain::after {
@@ -422,19 +418,26 @@ body,
     background: #64748b;
 }
 
-@keyframes pullAnimation {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(16px); }
-    100% { transform: translateY(0); }
+@keyframes ropeBounce {
+    0% { height: var(--last-height, 60px); }
+    30% { height: 45px; }
+    50% { height: 65px; }
+    70% { height: 57px; }
+    100% { height: 60px; }
 }
 
-.lightbulb-container.pulling {
-    animation: pullAnimation 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+@keyframes bulbSwing {
+    0%, 100% { transform: rotate(0deg); }
+    15% { transform: rotate(18deg); }
+    30% { transform: rotate(-14deg); }
+    45% { transform: rotate(9deg); }
+    60% { transform: rotate(-5deg); }
+    75% { transform: rotate(2deg); }
+    90% { transform: rotate(-0.5deg); }
 }
 
-.lightbulb-container:hover {
-    transform: scaleY(1.02);
-}
+.lightbulb-container.release .pull-chain { animation: ropeBounce 0.6s ease-out; }
+.lightbulb-container.swing { animation: bulbSwing 2s ease-in-out; }
 
 .lightbulb-container:hover .pull-chain::after {
     background: var(--indigo-light);
@@ -3229,7 +3232,6 @@ body.portal-open .lightbulb-container {
 
     .lightbulb-container {
         right: 80px;
-        height: 120px;
     }
 
     .lightbulb-container .wire {
@@ -3237,19 +3239,16 @@ body.portal-open .lightbulb-container {
     }
 
     .lightbulb-container .fixture {
-        top: 20px;
+        height: 5px;
     }
 
     .lightbulb-container .bulb {
-        top: 30px;
         width: 26px;
-        height: 26px;
+        height: 34px;
     }
 
     .lightbulb-container .pull-chain {
-        top: 30px;
         height: 60px;
-        left: 50%;
     }
 
     .account-button {
@@ -3766,6 +3765,7 @@ body.portal-open .lightbulb-container {
         width: 100%;
     }
 }
+
   </style>
 </head>
 
@@ -4408,17 +4408,71 @@ body.portal-open .lightbulb-container {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     htmlEl.setAttribute('data-theme', savedTheme);
 
-    themeToggleBtn.addEventListener('click', () => {
-      // Chạy hiệu ứng kéo dây
-      themeToggleBtn.classList.add('pulling');
-      setTimeout(() => {
-        themeToggleBtn.classList.remove('pulling');
-      }, 250);
+    const pullChain = themeToggleBtn.querySelector('.pull-chain');
+    const bulb = themeToggleBtn.querySelector('.bulb');
+    const DEFAULT_ROPE_HEIGHT = 60;
+    const MAX_DRAG_DISTANCE = 60;
+    const TRIGGER_DISTANCE = 35;
+    let isDraggingRope = false;
+    let ropeStartY = 0;
+    let currentDragDistance = 0;
+    let themeTriggeredWhileDragging = false;
 
+    function toggleTheme() {
       const currentTheme = htmlEl.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       htmlEl.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
+    }
+
+    function restartRopeAnimation() {
+      themeToggleBtn.classList.remove('release', 'swing');
+      void themeToggleBtn.offsetWidth;
+      themeToggleBtn.classList.add('release', 'swing');
+    }
+
+    function startRopeDrag(event) {
+      isDraggingRope = true;
+      ropeStartY = event.clientY;
+      currentDragDistance = 0;
+      themeTriggeredWhileDragging = false;
+      themeToggleBtn.classList.remove('release', 'swing');
+      pullChain.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    }
+
+    function moveRope(event) {
+      if (!isDraggingRope) return;
+      currentDragDistance = Math.min(Math.max(0, event.clientY - ropeStartY), MAX_DRAG_DISTANCE);
+      pullChain.style.height = `${DEFAULT_ROPE_HEIGHT + currentDragDistance}px`;
+
+      if (currentDragDistance >= TRIGGER_DISTANCE && !themeTriggeredWhileDragging) {
+        toggleTheme();
+        themeTriggeredWhileDragging = true;
+      }
+      event.preventDefault();
+    }
+
+    function endRopeDrag(event) {
+      if (!isDraggingRope) return;
+      isDraggingRope = false;
+      themeToggleBtn.style.setProperty('--last-height', `${DEFAULT_ROPE_HEIGHT + currentDragDistance}px`);
+      pullChain.style.height = '';
+
+      if (!themeTriggeredWhileDragging) toggleTheme();
+      if (pullChain.hasPointerCapture(event.pointerId)) pullChain.releasePointerCapture(event.pointerId);
+      restartRopeAnimation();
+      currentDragDistance = 0;
+    }
+
+    pullChain.addEventListener('pointerdown', startRopeDrag);
+    pullChain.addEventListener('pointermove', moveRope);
+    pullChain.addEventListener('pointerup', endRopeDrag);
+    pullChain.addEventListener('pointercancel', endRopeDrag);
+    bulb.addEventListener('click', () => {
+      if (isDraggingRope) return;
+      toggleTheme();
+      restartRopeAnimation();
     });
 
     // Lưu trữ URL của iframe được tạo từ lượt tìm kiếm
