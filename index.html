@@ -1567,22 +1567,36 @@ body.portal-open .lightbulb-container {
 }
 [data-theme="light"] #loading-splash { background: radial-gradient(circle at 50% 20%, rgba(37,99,235,.12), transparent 40%), #f0f4f9; }
 #loading-splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-.splash-logo { width: 82px; height: 82px; object-fit: contain; border-radius: 20px; animation: splashPulse 2s ease-in-out infinite; }
-@keyframes splashPulse { 0%,100% { transform:scale(1); filter:drop-shadow(0 0 12px rgba(59,130,246,.5)); } 50% { transform:scale(1.06); filter:drop-shadow(0 0 25px rgba(59,130,246,.8)); } }
+.splash-brand { position:relative; width:150px; height:150px; display:grid; place-items:center; isolation:isolate; }
+.splash-brand::before, .splash-brand::after { content:""; position:absolute; border-radius:50%; pointer-events:none; }
+.splash-brand::before { inset:0; border:1px solid rgba(96,165,250,.22); border-top-color:#60a5fa; border-right-color:rgba(16,185,129,.75); box-shadow:0 0 28px rgba(59,130,246,.16), inset 0 0 24px rgba(59,130,246,.08); animation:splashOrbit 5s linear infinite; }
+.splash-brand::after { inset:12px; border:1px dashed rgba(226,232,240,.2); animation:splashOrbitReverse 9s linear infinite; }
+.splash-logo-card { position:relative; z-index:1; width:112px; height:112px; display:grid; place-items:center; overflow:hidden; border:1px solid rgba(255,255,255,.7); border-radius:30px; background:#fff; box-shadow:0 18px 45px rgba(2,6,23,.35), 0 0 30px rgba(59,130,246,.18); animation:splashFloat 3.2s ease-in-out infinite; }
+.splash-logo { width:100%; height:100%; object-fit:contain; border-radius:0; }
+@keyframes splashOrbit { to { transform:rotate(360deg); } }
+@keyframes splashOrbitReverse { to { transform:rotate(-360deg); } }
+@keyframes splashFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { .splash-brand::before, .splash-brand::after, .splash-logo-card { animation:none; } }
 .splash-title { margin:0; color:#f8fafc; font-size:clamp(21px,5vw,28px); font-weight:800; text-align:center; letter-spacing:-.03em; }
 [data-theme="light"] .splash-title { color:#172033; }
 .splash-subtitle { margin:-14px 0 0; color:#64748b; font-size:13px; text-align:center; }
-.splash-progress-wrap, .splash-steps { width:min(380px,90vw); }
-.splash-progress-bar-bg { height:8px; margin-bottom:12px; overflow:hidden; border-radius:999px; background:rgba(148,163,184,.15); }
-.splash-progress-bar-fill { width:5%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#60a5fa,#10b981); background-size:200% 100%; transition:width .5s cubic-bezier(.4,0,.2,1); animation:splashShimmer 2s linear infinite; }
+.splash-progress-wrap, .splash-steps { width:min(400px,90vw); }
+.splash-progress-meta { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:9px; }
+.splash-progress-label { color:#94a3b8; font-size:12px; font-weight:600; letter-spacing:.02em; }
+.splash-progress-percent { min-width:44px; color:#e2e8f0; font-size:14px; font-weight:800; text-align:right; font-variant-numeric:tabular-nums; }
+[data-theme="light"] .splash-progress-percent { color:#1e293b; }
+.splash-progress-bar-bg { position:relative; height:10px; margin-bottom:12px; overflow:hidden; border:1px solid rgba(148,163,184,.12); border-radius:999px; background:rgba(148,163,184,.13); box-shadow:inset 0 1px 3px rgba(0,0,0,.2); }
+.splash-progress-bar-fill { position:relative; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#60a5fa,#10b981); background-size:200% 100%; box-shadow:0 0 16px rgba(59,130,246,.5); transition:width .45s cubic-bezier(.22,1,.36,1); animation:splashShimmer 2s linear infinite; }
+.splash-progress-bar-fill::after { content:""; position:absolute; inset:1px 3px auto; height:35%; border-radius:999px; background:rgba(255,255,255,.38); }
 @keyframes splashShimmer { from { background-position:200% center; } to { background-position:-200% center; } }
 .splash-status { min-height:20px; color:#94a3b8; font-size:13px; text-align:center; }
 .splash-steps { display:flex; flex-direction:column; gap:10px; }
 .splash-step { display:flex; align-items:center; gap:12px; color:#64748b; font-size:13px; transition:color .3s; }
-.splash-step.active { color:#93c5fd; } .splash-step.done { color:#10b981; }
+.splash-step.active { color:#93c5fd; } .splash-step.done { color:#10b981; } .splash-step.error { color:#f87171; }
 .step-icon { width:25px; height:25px; flex:0 0 25px; display:grid; place-items:center; border:2px solid #334155; border-radius:50%; font-size:11px; transition:all .3s; }
 .splash-step.active .step-icon { border-color:#3b82f6; color:#60a5fa; }
 .splash-step.done .step-icon { border-color:#10b981; background:#10b981; color:#fff; }
+.splash-step.error .step-icon { border-color:#ef4444; background:rgba(239,68,68,.12); color:#f87171; }
 
 /* ══════════════════════════════════════════
    VIP MODAL
@@ -3759,13 +3773,21 @@ body.portal-open .lightbulb-container {
 
   <!-- ===== LOADING SPLASH SCREEN ===== -->
   <div id="loading-splash">
-    <img src="logo_dung_vi.png" alt="Logo" class="splash-logo">
+    <div class="splash-brand" aria-hidden="true">
+      <div class="splash-logo-card">
+        <img src="logo_dung_vi.png" alt="" class="splash-logo">
+      </div>
+    </div>
     <h1 class="splash-title">Tra cứu Thông tin Tạp chí</h1>
     <p class="splash-subtitle">Hệ thống &mdash; Lelong 2025</p>
 
     <div class="splash-progress-wrap">
+      <div class="splash-progress-meta">
+        <span class="splash-progress-label">ĐANG TẢI DỮ LIỆU</span>
+        <span id="splashProgressPercent" class="splash-progress-percent">0%</span>
+      </div>
       <div class="splash-progress-bar-bg">
-        <div id="splashProgressFill" class="splash-progress-bar-fill"></div>
+        <div id="splashProgressFill" class="splash-progress-bar-fill" role="progressbar" aria-label="Tiến độ tải ứng dụng" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
       </div>
       <div id="splashStatus" class="splash-status">Khởi động hệ thống...</div>
     </div>
@@ -5338,21 +5360,29 @@ body.portal-open .lightbulb-container {
     }
 
     function setSplashStep(stepId, state) {
-      // state: 'active' | 'done'
+      // state: 'active' | 'done' | 'error'
       const el = document.getElementById(stepId);
       if (!el) return;
-      el.classList.remove('active', 'done');
+      el.classList.remove('active', 'done', 'error');
       el.classList.add(state);
       if (state === 'done') {
         el.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
       } else if (state === 'active') {
         el.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+      } else if (state === 'error') {
+        el.querySelector('.step-icon').innerHTML = '<i class="fas fa-exclamation"></i>';
       }
     }
 
     function setSplashProgress(pct) {
       const fill = document.getElementById('splashProgressFill');
-      if (fill) fill.style.width = pct + '%';
+      const percent = document.getElementById('splashProgressPercent');
+      const safePct = Math.max(0, Math.min(100, Math.round(pct)));
+      if (fill) {
+        fill.style.width = safePct + '%';
+        fill.setAttribute('aria-valuenow', safePct);
+      }
+      if (percent) percent.textContent = safePct + '%';
     }
 
     function hideSplash() {
@@ -5384,27 +5414,54 @@ body.portal-open .lightbulb-container {
     });
 
     async function initApp() {
+      const totalTasks = 5;
+      let completedTasks = 0;
+      const finishTask = (message) => {
+        completedTasks += 1;
+        setSplashProgress((completedTasks / totalTasks) * 100);
+        updateLoadingStatus(message);
+      };
 
-      await initAuth();
-      void loadPublicConfig();
+      setSplashProgress(0);
+      updateLoadingStatus('Đang khôi phục phiên đăng nhập...');
+      try {
+        await initAuth();
+      } catch (error) {
+        updateLoadingStatus('Không thể khôi phục phiên, tiếp tục ở chế độ khách.', false, true);
+      } finally {
+        finishTask('Đang tải cấu hình hệ thống...');
+      }
 
-      // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
+      await loadPublicConfig();
+      finishTask('Đang kiểm tra các nguồn dữ liệu...');
+
       setSplashStep('step-jcr', 'active');
       setSplashStep('step-hdgsnn', 'active');
       setSplashStep('step-scopus', 'active');
-      setSplashProgress(30);
-      try {
-        updateLoadingStatus('Đang kết nối cơ sở dữ liệu Supabase...');
-        // Ping kiểm tra kết nối Supabase
-        const { error } = await publicDb.from('jcr_data').select('id').limit(1);
-        if (error) throw error;
-        setSplashStep('step-jcr', 'done');
-        setSplashStep('step-hdgsnn', 'done');
-        setSplashStep('step-scopus', 'done');
-        setSplashProgress(100);
-        updateLoadingStatus('Đã kết nối! 22k JCR · 25 HĐGSNN · 48k Scopus sẵn sàng.', true);
-      } catch (e) {
-        updateLoadingStatus('Lỗi kết nối cơ sở dữ liệu!', false, true);
+
+      const dataTasks = [
+        { table: 'jcr_data', step: 'step-jcr', label: 'JCR Impact Factor' },
+        { table: 'hdgsnn_list', step: 'step-hdgsnn', label: 'HĐGSNN 2025' },
+        { table: 'scopus_list', step: 'step-scopus', label: 'Scopus' }
+      ];
+      const results = await Promise.allSettled(dataTasks.map(async task => {
+        try {
+          const { error } = await publicDb.from(task.table).select('id').limit(1);
+          if (error) throw error;
+          setSplashStep(task.step, 'done');
+        } catch (error) {
+          setSplashStep(task.step, 'error');
+          throw error;
+        } finally {
+          finishTask(`Đã xử lý ${task.label} (${completedTasks + 1}/${totalTasks} tác vụ)`);
+        }
+      }));
+
+      const failedCount = results.filter(result => result.status === 'rejected').length;
+      if (failedCount) {
+        updateLoadingStatus(`Đã tải xong với ${failedCount} nguồn dữ liệu chưa kết nối được.`, false, true);
+      } else {
+        updateLoadingStatus('Hoàn tất! JCR · HĐGSNN · Scopus đã sẵn sàng.', true);
       }
 
       // Hoàn thành — tắt Splash Screen
