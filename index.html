@@ -1557,6 +1557,33 @@ body.portal-open .lightbulb-container {
     color: #94a3b8;
 }
 
+/* LOADING SPLASH SCREEN */
+#loading-splash {
+    position: fixed; inset: 0; z-index: 100000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 30px 20px; overflow: hidden;
+    background: radial-gradient(circle at 50% 20%, rgba(59,130,246,.16), transparent 38%), #070d1d;
+    transition: opacity .6s ease, visibility .6s ease;
+}
+[data-theme="light"] #loading-splash { background: radial-gradient(circle at 50% 20%, rgba(37,99,235,.12), transparent 40%), #f0f4f9; }
+#loading-splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.splash-logo { width: 82px; height: 82px; object-fit: contain; border-radius: 20px; animation: splashPulse 2s ease-in-out infinite; }
+@keyframes splashPulse { 0%,100% { transform:scale(1); filter:drop-shadow(0 0 12px rgba(59,130,246,.5)); } 50% { transform:scale(1.06); filter:drop-shadow(0 0 25px rgba(59,130,246,.8)); } }
+.splash-title { margin:0; color:#f8fafc; font-size:clamp(21px,5vw,28px); font-weight:800; text-align:center; letter-spacing:-.03em; }
+[data-theme="light"] .splash-title { color:#172033; }
+.splash-subtitle { margin:-14px 0 0; color:#64748b; font-size:13px; text-align:center; }
+.splash-progress-wrap, .splash-steps { width:min(380px,90vw); }
+.splash-progress-bar-bg { height:8px; margin-bottom:12px; overflow:hidden; border-radius:999px; background:rgba(148,163,184,.15); }
+.splash-progress-bar-fill { width:5%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#60a5fa,#10b981); background-size:200% 100%; transition:width .5s cubic-bezier(.4,0,.2,1); animation:splashShimmer 2s linear infinite; }
+@keyframes splashShimmer { from { background-position:200% center; } to { background-position:-200% center; } }
+.splash-status { min-height:20px; color:#94a3b8; font-size:13px; text-align:center; }
+.splash-steps { display:flex; flex-direction:column; gap:10px; }
+.splash-step { display:flex; align-items:center; gap:12px; color:#64748b; font-size:13px; transition:color .3s; }
+.splash-step.active { color:#93c5fd; } .splash-step.done { color:#10b981; }
+.step-icon { width:25px; height:25px; flex:0 0 25px; display:grid; place-items:center; border:2px solid #334155; border-radius:50%; font-size:11px; transition:all .3s; }
+.splash-step.active .step-icon { border-color:#3b82f6; color:#60a5fa; }
+.splash-step.done .step-icon { border-color:#10b981; background:#10b981; color:#fff; }
+
 /* ══════════════════════════════════════════
    VIP MODAL
 ══════════════════════════════════════════ */
@@ -4194,10 +4221,6 @@ body.portal-open .lightbulb-container {
       <button onclick="search()"><i class="fas fa-search"></i> Tìm kiếm</button>
     </div>
 
-    <div id="dbLoadingStatus" class="loading-status-msg">
-      <i class="fas fa-circle-notch fa-spin"></i> Đang khởi tạo cơ sở dữ liệu...
-    </div>
-
     <div class="info-card" style="text-align: center;">
       <h3 style="color: var(--primary-color); margin-top: 0; font-size: 22px; margin-bottom: 20px;">
         <i class="fas fa-bullhorn"></i> Thông báo
@@ -5288,24 +5311,15 @@ body.portal-open .lightbulb-container {
     }
 
     function updateLoadingStatus(msg, success = false, error = false) {
-      // Cập nhật cả splash screen lẫn status bar nhỏ phía dưới
-      const el = document.getElementById("dbLoadingStatus");
+      // Cập nhật trạng thái trên splash screen
       const splashStatus = document.getElementById("splashStatus");
-      if (!el) return;
-      let icon = '<i class="fas fa-circle-notch fa-spin"></i> ';
-      el.className = "loading-status-msg";
       if (success) {
-        icon = '<i class="fas fa-check-circle"></i> ';
-        el.className = "loading-status-msg success";
         if (splashStatus) { splashStatus.style.color = '#10b981'; }
       } else if (error) {
-        icon = '<i class="fas fa-exclamation-circle"></i> ';
-        el.className = "loading-status-msg error";
         if (splashStatus) { splashStatus.style.color = '#ef4444'; }
       } else {
         if (splashStatus) { splashStatus.style.color = ''; }
       }
-      el.innerHTML = icon + msg;
       if (splashStatus) splashStatus.textContent = msg;
     }
 
