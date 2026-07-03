@@ -25,6 +25,9 @@ export default {
     if (path === "/api/account" && request.method === "GET") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleAccount(req, env, ctx, apiCors));
     }
+    if (path === "/api/public/config" && request.method === "GET") {
+      return handlePublicConfig(env, apiCors);
+    }
     if (path === "/api/admin/dashboard" && request.method === "GET") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminDashboard(req, env, ctx, apiCors));
     }
@@ -476,6 +479,23 @@ function calculatePaidExpiry(payments, durationForPlan) {
 function requireAdmin(ctx, cors) {
   if (ctx.userClaims?.role === "admin") return null;
   return jsonResponse({ error: "Admin access required" }, 403, cors.headers);
+}
+
+async function handlePublicConfig(env, cors) {
+  if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
+  try {
+    const { data, error } = await getAdminClient(env).from("vip_plans")
+      .select("trial_days")
+      .eq("active", true)
+      .order("price_vnd", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return jsonResponse({ trial_days: Number(data?.trial_days || 30) }, 200, cors.headers);
+  } catch (error) {
+    console.error("Public config error", error.message);
+    return jsonResponse({ trial_days: 30 }, 200, cors.headers);
+  }
 }
 
 async function listAllAuthUsers(admin) {

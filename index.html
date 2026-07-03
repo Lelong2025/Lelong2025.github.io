@@ -4498,6 +4498,20 @@ body.portal-open .lightbulb-container {
     let activePaymentCode = null;
     let passwordRecoveryActive = false;
     let passwordRecoveryRequested = initialPasswordRecovery;
+    let configuredTrialDays = 30;
+    let publicConfigPromise = null;
+
+    function loadPublicConfig() {
+      if (publicConfigPromise) return publicConfigPromise;
+      publicConfigPromise = fetch(`${API_BASE}/api/public/config`)
+        .then(response => response.ok ? response.json() : Promise.reject(new Error('Không tải được cấu hình')))
+        .then(config => {
+          configuredTrialDays = Number(config.trial_days || 30);
+          return configuredTrialDays;
+        })
+        .catch(() => configuredTrialDays);
+      return publicConfigPromise;
+    }
 
     function setUserMessage(message = '', type = '') {
       const element = document.getElementById('authMessage');
@@ -4515,7 +4529,7 @@ body.portal-open .lightbulb-container {
       document.getElementById('authPassword').autocomplete = registering ? 'new-password' : 'current-password';
       document.getElementById('authHeading').textContent = registering ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
       document.getElementById('authLead').textContent = registering
-        ? 'Đăng ký để nhận 30 ngày dùng thử miễn phí và bắt đầu trò chuyện cùng AI.'
+        ? `Đăng ký để nhận ${configuredTrialDays} ngày dùng thử miễn phí và bắt đầu trò chuyện cùng AI.`
         : 'Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.';
       document.getElementById('authSubmitLabel').textContent = registering ? 'Tạo tài khoản' : 'Đăng nhập';
       document.getElementById('authWelcome').style.display = 'block';
@@ -5372,6 +5386,7 @@ body.portal-open .lightbulb-container {
     async function initApp() {
 
       await initAuth();
+      void loadPublicConfig();
 
       // 1. Tải 2019-2023JCRImpactFactor.xlsx (Dữ liệu JCR)
       setSplashStep('step-jcr', 'active');
@@ -5657,11 +5672,12 @@ body.portal-open .lightbulb-container {
       }
 
       if (!currentSession) {
+        const trialDays = await loadPublicConfig();
         setAuthMode('register');
         openUserModal();
         document.getElementById('authHeading').textContent = 'Dùng thử Chatbox AI miễn phí';
-        document.getElementById('authLead').textContent = 'Tạo tài khoản để nhận 30 ngày dùng thử và bắt đầu trò chuyện cùng Trợ lý Tạp chí AI.';
-        setUserMessage('Đăng ký miễn phí · 30 ngày dùng thử · Không cần thanh toán trước', 'success');
+        document.getElementById('authLead').textContent = `Tạo tài khoản để nhận ${trialDays} ngày dùng thử và bắt đầu trò chuyện cùng Trợ lý Tạp chí AI.`;
+        setUserMessage(`Đăng ký miễn phí · ${trialDays} ngày dùng thử · Không cần thanh toán trước`, 'success');
         return;
       }
       const account = currentAccount || await refreshAccount();
