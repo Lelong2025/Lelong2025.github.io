@@ -5657,9 +5657,11 @@ body.portal-open .lightbulb-container {
       }
 
       if (!currentSession) {
-        setAuthMode('login');
+        setAuthMode('register');
         openUserModal();
-        setUserMessage('Đăng nhập và kích hoạt VIP để sử dụng Chatbox AI.');
+        document.getElementById('authHeading').textContent = 'Dùng thử Chatbox AI miễn phí';
+        document.getElementById('authLead').textContent = 'Tạo tài khoản để nhận 30 ngày dùng thử và bắt đầu trò chuyện cùng Trợ lý Tạp chí AI.';
+        setUserMessage('Đăng ký miễn phí · 30 ngày dùng thử · Không cần thanh toán trước', 'success');
         return;
       }
       const account = currentAccount || await refreshAccount();
