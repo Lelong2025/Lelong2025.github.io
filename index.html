@@ -5217,10 +5217,11 @@ body.portal-open .lightbulb-container {
     function userTableMarkup(rows) {
       const body = rows.length ? rows.map(row => {
         const initials = String(row.name || 'U').split(' ').slice(-2).map(part => part[0]).join('').toUpperCase();
-        const plan = row.is_trial ? 'Free Trial' : row.subscription?.vip_plans?.name || row.subscription?.plan_id || 'Standard';
+        const isAdmin = row.role === 'admin';
+        const plan = isAdmin ? 'Admin' : row.is_trial ? 'Free Trial' : row.subscription?.vip_plans?.name || row.subscription?.plan_id || 'Standard';
         const active = row.is_vip || row.is_trial;
-        const status = row.is_trial ? 'Dùng thử' : row.is_vip ? 'VIP' : 'Không hoạt động';
-        const remaining = row.is_trial ? formatPortalDate(row.subscription?.trial_ends_at, '-') : `${Number(row.subscription?.ai_credits_remaining || 0).toLocaleString('vi-VN')} lượt · ${formatVnd(row.subscription?.wallet_balance_vnd || 0)}`;
+        const status = isAdmin ? 'Admin' : row.is_trial ? 'Dùng thử' : row.is_vip ? 'VIP' : 'Không hoạt động';
+        const remaining = isAdmin ? 'Vô hạn' : row.is_trial ? formatPortalDate(row.subscription?.trial_ends_at, '-') : `${Number(row.subscription?.ai_credits_remaining || 0).toLocaleString('vi-VN')} lượt · ${formatVnd(row.subscription?.wallet_balance_vnd || 0)}`;
         return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td><span class="portal-pill">${escapeHTML(plan)}</span></td><td>${escapeHTML(remaining)}</td><td><span class="portal-pill ${active ? 'green' : 'orange'}">${status}</span></td></tr>`;
       }).join('') : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Chưa có người dùng.</td></tr>';
       return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Gói dịch vụ</th><th>Lượt / Trial</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;

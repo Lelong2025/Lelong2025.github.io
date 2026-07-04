@@ -617,6 +617,7 @@ async function handleAdminDashboard(request, env, ctx, cors) {
     const rows = users.map(user => {
       const subscription = subscriptionById.get(user.id) || null;
       const profile = profileById.get(user.id);
+      const role = user.app_metadata?.role === "admin" || adminEmailSet.has(String(user.email || "").toLowerCase()) ? "admin" : "user";
       const paidAccess = paidAccessFromDatabase({
         payments: paymentsByUser.get(user.id) || [],
         usageRows: usageByUser.get(user.id) || [],
@@ -628,7 +629,8 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         wallet_balance_vnd: paidAccess.walletBalance,
         status: paidAccess.paidActive ? "active" : subscription.status
       } : null;
-      const isTrial = Boolean(!paidAccess.paidActive && !paidAccess.hasPaid
+      const isAdmin = role === "admin";
+      const isTrial = Boolean(!isAdmin && !paidAccess.paidActive && !paidAccess.hasPaid
         && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) > now);
       return {
         id: user.id,
@@ -636,8 +638,8 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         name: profile?.display_name || user.user_metadata?.display_name || user.email?.split("@")[0] || "Người dùng",
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
-        role: user.app_metadata?.role === "admin" || adminEmailSet.has(String(user.email || "").toLowerCase()) ? "admin" : "user",
-        is_vip: paidAccess.paidActive,
+        role,
+        is_vip: isAdmin || paidAccess.paidActive,
         is_trial: isTrial,
         subscription: displaySubscription
       };
