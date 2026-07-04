@@ -375,7 +375,7 @@ async function handleAccount(request, env, ctx, cors) {
     weekStart.setUTCDate(weekStart.getUTCDate() - 29);
     const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
-        .select("status, expires_at, ai_credits_remaining, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount)")
+        .select("status, expires_at, ai_credits_remaining, wallet_balance_vnd, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd)")
         .eq("user_id", userId)
         .maybeSingle(),
       ctx.supabase.from("ai_usage")
@@ -384,7 +384,7 @@ async function handleAccount(request, env, ctx, cors) {
         .eq("usage_date", today)
         .maybeSingle(),
       ctx.supabase.from("payments")
-        .select("id, plan_id, amount_vnd, payment_code, status, credits_granted, created_at, paid_at")
+        .select("id, plan_id, amount_vnd, payment_code, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -403,9 +403,10 @@ async function handleAccount(request, env, ctx, cors) {
     let subscription = subRes.data || null;
     const hasPaid = (paymentsRes.data || []).some(payment => payment.status === "paid");
     const paidCredits = Number(subscription?.ai_credits_remaining || 0);
+    const walletBalance = Number(subscription?.wallet_balance_vnd || 0);
     let isTrial = Boolean(!hasPaid && subscription?.status === "active" && subscription?.trial_ends_at
       && new Date(subscription.trial_ends_at) > new Date());
-    let isVip = paidCredits > 0 || isTrial;
+    let isVip = paidCredits > 0 || walletBalance >= Number(subscription?.vip_plans?.ai_wallet_unit_price_vnd || 1000) || isTrial;
 
     if (ctx.userClaims?.role === "admin") {
       isVip = true;
@@ -415,10 +416,12 @@ async function handleAccount(request, env, ctx, cors) {
           status: "active",
           expires_at: null,
           ai_credits_remaining: null,
+          wallet_balance_vnd: null,
           vip_plans: {
             name: "Vô hạn (Admin)",
             daily_ai_limit: 99999,
             ai_credit_amount: 99999,
+            ai_wallet_unit_price_vnd: 1,
             trial_days: 0
           }
         };
@@ -426,11 +429,13 @@ async function handleAccount(request, env, ctx, cors) {
         subscription.status = "active";
         subscription.expires_at = null;
         subscription.ai_credits_remaining = null;
+        subscription.wallet_balance_vnd = null;
         subscription.vip_plans = {
           ...subscription.vip_plans,
           name: "Vô hạn (Admin)",
           daily_ai_limit: 99999,
-          ai_credit_amount: 99999
+          ai_credit_amount: 99999,
+          ai_wallet_unit_price_vnd: 1
         };
       }
     }
@@ -442,6 +447,7 @@ async function handleAccount(request, env, ctx, cors) {
       is_vip: isVip,
       is_trial: isTrial,
       remaining_credits: ctx.userClaims?.role === "admin" ? null : paidCredits,
+      wallet_balance_vnd: ctx.userClaims?.role === "admin" ? null : walletBalance,
       usage_today: usageRes.data?.message_count || 0,
       usage_history: usageHistoryRes.data || [],
       payments: paymentsRes.data || []
@@ -492,15 +498,15 @@ async function handleAdminDashboard(request, env, ctx, cors) {
     const [users, paymentsRes, subscriptionsRes, usageRes, plansRes] = await Promise.all([
       listAllAuthUsers(ctx.supabaseAdmin),
       ctx.supabaseAdmin.from("payments")
-        .select("id, user_id, plan_id, payment_code, amount_vnd, status, credits_granted, created_at, paid_at")
+        .select("id, user_id, plan_id, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
         .order("created_at", { ascending: false }),
       ctx.supabaseAdmin.from("subscriptions")
-        .select("user_id, status, expires_at, ai_credits_remaining, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount)"),
+        .select("user_id, status, expires_at, ai_credits_remaining, wallet_balance_vnd, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd)"),
       ctx.supabaseAdmin.from("ai_usage")
         .select("user_id, usage_date, message_count")
         .order("usage_date", { ascending: true }),
       ctx.supabaseAdmin.from("vip_plans")
-        .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, active")
+        .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd, active")
         .order("price_vnd", { ascending: true })
     ]);
     for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes]) {
@@ -515,13 +521,16 @@ async function handleAdminDashboard(request, env, ctx, cors) {
       paymentsByUser.get(payment.user_id).push(payment);
     }
     const activePaidSubscriptions = (subscriptionsRes.data || []).filter(row =>
-      row.status === "active" && Number(row.ai_credits_remaining || 0) > 0
+      row.status === "active" && (Number(row.ai_credits_remaining || 0) > 0
+        || Number(row.wallet_balance_vnd || 0) >= Number(row.vip_plans?.ai_wallet_unit_price_vnd || 1000))
     );
     const userById = new Map(users.map(user => [user.id, user]));
     const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
     const rows = users.map(user => {
       const subscription = subscriptionById.get(user.id) || null;
-      const paidActive = Boolean(subscription?.status === "active" && Number(subscription.ai_credits_remaining || 0) > 0);
+      const paidActive = Boolean(subscription?.status === "active"
+        && (Number(subscription.ai_credits_remaining || 0) > 0
+          || Number(subscription.wallet_balance_vnd || 0) >= Number(subscription.vip_plans?.ai_wallet_unit_price_vnd || 1000)));
       const isTrial = Boolean(!paidActive && !paymentsByUser.has(user.id)
         && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) > now);
       return {
@@ -569,17 +578,19 @@ async function handleAdminSettings(request, env, ctx, cors) {
     const id = String(body.id || "chatbox_ai");
     const price = Number(body.price_vnd);
     const credits = Number(body.ai_credit_amount);
+    const walletUnitPrice = Number(body.ai_wallet_unit_price_vnd);
     const trialDays = Number(body.trial_days);
     const limit = Number(body.daily_ai_limit);
     if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(credits) || credits < 1
+      || !Number.isSafeInteger(walletUnitPrice) || walletUnitPrice < 1
       || !Number.isSafeInteger(trialDays) || trialDays < 1 || trialDays > 365
       || !Number.isSafeInteger(limit) || limit < 1) {
       return jsonResponse({ error: "Invalid plan settings" }, 400, cors.headers);
     }
     const { data, error } = await ctx.supabaseAdmin.from("vip_plans")
-      .update({ price_vnd: price, ai_credit_amount: credits, trial_days: trialDays, daily_ai_limit: limit })
+      .update({ price_vnd: price, ai_credit_amount: credits, ai_wallet_unit_price_vnd: walletUnitPrice, trial_days: trialDays, daily_ai_limit: limit })
       .eq("id", id)
-      .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, active")
+      .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd, active")
       .single();
     if (error) throw error;
     const { data: syncedTrials, error: syncError } = await ctx.supabaseAdmin
@@ -612,6 +623,7 @@ function orderPayload(order, env) {
     code: order.payment_code,
     amount: order.amount_vnd,
     status: order.status,
+    order_type: order.order_type || "vip_credits",
     expires_at: order.expires_at,
     bank: env.SEPAY_BANK,
     account_number: env.SEPAY_ACCOUNT_NUMBER,
@@ -629,6 +641,10 @@ async function handleCreateOrder(request, env, ctx, cors) {
       return jsonResponse({ error: "Payment account is not configured" }, 503, cors.headers);
     }
 
+    const body = await request.json().catch(() => ({}));
+    const orderType = String(body.order_type || "vip_credits");
+    const topupAmount = Number(body.amount_vnd || 0);
+
     const { data: plans, error: planError } = await ctx.supabase.from("vip_plans")
       .select("id, name, price_vnd, ai_credit_amount, payment_prefix")
       .eq("id", "chatbox_ai")
@@ -637,6 +653,13 @@ async function handleCreateOrder(request, env, ctx, cors) {
 
     const plan = plans?.[0];
     if (!plan) return jsonResponse({ error: "VIP plan is unavailable" }, 503, cors.headers);
+    if (!["vip_credits", "wallet_topup"].includes(orderType)) {
+      return jsonResponse({ error: "Invalid order type" }, 400, cors.headers);
+    }
+    if (orderType === "wallet_topup"
+      && (!Number.isSafeInteger(topupAmount) || topupAmount < 1000 || topupAmount > 5000000)) {
+      return jsonResponse({ error: "Invalid top-up amount" }, 400, cors.headers);
+    }
 
     const now = new Date().toISOString();
     const { error: cleanupError } = await ctx.supabaseAdmin.from("payments")
@@ -647,9 +670,10 @@ async function handleCreateOrder(request, env, ctx, cors) {
     if (cleanupError) throw cleanupError;
 
     const { data: pending, error: pendingError } = await ctx.supabase.from("payments")
-      .select("id, payment_code, amount_vnd, status, expires_at")
+      .select("id, payment_code, amount_vnd, status, order_type, expires_at")
       .eq("user_id", userId)
       .eq("status", "pending")
+      .eq("order_type", orderType)
       .gt("expires_at", now)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -660,15 +684,16 @@ async function handleCreateOrder(request, env, ctx, cors) {
     const payment = {
       user_id: userId,
       plan_id: plan.id,
-      amount_vnd: plan.price_vnd,
+      amount_vnd: orderType === "wallet_topup" ? topupAmount : plan.price_vnd,
       payment_code: randomPaymentCode(plan.payment_prefix),
-      status: "pending"
+      status: "pending",
+      order_type: orderType
     };
 
     // Tạo đơn thanh toán với admin client (vượt qua RLS của payments)
     const { data: inserted, error: insertError } = await ctx.supabaseAdmin.from("payments")
       .insert(payment)
-      .select("id, payment_code, amount_vnd, status, expires_at");
+      .select("id, payment_code, amount_vnd, status, order_type, expires_at");
     if (insertError) throw insertError;
 
     return jsonResponse(orderPayload(inserted[0], env), 201, cors.headers);
