@@ -693,10 +693,19 @@ async function handleAdminSettings(request, env, ctx, cors) {
       .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd, active")
       .single();
     if (error) throw error;
-    const { data: syncedTrials, error: syncError } = await ctx.supabaseAdmin
-      .rpc("sync_active_trial_duration", { p_trial_days: trialDays });
-    if (syncError) throw syncError;
-    return jsonResponse({ plan: data, synced_trials: syncedTrials || 0 }, 200, cors.headers);
+    let syncedTrials = 0;
+    try {
+      const { data: syncRes, error: syncError } = await ctx.supabaseAdmin
+        .rpc("sync_active_trial_duration", { p_trial_days: trialDays });
+      if (syncError) {
+        console.warn("RPC sync_active_trial_duration failed or not defined in Supabase:", syncError.message);
+      } else {
+        syncedTrials = syncRes || 0;
+      }
+    } catch (rpcErr) {
+      console.warn("Exception during sync_active_trial_duration call:", rpcErr.message);
+    }
+    return jsonResponse({ plan: data, synced_trials: syncedTrials }, 200, cors.headers);
   } catch (error) {
     console.error("Admin settings error", error.message);
     return jsonResponse({ error: "Unable to save admin settings" }, 500, cors.headers);
