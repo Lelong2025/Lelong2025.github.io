@@ -42,7 +42,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -85,6 +85,10 @@
 
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
+  <!-- SheetJS — xuất Excel .xlsx -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF — xuất PDF hóa đơn -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo_dung_vi.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -4321,7 +4325,11 @@ body.portal-open .lightbulb-container {
             <div>
               <h3>Hóa đơn gần đây</h3>
               <p>Các giao dịch mới nhất từ mua lượt VIP và nạp số dư</p>
-            </div><button class="portal-btn" onclick="switchPortalPage('adminInvoices')">Xem tất cả</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="portal-btn" onclick="switchPortalPage('adminInvoices')">Xem tất cả</button>
+              <button class="portal-btn primary" onclick="exportAdminSummary()"><i class="fas fa-file-excel"></i> Xuất báo cáo tổng hợp</button>
+            </div>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="adminRecentInvoicesTable"></table>
@@ -4335,8 +4343,7 @@ body.portal-open .lightbulb-container {
             <div>
               <h3>Quản lý người dùng</h3>
               <p>Theo dõi trạng thái VIP, email và lượt còn lại.</p>
-            </div><button class="portal-btn primary" onclick="exportAdminUsers()"><i class="fas fa-download"></i> Xuất
-              báo cáo</button>
+            </div><button class="portal-btn primary" onclick="exportAdminUsers()"><i class="fas fa-file-excel"></i> Xuất Excel</button>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="adminUsersTable"></table>
@@ -4350,8 +4357,11 @@ body.portal-open .lightbulb-container {
             <div>
               <h3>Quản lý hóa đơn</h3>
               <p>Theo dõi mã thanh toán, khách hàng, số lượt và trạng thái giao dịch.</p>
-            </div><button class="portal-btn primary" onclick="exportAdminInvoices()"><i class="fas fa-download"></i>
-              Xuất hóa đơn</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="portal-btn primary" onclick="exportAdminInvoices()"><i class="fas fa-file-excel"></i> Xuất Excel</button>
+              <button class="portal-btn" onclick="exportAdminInvoicesPDF()"><i class="fas fa-file-pdf"></i> Xuất PDF</button>
+            </div>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="adminInvoicesTable"></table>
@@ -5521,42 +5531,219 @@ body.portal-open .lightbulb-container {
       }
     }
 
-    function exportAdminUsers() {
-      const users = adminDashboardData?.users || [];
-      const lines = [['Tên', 'Email', 'Vai trò', 'VIP', 'Lượt còn lại', 'Số dư', 'Trial đến'], ...users.map(user => [
-        user.name, user.email, user.role, user.is_vip ? 'Có' : 'Không',
-        Number(user.subscription?.ai_credits_remaining || 0),
-        Number(user.subscription?.wallet_balance_vnd || 0),
-        formatPortalDate(user.subscription?.trial_ends_at, '')
-      ])];
-      const csv = lines.map(line => line.map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
-      link.download = `nguoi-dung-${new Date().toISOString().slice(0, 10)}.csv`;
-      link.click();
-      URL.revokeObjectURL(link.href);
+    // ─── Tiện ích Excel ───────────────────────────────────────────────
+    function _xlsxStyleHeader(ws, headers) {
+      if (typeof XLSX === 'undefined') return;
+      headers.forEach((_, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+        if (!ws[cellRef]) return;
+        ws[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '1E3A5F' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border: { bottom: { style: 'thin', color: { rgb: '94A3B8' } } }
+        };
+      });
     }
 
+    function _downloadXlsx(wb, filename) {
+      if (typeof XLSX === 'undefined') { alert('Thư viện xuất Excel chưa tải xong, vui lòng thử lại.'); return; }
+      XLSX.writeFile(wb, filename, { bookType: 'xlsx', type: 'binary', cellStyles: true });
+    }
+
+    // ─── Xuất danh sách người dùng → Excel ───────────────────────────
+    function exportAdminUsers() {
+      if (typeof XLSX === 'undefined') { alert('Thư viện xuất Excel chưa tải xong, vui lòng thử lại.'); return; }
+      const users = adminDashboardData?.users || [];
+      const headers = ['Tên', 'Email', 'Vai trò', 'VIP', 'Lượt còn lại', 'Số dư (VND)', 'Trial đến'];
+      const rows = users.map(u => ([
+        u.name || '',
+        u.email || '',
+        u.role || 'user',
+        u.is_vip ? 'Có' : 'Không',
+        Number(u.subscription?.ai_credits_remaining || 0),
+        Number(u.subscription?.wallet_balance_vnd || 0),
+        formatPortalDate(u.subscription?.trial_ends_at, '')
+      ]));
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = [{ wch: 24 }, { wch: 32 }, { wch: 10 }, { wch: 6 }, { wch: 12 }, { wch: 14 }, { wch: 18 }];
+      _xlsxStyleHeader(ws, headers);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Người dùng');
+      _downloadXlsx(wb, `nguoi-dung-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    // ─── Xuất hóa đơn → Excel ────────────────────────────────────────
     function exportAdminInvoices() {
+      if (typeof XLSX === 'undefined') { alert('Thư viện xuất Excel chưa tải xong, vui lòng thử lại.'); return; }
       const rows = adminDashboardData?.payments || [];
-      const lines = [['Ngày', 'Mã hóa đơn', 'Khách hàng', 'Email', 'Loại', 'Gói', 'Số tiền', 'Lượt cộng', 'Số dư nạp', 'Trạng thái'], ...rows.map(row => [
-        formatPortalDate(row.paid_at || row.created_at, ''),
-        row.payment_code || row.id || '',
-        row.name || '',
-        row.email || '',
-        row.order_type === 'wallet_topup' ? 'Nạp số dư' : 'Mua lượt VIP',
-        row.plan_id || '',
-        Number(row.amount_vnd || 0),
-        Number(row.credits_granted || 0),
-        Number(row.wallet_amount_vnd || 0),
-        row.status || ''
-      ])];
-      const csv = lines.map(line => line.map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
-      link.download = `hoa-don-${new Date().toISOString().slice(0, 10)}.csv`;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const headers = ['Ngày', 'Mã hóa đơn', 'Khách hàng', 'Email', 'Loại', 'Gói', 'Số tiền (VND)', 'Lượt cộng', 'Số dư nạp (VND)', 'Trạng thái'];
+      const data = rows.map(r => ([
+        formatPortalDate(r.paid_at || r.created_at, ''),
+        r.payment_code || r.id || '',
+        r.name || '',
+        r.email || '',
+        r.order_type === 'wallet_topup' ? 'Nạp số dư' : 'Mua lượt VIP',
+        r.plan_id || '',
+        Number(r.amount_vnd || 0),
+        Number(r.credits_granted || 0),
+        Number(r.wallet_amount_vnd || 0),
+        r.status || ''
+      ]));
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      ws['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 12 }];
+      _xlsxStyleHeader(ws, headers);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Hóa đơn');
+      _downloadXlsx(wb, `hoa-don-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    // ─── Xuất hóa đơn → PDF ─────────────────────────────────────────
+    function exportAdminInvoicesPDF() {
+      if (typeof window.jspdf === 'undefined') { alert('Thư viện xuất PDF chưa tải xong, vui lòng thử lại.'); return; }
+      const { jsPDF } = window.jspdf;
+      const rows = adminDashboardData?.payments || [];
+      if (!rows.length) { alert('Không có hóa đơn để xuất.'); return; }
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const dateStr = new Date().toLocaleDateString('vi-VN');
+
+      // Tiêu đề
+      doc.setFillColor(30, 58, 95);
+      doc.rect(0, 0, pageW, 22, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DANH SACH HOA DON THANH TOAN', pageW / 2, 10, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Xuat ngay: ${dateStr}`, pageW / 2, 17, { align: 'center' });
+
+      // Bảng
+      const colW = [24, 32, 32, 40, 22, 22, 26, 18, 26, 18];
+      const headers = ['Ngay', 'Ma HD', 'Khach hang', 'Email', 'Loai', 'Goi', 'So tien', 'Luot', 'So du nap', 'Trang thai'];
+      let y = 28;
+
+      const drawRow = (cells, rowY, isBold, bgRgb) => {
+        let x = 8;
+        if (bgRgb) { doc.setFillColor(...bgRgb); doc.rect(x - 1, rowY - 4, pageW - 14, 8, 'F'); }
+        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+        doc.setTextColor(isBold ? 255 : 30, isBold ? 255 : 40, isBold ? 255 : 60);
+        doc.setFontSize(8);
+        cells.forEach((cell, i) => {
+          const txt = String(cell ?? '').substring(0, 22);
+          doc.text(txt, x + 1, rowY);
+          x += colW[i];
+        });
+      };
+
+      drawRow(headers, y, true, [30, 58, 95]);
+      y += 9;
+
+      rows.forEach((r, idx) => {
+        if (y > 185) { doc.addPage(); y = 15; drawRow(headers, y, true, [30, 58, 95]); y += 9; }
+        const bg = idx % 2 === 0 ? [240, 245, 255] : null;
+        const cells = [
+          formatPortalDate(r.paid_at || r.created_at, ''),
+          (r.payment_code || r.id || '').substring(0, 14),
+          (r.name || '').substring(0, 18),
+          (r.email || '').substring(0, 26),
+          r.order_type === 'wallet_topup' ? 'Nap so du' : 'Mua luot VIP',
+          r.plan_id || '',
+          Number(r.amount_vnd || 0).toLocaleString('vi-VN'),
+          String(r.credits_granted || 0),
+          Number(r.wallet_amount_vnd || 0).toLocaleString('vi-VN'),
+          r.status || ''
+        ];
+        drawRow(cells, y, false, bg);
+        y += 8;
+      });
+
+      // Footer
+      doc.setTextColor(120, 130, 150);
+      doc.setFontSize(7);
+      doc.text(`Tong: ${rows.length} giao dich`, 8, y + 6);
+      doc.save(`hoa-don-${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    // ─── Xuất báo cáo tổng hợp → Excel ──────────────────────────────
+    function exportAdminSummary() {
+      if (typeof XLSX === 'undefined') { alert('Thư viện xuất Excel chưa tải xong, vui lòng thử lại.'); return; }
+      const payments = adminDashboardData?.payments || [];
+      const metrics = adminDashboardData?.metrics || {};
+      const users = adminDashboardData?.users || [];
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Tổng quan
+      const overviewHeaders = ['Chỉ số', 'Giá trị'];
+      const overviewData = [
+        ['Tổng doanh thu (VND)', Number(metrics.revenue_vnd || 0)],
+        ['Số người dùng VIP', Number(metrics.vip_users || 0)],
+        ['Tổng tài khoản', Number(metrics.total_users || 0)],
+        ['Tổng lượt dùng AI', Number(metrics.ai_uses || 0)],
+        ['Ngày xuất báo cáo', new Date().toLocaleDateString('vi-VN')]
+      ];
+      const ws1 = XLSX.utils.aoa_to_sheet([overviewHeaders, ...overviewData]);
+      ws1['!cols'] = [{ wch: 28 }, { wch: 20 }];
+      _xlsxStyleHeader(ws1, overviewHeaders);
+      XLSX.utils.book_append_sheet(wb, ws1, 'Tổng quan');
+
+      // Sheet 2: Doanh thu theo tháng
+      const byMonth = {};
+      payments.forEach(p => {
+        if (p.status !== 'paid') return;
+        const d = new Date(p.paid_at || p.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!byMonth[key]) byMonth[key] = { month: key, count: 0, revenue: 0, credits: 0, wallet: 0 };
+        byMonth[key].count++;
+        byMonth[key].revenue += Number(p.amount_vnd || 0);
+        byMonth[key].credits += Number(p.credits_granted || 0);
+        byMonth[key].wallet += Number(p.wallet_amount_vnd || 0);
+      });
+      const monthHeaders = ['Tháng', 'Số giao dịch', 'Doanh thu (VND)', 'Lượt VIP cộng', 'Số dư nạp (VND)'];
+      const monthRows = Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month))
+        .map(m => [m.month, m.count, m.revenue, m.credits, m.wallet]);
+      const ws2 = XLSX.utils.aoa_to_sheet([monthHeaders, ...monthRows]);
+      ws2['!cols'] = [{ wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 16 }, { wch: 18 }];
+      _xlsxStyleHeader(ws2, monthHeaders);
+      XLSX.utils.book_append_sheet(wb, ws2, 'Doanh thu theo tháng');
+
+      // Sheet 3: Hóa đơn đầy đủ
+      const invHeaders = ['Ngày', 'Mã hóa đơn', 'Khách hàng', 'Email', 'Loại', 'Gói', 'Số tiền (VND)', 'Lượt cộng', 'Số dư nạp (VND)', 'Trạng thái'];
+      const invRows = payments.map(r => ([
+        formatPortalDate(r.paid_at || r.created_at, ''),
+        r.payment_code || r.id || '',
+        r.name || '',
+        r.email || '',
+        r.order_type === 'wallet_topup' ? 'Nạp số dư' : 'Mua lượt VIP',
+        r.plan_id || '',
+        Number(r.amount_vnd || 0),
+        Number(r.credits_granted || 0),
+        Number(r.wallet_amount_vnd || 0),
+        r.status || ''
+      ]));
+      const ws3 = XLSX.utils.aoa_to_sheet([invHeaders, ...invRows]);
+      ws3['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 12 }];
+      _xlsxStyleHeader(ws3, invHeaders);
+      XLSX.utils.book_append_sheet(wb, ws3, 'Hóa đơn');
+
+      // Sheet 4: Người dùng
+      const userHeaders = ['Tên', 'Email', 'Vai trò', 'VIP', 'Lượt còn lại', 'Số dư (VND)', 'Trial đến'];
+      const userRows = users.map(u => ([
+        u.name || '',
+        u.email || '',
+        u.role || 'user',
+        u.is_vip ? 'Có' : 'Không',
+        Number(u.subscription?.ai_credits_remaining || 0),
+        Number(u.subscription?.wallet_balance_vnd || 0),
+        formatPortalDate(u.subscription?.trial_ends_at, '')
+      ]));
+      const ws4 = XLSX.utils.aoa_to_sheet([userHeaders, ...userRows]);
+      ws4['!cols'] = [{ wch: 24 }, { wch: 32 }, { wch: 10 }, { wch: 6 }, { wch: 12 }, { wch: 14 }, { wch: 18 }];
+      _xlsxStyleHeader(ws4, userHeaders);
+      XLSX.utils.book_append_sheet(wb, ws4, 'Người dùng');
+
+      _downloadXlsx(wb, `bao-cao-tong-hop-${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     async function changePortalPassword(event) {
