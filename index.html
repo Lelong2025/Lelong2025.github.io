@@ -77,6 +77,40 @@
     "url": "https://lelong2025.github.io/",
     "potentialAction": {
       "@type": "SearchAction",
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+
+  <!-- SEO Meta Tags -->
+  <title>Tra Cứu Thông Tin Tạp Chí</title>
+  <meta name="description"
+    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Hỗ trợ tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, trạng thái danh mục Scopus nhanh chóng, chính xác." />
+  <meta name="keywords"
+    content="tra cứu tạp chí, điểm khung hdgsnn 2025, jcr impact factor, phân hạng Q, danh mục scopus, tạp chí khoa học" />
+  <meta name="author" content="Lelong2025" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lelong2025.github.io/" />
+  <meta property="og:title" content="Tra Cứu Thông Tin Tạp Chí" />
+  <meta property="og:description"
+    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, danh mục Scopus." />
+  <meta property="og:image" content="https://lelong2025.github.io/logo.png" />
+
+  <!-- Google Search Console Verification Code Placeholder -->
+  <!-- Thay thế content bằng mã xác minh của bạn từ Google Search Console nếu cần -->
+  <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />
+
+  <link rel="canonical" href="https://lelong2025.github.io/" />
+
+  <!-- Schema.org JSON-LD Structured Data for Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Tra Cứu Thông Tin Tạp Chí",
+    "url": "https://lelong2025.github.io/",
+    "potentialAction": {
+      "@type": "SearchAction",
       "target": "https://lelong2025.github.io/?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
@@ -85,14 +119,13 @@
 
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
-  <!-- SheetJS — xuất Excel .xlsx -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- jsPDF — xuất PDF hóa đơn -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- SheetJS — xuất Excel .xlsx (defer: không chặn render trang) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF — xuất PDF hóa đơn (defer: không chặn render trang) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="icon" type="image/x-icon" href="logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap');
 
 /* ══════════════════════════════════════════
    DESIGN TOKENS — DARK (Navy Blue theme)
