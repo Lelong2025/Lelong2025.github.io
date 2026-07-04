@@ -4182,9 +4182,9 @@ body.portal-open .lightbulb-container {
             </div>
           </div>
           <div class="portal-panel portal-balance">
-            <i class="fas fa-crown"></i>
-            <div><span style="color:#64748b;">Gói thành viên</span><strong>Nâng cấp VIP</strong>
-              <p>Nạp thêm lượt để tiếp tục sử dụng AI khi hết lượt.</p>
+            <i class="fas fa-wallet"></i>
+            <div><span style="color:#64748b;">Số dư tài khoản</span><strong id="portalWalletBalance">0 đ</strong>
+              <p id="portalWalletNote">Dùng để tự gia hạn gói VIP khi hết lượt.</p>
             </div>
             <button type="button" class="portal-btn" style="width:100%;"
               onclick="createVipOrder();openUserModal(true);">Xem gói VIP</button>
@@ -5113,6 +5113,12 @@ body.portal-open .lightbulb-container {
       document.getElementById('portalVipPercent').textContent = admin ? 'Vô hạn' : account?.is_trial ? `${percent}%` : `${remainingCredits} lượt`;
       document.getElementById('portalVipProgress').style.width = admin ? '100%' : `${percent}%`;
       document.getElementById('portalVipProgressLabel').textContent = admin ? 'Lượt dùng: Vô hạn' : account?.is_trial ? `Lượt dùng hôm nay (${used}/${limit})` : `Đã dùng ${Math.max(0, creditTotal - remainingCredits)}/${creditTotal} lượt`;
+      document.getElementById('portalWalletBalance').textContent = admin ? 'Vô hạn' : formatVnd(walletBalance);
+      document.getElementById('portalWalletNote').textContent = admin
+        ? 'Tài khoản admin không cần nạp số dư.'
+        : walletBalance > 0
+          ? 'Số dư sẽ được dùng để tự gia hạn khi đủ giá gói.'
+          : 'Nạp số dư để tự gia hạn gói VIP khi hết lượt.';
     }
 
     function openAccountPortal(page = 'userOverview') {
