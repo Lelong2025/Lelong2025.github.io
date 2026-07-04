@@ -4119,16 +4119,17 @@ body.portal-open .lightbulb-container {
             cứu</span></button>
         <button type="button" class="active" data-page="userOverview" onclick="switchPortalPage('userOverview')"><i
             class="fas fa-gauge-high"></i><span>Tổng quan</span></button>
-        <button type="button" data-page="userTransactions" onclick="switchPortalPage('userTransactions')"><i
-            class="fas fa-clock-rotate-left"></i><span>Lịch sử giao dịch</span></button>
+        <button id="portalTransactionsNav" type="button" data-page="userTransactions"
+          onclick="switchPortalPage('userTransactions')"><i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao
+            dịch</span></button>
         <button type="button" data-page="userPassword" onclick="switchPortalPage('userPassword')"><i
             class="fas fa-shield-halved"></i><span>Đổi mật khẩu</span></button>
         <button type="button" data-admin-only data-page="adminDashboard" onclick="switchPortalPage('adminDashboard')"><i
             class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
         <button type="button" data-admin-only data-page="adminUsers" onclick="switchPortalPage('adminUsers')"><i
             class="fas fa-users"></i><span>Người dùng</span></button>
-        <button type="button" data-admin-only data-page="adminInvoices" onclick="switchPortalPage('adminInvoices')"><i
-            class="fas fa-file-invoice-dollar"></i><span>Hóa đơn</span></button>
+        <button id="adminInvoicesNav" type="button" data-admin-only data-page="adminInvoices"
+          onclick="switchPortalPage('adminInvoices')"><i class="fas fa-file-invoice-dollar"></i><span>Hóa đơn</span></button>
         <button type="button" data-admin-only data-page="adminSettings" onclick="switchPortalPage('adminSettings')"><i
             class="fas fa-gears"></i><span>Cài đặt</span></button>
       </nav>
@@ -5072,6 +5073,16 @@ body.portal-open .lightbulb-container {
         : Math.min(100, Math.round(((creditTotal - remainingCredits) / creditTotal) * 100));
 
       document.getElementById('accountPortal').classList.toggle('admin-enabled', admin);
+      const transactionNav = document.getElementById('portalTransactionsNav');
+      if (transactionNav) {
+        transactionNav.dataset.page = admin ? 'adminInvoices' : 'userTransactions';
+        transactionNav.setAttribute('onclick', `switchPortalPage('${admin ? 'adminInvoices' : 'userTransactions'}')`);
+        transactionNav.innerHTML = admin
+          ? '<i class="fas fa-file-invoice-dollar"></i><span>Hóa đơn gần đây</span>'
+          : '<i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao dịch</span>';
+      }
+      const adminInvoicesNav = document.getElementById('adminInvoicesNav');
+      if (adminInvoicesNav) adminInvoicesNav.style.display = admin ? 'none' : '';
       document.getElementById('portalRoleLabel').textContent = admin ? 'Hệ thống quản trị' : 'Tài khoản người dùng';
       document.getElementById('portalProfileName').textContent = name;
       document.getElementById('portalAvatar').textContent = firstLetter;
