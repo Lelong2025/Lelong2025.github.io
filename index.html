@@ -42,7 +42,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -4702,6 +4702,12 @@ body.portal-open .lightbulb-container {
     let currentAccount = null;
     let currentAuthMode = 'login';
     let accountRefreshPromise = null;
+    let accountRealtimeChannel = null;
+    let accountRealtimeUserId = null;
+    let accountRealtimeTimer = null;
+    let adminRealtimeChannel = null;
+    let adminRealtimeTimer = null;
+    let adminRealtimeFallbackTimer = null;
     let paymentPollTimer = null;
     let activePaymentCode = null;
     let passwordRecoveryActive = false;
@@ -4939,6 +4945,7 @@ body.portal-open .lightbulb-container {
 
     async function signOutUser() {
       await cancelPendingPayment();
+      resetRealtimeSubscriptions();
       await db.auth.signOut();
       currentAccount = null;
       closeAccountPortal();
@@ -5387,6 +5394,106 @@ body.portal-open .lightbulb-container {
       }
     }
 
+    function scheduleAccountRealtimeRefresh(delay = 300) {
+      clearTimeout(accountRealtimeTimer);
+      accountRealtimeTimer = setTimeout(() => {
+        if (currentSession) void refreshAccount();
+      }, delay);
+    }
+
+    function scheduleAdminRealtimeRefresh(delay = 600) {
+      clearTimeout(adminRealtimeTimer);
+      adminRealtimeTimer = setTimeout(() => {
+        if (isAdminAccount()) void loadAdminDashboard();
+      }, delay);
+    }
+
+    function stopAdminRealtimeFallback() {
+      if (adminRealtimeFallbackTimer) clearInterval(adminRealtimeFallbackTimer);
+      adminRealtimeFallbackTimer = null;
+    }
+
+    function startAdminRealtimeFallback() {
+      stopAdminRealtimeFallback();
+      adminRealtimeFallbackTimer = setInterval(() => {
+        if (document.hidden || !isAdminAccount()) return;
+        void loadAdminDashboard();
+      }, 15000);
+    }
+
+    function removeRealtimeChannel(channel) {
+      if (channel) db.removeChannel(channel);
+    }
+
+    function resetRealtimeSubscriptions() {
+      removeRealtimeChannel(accountRealtimeChannel);
+      removeRealtimeChannel(adminRealtimeChannel);
+      accountRealtimeChannel = null;
+      adminRealtimeChannel = null;
+      accountRealtimeUserId = null;
+      clearTimeout(accountRealtimeTimer);
+      clearTimeout(adminRealtimeTimer);
+      stopAdminRealtimeFallback();
+    }
+
+    function syncRealtimeSubscriptions(account = currentAccount) {
+      const userId = currentSession?.user?.id;
+      if (!userId) {
+        resetRealtimeSubscriptions();
+        return;
+      }
+
+      if (!accountRealtimeChannel || accountRealtimeUserId !== userId) {
+        removeRealtimeChannel(accountRealtimeChannel);
+        accountRealtimeUserId = userId;
+        accountRealtimeChannel = db.channel(`account-live-${userId}`)
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'payments',
+            filter: `user_id=eq.${userId}`
+          }, payload => {
+            if (payload.new?.payment_code === activePaymentCode && payload.new?.status === 'paid') {
+              void finishPaidPayment();
+              return;
+            }
+            scheduleAccountRealtimeRefresh();
+          })
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'subscriptions',
+            filter: `user_id=eq.${userId}`
+          }, () => scheduleAccountRealtimeRefresh())
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'ai_usage',
+            filter: `user_id=eq.${userId}`
+          }, () => scheduleAccountRealtimeRefresh(700))
+          .subscribe(status => {
+            if (status === 'CHANNEL_ERROR') scheduleAccountRealtimeRefresh(1500);
+          });
+      }
+
+      if (account?.role === 'admin') {
+        if (!adminRealtimeChannel) {
+          adminRealtimeChannel = db.channel('admin-live-dashboard')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => scheduleAdminRealtimeRefresh())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => scheduleAdminRealtimeRefresh())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleAdminRealtimeRefresh())
+            .subscribe(status => {
+              if (status === 'CHANNEL_ERROR') scheduleAdminRealtimeRefresh(1500);
+            });
+        }
+        if (!adminRealtimeFallbackTimer) startAdminRealtimeFallback();
+      } else {
+        removeRealtimeChannel(adminRealtimeChannel);
+        adminRealtimeChannel = null;
+        stopAdminRealtimeFallback();
+      }
+    }
+
     async function saveAdminSettings() {
       const message = document.getElementById('adminSettingsMessage');
       try {
@@ -5481,6 +5588,7 @@ body.portal-open .lightbulb-container {
         try {
           currentAccount = await apiFetch('/api/account');
           renderAccount(currentAccount);
+          syncRealtimeSubscriptions(currentAccount);
           return currentAccount;
         } catch (error) {
           if (error.status !== 401) setUserMessage(error.message, 'error');
@@ -5525,7 +5633,10 @@ body.portal-open .lightbulb-container {
       }
       db.auth.onAuthStateChange((event, session) => {
         currentSession = session;
-        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') currentAccount = null;
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          currentAccount = null;
+          resetRealtimeSubscriptions();
+        }
         setTimeout(async () => {
           updateAuthUi();
           if (event === 'PASSWORD_RECOVERY') {
@@ -5545,6 +5656,19 @@ body.portal-open .lightbulb-container {
       paymentPollTimer = null;
     }
 
+    async function finishPaidPayment() {
+      activePaymentCode = null;
+      stopPaymentPolling();
+      document.getElementById('paymentBox').classList.remove('open');
+      document.getElementById('paymentQr').removeAttribute('src');
+      setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
+      await refreshAccount();
+      renderPortalTables();
+      renderPortalCharts();
+      if (isAdminAccount()) void loadAdminDashboard();
+      closeUserModal();
+    }
+
     async function pollPayment(code, expiresAt) {
       stopPaymentPolling();
       const countdown = document.getElementById('paymentCountdown');
@@ -5561,16 +5685,7 @@ body.portal-open .lightbulb-container {
         try {
           const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`);
           if (order.status === 'paid') {
-            activePaymentCode = null;
-            stopPaymentPolling();
-            document.getElementById('paymentBox').classList.remove('open');
-            document.getElementById('paymentQr').removeAttribute('src');
-            setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
-            await refreshAccount();
-            renderPortalTables();
-            renderPortalCharts();
-            if (isAdminAccount()) void loadAdminDashboard();
-            closeUserModal();
+            await finishPaidPayment();
             return;
           }
         } catch (_) { }

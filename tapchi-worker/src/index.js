@@ -378,6 +378,42 @@ function databaseMigrationResponse(cors) {
   }, 503, cors.headers);
 }
 
+function usageSince(usageRows, startDate) {
+  if (!startDate) return 0;
+  const start = String(startDate).slice(0, 10);
+  return (usageRows || [])
+    .filter(row => String(row.usage_date || "").slice(0, 10) >= start)
+    .reduce((sum, row) => sum + Number(row.message_count || 0), 0);
+}
+
+function paidAccessFromDatabase({ payments = [], usageRows = [], subscription = null }) {
+  const paidPayments = payments.filter(payment => payment.status === "paid");
+  const paidCreditOrders = paidPayments.filter(payment => (payment.order_type || "vip_credits") === "vip_credits");
+  const firstPaidDate = paidCreditOrders
+    .map(payment => payment.paid_at || payment.created_at)
+    .filter(Boolean)
+    .sort()[0] || null;
+  const totalCredits = paidCreditOrders.reduce((sum, payment) => sum + Number(payment.credits_granted || 0), 0);
+  const usedAfterPaid = usageSince(usageRows, firstPaidDate);
+  const computedCredits = Math.max(totalCredits - usedAfterPaid, 0);
+  const storedCredits = Number(subscription?.ai_credits_remaining || 0);
+  const remainingCredits = paidCreditOrders.length ? computedCredits : storedCredits;
+  const walletBalance = Number(subscription?.wallet_balance_vnd || 0);
+  const walletUnitPrice = Number(subscription?.vip_plans?.ai_wallet_unit_price_vnd || 1000);
+  const hasPaid = paidPayments.length > 0;
+  const paidActive = hasPaid && (remainingCredits > 0 || walletBalance >= walletUnitPrice);
+  return {
+    hasPaid,
+    paidActive,
+    remainingCredits,
+    walletBalance,
+    walletUnitPrice,
+    totalCredits,
+    usedAfterPaid,
+    firstPaidDate
+  };
+}
+
 async function handleAccount(request, env, ctx, cors) {
   if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
   try {
@@ -395,7 +431,7 @@ async function handleAccount(request, env, ctx, cors) {
     const today = new Date().toISOString().slice(0, 10);
     const weekStart = new Date();
     weekStart.setUTCDate(weekStart.getUTCDate() - 29);
-    const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
+    const [subRes, usageRes, paymentsRes, usageHistoryRes, usageAllRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
         .select("status, expires_at, ai_credits_remaining, wallet_balance_vnd, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd)")
         .eq("user_id", userId)
@@ -408,12 +444,15 @@ async function handleAccount(request, env, ctx, cors) {
       ctx.supabase.from("payments")
         .select("id, plan_id, amount_vnd, payment_code, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
+        .order("created_at", { ascending: false }),
       ctx.supabase.from("ai_usage")
         .select("usage_date, message_count")
         .eq("user_id", userId)
         .gte("usage_date", weekStart.toISOString().slice(0, 10))
+        .order("usage_date", { ascending: true }),
+      ctx.supabase.from("ai_usage")
+        .select("usage_date, message_count")
+        .eq("user_id", userId)
         .order("usage_date", { ascending: true })
     ]);
 
@@ -421,14 +460,25 @@ async function handleAccount(request, env, ctx, cors) {
     if (usageRes.error) throw usageRes.error;
     if (paymentsRes.error) throw paymentsRes.error;
     if (usageHistoryRes.error) throw usageHistoryRes.error;
+    if (usageAllRes.error) throw usageAllRes.error;
 
     let subscription = subRes.data || null;
-    const hasPaid = (paymentsRes.data || []).some(payment => payment.status === "paid");
-    const paidCredits = Number(subscription?.ai_credits_remaining || 0);
-    const walletBalance = Number(subscription?.wallet_balance_vnd || 0);
-    let isTrial = Boolean(!hasPaid && subscription?.status === "active" && subscription?.trial_ends_at
+    const paidAccess = paidAccessFromDatabase({
+      payments: paymentsRes.data || [],
+      usageRows: usageAllRes.data || [],
+      subscription
+    });
+    if (subscription && paidAccess.hasPaid) {
+      subscription = {
+        ...subscription,
+        ai_credits_remaining: paidAccess.remainingCredits,
+        wallet_balance_vnd: paidAccess.walletBalance,
+        status: paidAccess.paidActive ? "active" : "inactive"
+      };
+    }
+    let isTrial = Boolean(!paidAccess.hasPaid && subscription?.status === "active" && subscription?.trial_ends_at
       && new Date(subscription.trial_ends_at) > new Date());
-    let isVip = paidCredits > 0 || walletBalance >= Number(subscription?.vip_plans?.ai_wallet_unit_price_vnd || 1000) || isTrial;
+    let isVip = paidAccess.paidActive || isTrial;
 
     if (ctx.userClaims?.role === "admin") {
       isVip = true;
@@ -468,8 +518,8 @@ async function handleAccount(request, env, ctx, cors) {
       subscription,
       is_vip: isVip,
       is_trial: isTrial,
-      remaining_credits: ctx.userClaims?.role === "admin" ? null : paidCredits,
-      wallet_balance_vnd: ctx.userClaims?.role === "admin" ? null : walletBalance,
+      remaining_credits: ctx.userClaims?.role === "admin" ? null : paidAccess.remainingCredits,
+      wallet_balance_vnd: ctx.userClaims?.role === "admin" ? null : paidAccess.walletBalance,
       usage_today: usageRes.data?.message_count || 0,
       usage_history: usageHistoryRes.data || [],
       payments: paymentsRes.data || []
@@ -479,7 +529,11 @@ async function handleAccount(request, env, ctx, cors) {
     if (isDatabaseMigrationError(error)) {
       return databaseMigrationResponse(cors);
     }
-    return jsonResponse({ error: "Unable to load account" }, 500, cors.headers);
+    return jsonResponse({
+      error: "Unable to load account",
+      code: "account_unavailable",
+      detail: error?.code || error?.message || "unknown"
+    }, 500, cors.headers);
   }
 }
 
@@ -520,7 +574,7 @@ async function handleAdminDashboard(request, env, ctx, cors) {
   const denied = requireAdmin(ctx, cors);
   if (denied) return denied;
   try {
-    const [users, paymentsRes, subscriptionsRes, usageRes, plansRes] = await Promise.all([
+    const [users, paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes] = await Promise.all([
       listAllAuthUsers(ctx.supabaseAdmin),
       ctx.supabaseAdmin.from("payments")
         .select("id, user_id, plan_id, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
@@ -532,11 +586,18 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         .order("usage_date", { ascending: true }),
       ctx.supabaseAdmin.from("vip_plans")
         .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd, active")
-        .order("price_vnd", { ascending: true })
+        .order("price_vnd", { ascending: true }),
+      ctx.supabaseAdmin.from("profiles")
+        .select("user_id, display_name")
+        .order("display_name", { ascending: true })
     ]);
-    for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes]) {
+    for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes]) {
       if (result.error) throw result.error;
     }
+    const { data: adminRows, error: adminUsersError } = await ctx.supabaseAdmin.from("admin_users")
+      .select("email");
+    if (adminUsersError) console.error("Admin users lookup failed", adminUsersError.message);
+    const adminEmailSet = new Set((adminRows || []).map(row => String(row.email || "").toLowerCase()));
 
     const now = new Date();
     const paidPayments = (paymentsRes.data || []).filter(row => row.status === "paid");
@@ -545,42 +606,54 @@ async function handleAdminDashboard(request, env, ctx, cors) {
       if (!paymentsByUser.has(payment.user_id)) paymentsByUser.set(payment.user_id, []);
       paymentsByUser.get(payment.user_id).push(payment);
     }
-    const activePaidSubscriptions = (subscriptionsRes.data || []).filter(row =>
-      row.status === "active" && (Number(row.ai_credits_remaining || 0) > 0
-        || Number(row.wallet_balance_vnd || 0) >= Number(row.vip_plans?.ai_wallet_unit_price_vnd || 1000))
-    );
+    const usageByUser = new Map();
+    for (const usage of usageRes.data || []) {
+      if (!usageByUser.has(usage.user_id)) usageByUser.set(usage.user_id, []);
+      usageByUser.get(usage.user_id).push(usage);
+    }
     const userById = new Map(users.map(user => [user.id, user]));
+    const profileById = new Map((profilesRes.data || []).map(row => [row.user_id, row]));
     const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
     const rows = users.map(user => {
       const subscription = subscriptionById.get(user.id) || null;
-      const paidActive = Boolean(subscription?.status === "active"
-        && (Number(subscription.ai_credits_remaining || 0) > 0
-          || Number(subscription.wallet_balance_vnd || 0) >= Number(subscription.vip_plans?.ai_wallet_unit_price_vnd || 1000)));
-      const isTrial = Boolean(!paidActive && !paymentsByUser.has(user.id)
+      const profile = profileById.get(user.id);
+      const paidAccess = paidAccessFromDatabase({
+        payments: paymentsByUser.get(user.id) || [],
+        usageRows: usageByUser.get(user.id) || [],
+        subscription
+      });
+      const displaySubscription = subscription ? {
+        ...subscription,
+        ai_credits_remaining: paidAccess.remainingCredits,
+        wallet_balance_vnd: paidAccess.walletBalance,
+        status: paidAccess.paidActive ? "active" : subscription.status
+      } : null;
+      const isTrial = Boolean(!paidAccess.paidActive && !paidAccess.hasPaid
         && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) > now);
       return {
         id: user.id,
         email: user.email || "",
-        name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Người dùng",
+        name: profile?.display_name || user.user_metadata?.display_name || user.email?.split("@")[0] || "Người dùng",
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
-        role: user.app_metadata?.role || "user",
-        is_vip: paidActive,
+        role: user.app_metadata?.role === "admin" || adminEmailSet.has(String(user.email || "").toLowerCase()) ? "admin" : "user",
+        is_vip: paidAccess.paidActive,
         is_trial: isTrial,
-        subscription
+        subscription: displaySubscription
       };
     });
     const payments = (paymentsRes.data || []).map(payment => ({
       ...payment,
       email: userById.get(payment.user_id)?.email || "",
-      name: userById.get(payment.user_id)?.user_metadata?.display_name
+      name: profileById.get(payment.user_id)?.display_name
+        || userById.get(payment.user_id)?.user_metadata?.display_name
         || userById.get(payment.user_id)?.email?.split("@")[0] || "Người dùng"
     }));
 
     return jsonResponse({
       metrics: {
         revenue_vnd: paidPayments.reduce((sum, row) => sum + Number(row.amount_vnd || 0), 0),
-        vip_users: activePaidSubscriptions.length,
+        vip_users: rows.filter(row => row.is_vip).length,
         ai_uses: (usageRes.data || []).reduce((sum, row) => sum + Number(row.message_count || 0), 0),
         total_users: users.length
       },
