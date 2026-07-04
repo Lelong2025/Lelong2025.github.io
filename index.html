@@ -4117,15 +4117,15 @@ body.portal-open .lightbulb-container {
       <nav class="portal-nav" aria-label="Điều hướng tài khoản">
         <button type="button" onclick="closeAccountPortal()"><i class="fas fa-magnifying-glass"></i><span>Về trang tra
             cứu</span></button>
-        <button type="button" class="active" data-page="userOverview" onclick="switchPortalPage('userOverview')"><i
-            class="fas fa-gauge-high"></i><span>Tổng quan</span></button>
+        <button id="portalOverviewNav" type="button" class="active" data-page="userOverview"
+          onclick="switchPortalPage('userOverview')"><i class="fas fa-gauge-high"></i><span>Tổng quan</span></button>
         <button id="portalTransactionsNav" type="button" data-page="userTransactions"
           onclick="switchPortalPage('userTransactions')"><i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao
             dịch</span></button>
         <button type="button" data-page="userPassword" onclick="switchPortalPage('userPassword')"><i
             class="fas fa-shield-halved"></i><span>Đổi mật khẩu</span></button>
-        <button type="button" data-admin-only data-page="adminDashboard" onclick="switchPortalPage('adminDashboard')"><i
-            class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
+        <button id="adminDashboardNav" type="button" data-admin-only data-page="adminDashboard"
+          onclick="switchPortalPage('adminDashboard')"><i class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
         <button type="button" data-admin-only data-page="adminUsers" onclick="switchPortalPage('adminUsers')"><i
             class="fas fa-users"></i><span>Người dùng</span></button>
         <button id="adminInvoicesNav" type="button" data-admin-only data-page="adminInvoices"
@@ -4197,7 +4197,8 @@ body.portal-open .lightbulb-container {
               <div>
                 <h3><i class="fas fa-file-invoice-dollar" style="color:#2f6df6;"></i> Hóa đơn gần đây</h3>
                 <p>Các hóa đơn gần đây nhất</p>
-              </div><button class="vip-link" type="button" onclick="switchPortalPage('userTransactions')">Xem tất
+              </div><button class="vip-link" type="button"
+                onclick="switchPortalPage(isAdminAccount() ? 'adminInvoices' : 'userTransactions')">Xem tất
                 cả</button>
             </div>
             <div class="portal-table-wrap">
@@ -4700,6 +4701,7 @@ body.portal-open .lightbulb-container {
     let currentSession = null;
     let currentAccount = null;
     let currentAuthMode = 'login';
+    let accountRefreshPromise = null;
     let paymentPollTimer = null;
     let activePaymentCode = null;
     let passwordRecoveryActive = false;
@@ -4777,7 +4779,7 @@ body.portal-open .lightbulb-container {
       const recovering = passwordRecoveryActive || passwordRecoveryRequested;
       document.getElementById('authView').style.display = recovering || !currentSession ? 'block' : 'none';
       document.getElementById('accountView').style.display = currentSession && !recovering ? 'block' : 'none';
-      if (currentSession) refreshAccount();
+      if (currentSession && !currentAccount) void refreshAccount();
     }
 
     function closeUserModal() {
@@ -4943,7 +4945,7 @@ body.portal-open .lightbulb-container {
       closeUserModal();
     }
 
-    async function apiFetch(path, options = {}, _isRetry = false) {
+    async function apiFetch(path, options = {}) {
       const { data: { session } } = await db.auth.getSession();
       if (!session?.access_token) throw new Error('Bạn cần đăng nhập.');
       currentSession = session;
@@ -4958,12 +4960,6 @@ body.portal-open .lightbulb-container {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        // Nếu nhận 401 lần đầu: Supabase có thể đang refresh token.
-        // Chờ 800ms rồi thử lại một lần với session mới (tránh vòng lặp vô hạn).
-        if (response.status === 401 && !_isRetry) {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          return apiFetch(path, options, true);
-        }
         const error = new Error(data.error || 'Yêu cầu không thành công.');
         error.status = response.status;
         error.data = data;
@@ -5073,6 +5069,14 @@ body.portal-open .lightbulb-container {
         : Math.min(100, Math.round(((creditTotal - remainingCredits) / creditTotal) * 100));
 
       document.getElementById('accountPortal').classList.toggle('admin-enabled', admin);
+      const overviewNav = document.getElementById('portalOverviewNav');
+      if (overviewNav) {
+        overviewNav.dataset.page = admin ? 'adminDashboard' : 'userOverview';
+        overviewNav.setAttribute('onclick', `switchPortalPage('${admin ? 'adminDashboard' : 'userOverview'}')`);
+        overviewNav.innerHTML = admin
+          ? '<i class="fas fa-chart-pie"></i><span>Dashboard admin</span>'
+          : '<i class="fas fa-gauge-high"></i><span>Tổng quan</span>';
+      }
       const transactionNav = document.getElementById('portalTransactionsNav');
       if (transactionNav) {
         transactionNav.dataset.page = admin ? 'adminInvoices' : 'userTransactions';
@@ -5083,6 +5087,8 @@ body.portal-open .lightbulb-container {
       }
       const adminInvoicesNav = document.getElementById('adminInvoicesNav');
       if (adminInvoicesNav) adminInvoicesNav.style.display = admin ? 'none' : '';
+      const adminDashboardNav = document.getElementById('adminDashboardNav');
+      if (adminDashboardNav) adminDashboardNav.style.display = admin ? 'none' : '';
       document.getElementById('portalRoleLabel').textContent = admin ? 'Hệ thống quản trị' : 'Tài khoản người dùng';
       document.getElementById('portalProfileName').textContent = name;
       document.getElementById('portalAvatar').textContent = firstLetter;
@@ -5114,6 +5120,7 @@ body.portal-open .lightbulb-container {
       renderPortalAccount(currentAccount || { user: currentSession.user, is_vip: false });
       renderPortalTables();
       renderPortalCharts();
+      if (isAdminAccount() && page === 'userOverview') page = 'adminDashboard';
       switchPortalPage(page);
       if (isAdminAccount()) void loadAdminDashboard();
       const portal = document.getElementById('accountPortal');
@@ -5163,6 +5170,8 @@ body.portal-open .lightbulb-container {
     }
 
     function switchPortalPage(pageId) {
+      if (pageId === 'userOverview' && isAdminAccount()) pageId = 'adminDashboard';
+      if (pageId === 'userTransactions' && isAdminAccount()) pageId = 'adminInvoices';
       const page = document.getElementById(pageId);
       if (!page || (pageId.startsWith('admin') && !isAdminAccount())) return;
       document.querySelectorAll('.portal-page').forEach(item => item.classList.toggle('active', item.id === pageId));
@@ -5224,9 +5233,12 @@ body.portal-open .lightbulb-container {
     }
 
     function renderPortalTables() {
-      const transactionMarkup = transactionTableMarkup(currentAccount?.payments || []);
+      const accountRows = isAdminAccount() && adminDashboardData?.payments
+        ? adminDashboardData.payments.slice(0, 5)
+        : currentAccount?.payments || [];
+      const transactionMarkup = transactionTableMarkup(accountRows);
       document.getElementById('portalTransactionTable').innerHTML = transactionMarkup;
-      document.getElementById('portalTransactionFullTable').innerHTML = transactionMarkup;
+      document.getElementById('portalTransactionFullTable').innerHTML = transactionTableMarkup(currentAccount?.payments || []);
       const users = adminDashboardData?.users || [];
       const recentInvoicesTable = document.getElementById('adminRecentInvoicesTable');
       if (recentInvoicesTable) recentInvoicesTable.innerHTML = invoiceTableMarkup((adminDashboardData?.payments || []).slice(0, 5));
@@ -5463,15 +5475,22 @@ body.portal-open .lightbulb-container {
 
     async function refreshAccount() {
       if (!currentSession) return null;
-      try {
-        currentAccount = await apiFetch('/api/account');
-        renderAccount(currentAccount);
-        return currentAccount;
-      } catch (error) {
-        // 401 = token đang được gia hạn tự động, không hiện lỗi cho người dùng
-        if (error.status !== 401) setUserMessage(error.message, 'error');
-        return null;
-      }
+      if (accountRefreshPromise) return accountRefreshPromise;
+
+      accountRefreshPromise = (async () => {
+        try {
+          currentAccount = await apiFetch('/api/account');
+          renderAccount(currentAccount);
+          return currentAccount;
+        } catch (error) {
+          if (error.status !== 401) setUserMessage(error.message, 'error');
+          return null;
+        } finally {
+          accountRefreshPromise = null;
+        }
+      })();
+
+      return accountRefreshPromise;
     }
 
     function updateAuthUi() {
@@ -5516,10 +5535,6 @@ body.portal-open .lightbulb-container {
             await refreshAccount();
             document.getElementById('authView').style.display = 'none';
             document.getElementById('accountView').style.display = 'block';
-          } else if (event === 'TOKEN_REFRESHED' && session) {
-            // Token được làm mới tự động: chỉ cập nhật account nếu đang ở trạng thái đã đăng nhập
-            // mà chưa có account data (tránh gọi lặp khi không cần thiết)
-            if (!currentAccount) await refreshAccount();
           }
         }, 0);
       });

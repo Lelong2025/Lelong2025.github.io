@@ -357,6 +357,27 @@ function getAdminClient(env) {
   });
 }
 
+function isDatabaseMigrationError(error) {
+  const text = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+  return (text.includes("column") || text.includes("function") || text.includes("schema cache"))
+    && (text.includes("does not exist")
+      || text.includes("could not find")
+      || text.includes("wallet_balance_vnd")
+      || text.includes("wallet_amount_vnd")
+      || text.includes("order_type")
+      || text.includes("ai_wallet_unit_price_vnd")
+      || text.includes("ai_credits_remaining")
+      || text.includes("credits_granted")
+      || text.includes("activate_free_trial"));
+}
+
+function databaseMigrationResponse(cors) {
+  return jsonResponse({
+    error: "Database chưa cập nhật. Hãy chạy database/free-trial.sql và database/vip-credits.sql trên Supabase rồi thử lại.",
+    code: "migration_required"
+  }, 503, cors.headers);
+}
+
 async function handleAccount(request, env, ctx, cors) {
   if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
   try {
@@ -367,6 +388,7 @@ async function handleAccount(request, env, ctx, cors) {
     const { error: trialError } = await ctx.supabaseAdmin.rpc("activate_free_trial", { p_user_id: userId });
     if (trialError) {
       console.error("Free trial activation failed", trialError.message);
+      if (isDatabaseMigrationError(trialError)) return databaseMigrationResponse(cors);
       return jsonResponse({ error: "Account subscription is unavailable" }, 503, cors.headers);
     }
 
@@ -454,6 +476,9 @@ async function handleAccount(request, env, ctx, cors) {
     }, 200, cors.headers);
   } catch (error) {
     console.error("Account error", error.message);
+    if (isDatabaseMigrationError(error)) {
+      return databaseMigrationResponse(cors);
+    }
     return jsonResponse({ error: "Unable to load account" }, 500, cors.headers);
   }
 }
