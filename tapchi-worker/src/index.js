@@ -375,7 +375,7 @@ async function handleAccount(request, env, ctx, cors) {
     weekStart.setUTCDate(weekStart.getUTCDate() - 29);
     const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
-        .select("status, expires_at, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, duration_days, trial_days, daily_ai_limit)")
+        .select("status, expires_at, ai_credits_remaining, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount)")
         .eq("user_id", userId)
         .maybeSingle(),
       ctx.supabase.from("ai_usage")
@@ -384,7 +384,7 @@ async function handleAccount(request, env, ctx, cors) {
         .eq("usage_date", today)
         .maybeSingle(),
       ctx.supabase.from("payments")
-        .select("id, plan_id, amount_vnd, payment_code, status, created_at, paid_at")
+        .select("id, plan_id, amount_vnd, payment_code, status, credits_granted, created_at, paid_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -401,25 +401,11 @@ async function handleAccount(request, env, ctx, cors) {
     if (usageHistoryRes.error) throw usageHistoryRes.error;
 
     let subscription = subRes.data || null;
-    const expectedExpiry = calculatePaidExpiry(
-      paymentsRes.data || [],
-      () => subscription?.vip_plans?.duration_days
-    );
-    const currentExpiry = subscription?.expires_at ? new Date(subscription.expires_at) : null;
-    if (subscription && expectedExpiry
-      && (!currentExpiry || Number.isNaN(currentExpiry.getTime()) || expectedExpiry > currentExpiry)) {
-      const { error: reconcileError } = await ctx.supabaseAdmin.from("subscriptions")
-        .update({ expires_at: expectedExpiry.toISOString(), status: "active" })
-        .eq("user_id", userId);
-      if (reconcileError) throw reconcileError;
-      subscription.expires_at = expectedExpiry.toISOString();
-      subscription.status = "active";
-    }
-    let isVip = Boolean(subscription?.status === "active"
-      && subscription.expires_at && new Date(subscription.expires_at) > new Date());
     const hasPaid = (paymentsRes.data || []).some(payment => payment.status === "paid");
-    let isTrial = Boolean(isVip && !hasPaid && subscription?.trial_ends_at
+    const paidCredits = Number(subscription?.ai_credits_remaining || 0);
+    let isTrial = Boolean(!hasPaid && subscription?.status === "active" && subscription?.trial_ends_at
       && new Date(subscription.trial_ends_at) > new Date());
+    let isVip = paidCredits > 0 || isTrial;
 
     if (ctx.userClaims?.role === "admin") {
       isVip = true;
@@ -427,20 +413,24 @@ async function handleAccount(request, env, ctx, cors) {
       if (!subscription) {
         subscription = {
           status: "active",
-          expires_at: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: null,
+          ai_credits_remaining: null,
           vip_plans: {
             name: "Vô hạn (Admin)",
             daily_ai_limit: 99999,
+            ai_credit_amount: 99999,
             trial_days: 0
           }
         };
       } else {
         subscription.status = "active";
-        subscription.expires_at = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
+        subscription.expires_at = null;
+        subscription.ai_credits_remaining = null;
         subscription.vip_plans = {
           ...subscription.vip_plans,
           name: "Vô hạn (Admin)",
-          daily_ai_limit: 99999
+          daily_ai_limit: 99999,
+          ai_credit_amount: 99999
         };
       }
     }
@@ -451,6 +441,7 @@ async function handleAccount(request, env, ctx, cors) {
       subscription,
       is_vip: isVip,
       is_trial: isTrial,
+      remaining_credits: ctx.userClaims?.role === "admin" ? null : paidCredits,
       usage_today: usageRes.data?.message_count || 0,
       usage_history: usageHistoryRes.data || [],
       payments: paymentsRes.data || []
@@ -459,21 +450,6 @@ async function handleAccount(request, env, ctx, cors) {
     console.error("Account error", error.message);
     return jsonResponse({ error: "Unable to load account" }, 500, cors.headers);
   }
-}
-
-function calculatePaidExpiry(payments, durationForPlan) {
-  let expiry = null;
-  const paid = payments
-    .filter(payment => payment.status === "paid" && (payment.paid_at || payment.created_at))
-    .sort((left, right) => new Date(left.paid_at || left.created_at) - new Date(right.paid_at || right.created_at));
-  for (const payment of paid) {
-    const paidAt = new Date(payment.paid_at || payment.created_at);
-    const durationDays = Number(durationForPlan(payment.plan_id) || 0);
-    if (Number.isNaN(paidAt.getTime()) || durationDays <= 0) continue;
-    const base = expiry && expiry > paidAt ? expiry : paidAt;
-    expiry = new Date(base.getTime() + durationDays * 86400000);
-  }
-  return expiry;
 }
 
 function requireAdmin(ctx, cors) {
@@ -516,15 +492,15 @@ async function handleAdminDashboard(request, env, ctx, cors) {
     const [users, paymentsRes, subscriptionsRes, usageRes, plansRes] = await Promise.all([
       listAllAuthUsers(ctx.supabaseAdmin),
       ctx.supabaseAdmin.from("payments")
-        .select("id, user_id, plan_id, amount_vnd, status, created_at, paid_at")
+        .select("id, user_id, plan_id, payment_code, amount_vnd, status, credits_granted, created_at, paid_at")
         .order("created_at", { ascending: false }),
       ctx.supabaseAdmin.from("subscriptions")
-        .select("user_id, status, expires_at, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, duration_days, trial_days, daily_ai_limit)"),
+        .select("user_id, status, expires_at, ai_credits_remaining, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount)"),
       ctx.supabaseAdmin.from("ai_usage")
         .select("user_id, usage_date, message_count")
         .order("usage_date", { ascending: true }),
       ctx.supabaseAdmin.from("vip_plans")
-        .select("id, name, price_vnd, duration_days, trial_days, daily_ai_limit, active")
+        .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, active")
         .order("price_vnd", { ascending: true })
     ]);
     for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes]) {
@@ -533,48 +509,20 @@ async function handleAdminDashboard(request, env, ctx, cors) {
 
     const now = new Date();
     const paidPayments = (paymentsRes.data || []).filter(row => row.status === "paid");
-    const planById = new Map((plansRes.data || []).map(plan => [plan.id, plan]));
     const paymentsByUser = new Map();
     for (const payment of paidPayments) {
       if (!paymentsByUser.has(payment.user_id)) paymentsByUser.set(payment.user_id, []);
       paymentsByUser.get(payment.user_id).push(payment);
     }
-    const subscriptionByUser = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
-    const reconciliationUpdates = [];
-    for (const [userId, userPayments] of paymentsByUser) {
-      const subscription = subscriptionByUser.get(userId);
-      if (!subscription) continue;
-      const expectedExpiry = calculatePaidExpiry(
-        userPayments,
-        planId => planById.get(planId)?.duration_days || subscription.vip_plans?.duration_days
-      );
-      const currentExpiry = subscription.expires_at ? new Date(subscription.expires_at) : null;
-      if (expectedExpiry && (!currentExpiry || Number.isNaN(currentExpiry.getTime()) || expectedExpiry > currentExpiry)) {
-        subscription.expires_at = expectedExpiry.toISOString();
-        subscription.status = "active";
-        reconciliationUpdates.push(
-          ctx.supabaseAdmin.from("subscriptions")
-            .update({ expires_at: expectedExpiry.toISOString(), status: "active" })
-            .eq("user_id", userId)
-        );
-      }
-    }
-    if (reconciliationUpdates.length) {
-      const updates = await Promise.all(reconciliationUpdates);
-      const failedUpdate = updates.find(update => update.error);
-      if (failedUpdate?.error) throw failedUpdate.error;
-    }
     const activePaidSubscriptions = (subscriptionsRes.data || []).filter(row =>
-      row.status === "active" && row.expires_at && new Date(row.expires_at) > now
-      && paymentsByUser.has(row.user_id)
+      row.status === "active" && Number(row.ai_credits_remaining || 0) > 0
     );
     const userById = new Map(users.map(user => [user.id, user]));
     const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
     const rows = users.map(user => {
       const subscription = subscriptionById.get(user.id) || null;
-      const active = Boolean(subscription && subscription.status === "active"
-        && subscription.expires_at && new Date(subscription.expires_at) > now);
-      const isTrial = Boolean(active && !paymentsByUser.has(user.id)
+      const paidActive = Boolean(subscription?.status === "active" && Number(subscription.ai_credits_remaining || 0) > 0);
+      const isTrial = Boolean(!paidActive && !paymentsByUser.has(user.id)
         && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) > now);
       return {
         id: user.id,
@@ -583,12 +531,12 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
         role: user.app_metadata?.role || "user",
-        is_vip: active && !isTrial,
+        is_vip: paidActive,
         is_trial: isTrial,
         subscription
       };
     });
-    const payments = paidPayments.map(payment => ({
+    const payments = (paymentsRes.data || []).map(payment => ({
       ...payment,
       email: userById.get(payment.user_id)?.email || "",
       name: userById.get(payment.user_id)?.user_metadata?.display_name
@@ -620,18 +568,18 @@ async function handleAdminSettings(request, env, ctx, cors) {
     const body = await request.json();
     const id = String(body.id || "chatbox_ai");
     const price = Number(body.price_vnd);
-    const duration = Number(body.duration_days);
+    const credits = Number(body.ai_credit_amount);
     const trialDays = Number(body.trial_days);
     const limit = Number(body.daily_ai_limit);
-    if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(duration) || duration < 1
+    if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(credits) || credits < 1
       || !Number.isSafeInteger(trialDays) || trialDays < 1 || trialDays > 365
       || !Number.isSafeInteger(limit) || limit < 1) {
       return jsonResponse({ error: "Invalid plan settings" }, 400, cors.headers);
     }
     const { data, error } = await ctx.supabaseAdmin.from("vip_plans")
-      .update({ price_vnd: price, duration_days: duration, trial_days: trialDays, daily_ai_limit: limit })
+      .update({ price_vnd: price, ai_credit_amount: credits, trial_days: trialDays, daily_ai_limit: limit })
       .eq("id", id)
-      .select("id, name, price_vnd, duration_days, trial_days, daily_ai_limit, active")
+      .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, active")
       .single();
     if (error) throw error;
     const { data: syncedTrials, error: syncError } = await ctx.supabaseAdmin
@@ -682,7 +630,7 @@ async function handleCreateOrder(request, env, ctx, cors) {
     }
 
     const { data: plans, error: planError } = await ctx.supabase.from("vip_plans")
-      .select("id, name, price_vnd, duration_days, payment_prefix")
+      .select("id, name, price_vnd, ai_credit_amount, payment_prefix")
       .eq("id", "chatbox_ai")
       .eq("active", true);
     if (planError) throw planError;

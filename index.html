@@ -3937,13 +3937,13 @@ body.portal-open .lightbulb-container {
           <div class="vip-account-email"><i class="fas fa-user-circle"></i><strong id="accountEmail"></strong></div>
           <div class="vip-detail-row"><span>Trạng thái</span><span id="vipStatus" class="vip-inactive">Chưa kích
               hoạt</span></div>
-          <div id="vipExpiryRow" class="vip-detail-row" style="display:none"><span>Hết hạn</span><strong
+          <div id="vipExpiryRow" class="vip-detail-row" style="display:none"><span>Dùng thử đến</span><strong
               id="vipExpiry"></strong></div>
-          <div class="vip-detail-row"><span>Lượt AI hôm nay</span><strong id="vipUsage">0/30</strong></div>
+          <div class="vip-detail-row"><span>Lượt AI còn lại</span><strong id="vipUsage">0 lượt</strong></div>
         </div>
         <div class="vip-actions">
           <button class="vip-primary" type="button" onclick="createVipOrder()"><i class="fas fa-crown"></i>&nbsp;
-            Mua/Gia hạn 30 ngày · 25.000đ</button>
+            Mua thêm lượt · 25.000đ</button>
           <button class="vip-secondary" type="button" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i>&nbsp;
             Đăng xuất</button>
         </div>
@@ -3987,6 +3987,8 @@ body.portal-open .lightbulb-container {
             class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
         <button type="button" data-admin-only data-page="adminUsers" onclick="switchPortalPage('adminUsers')"><i
             class="fas fa-users"></i><span>Người dùng</span></button>
+        <button type="button" data-admin-only data-page="adminInvoices" onclick="switchPortalPage('adminInvoices')"><i
+            class="fas fa-file-invoice-dollar"></i><span>Hóa đơn</span></button>
         <button type="button" data-admin-only data-page="adminSettings" onclick="switchPortalPage('adminSettings')"><i
             class="fas fa-gears"></i><span>Cài đặt</span></button>
       </nav>
@@ -4010,7 +4012,7 @@ body.portal-open .lightbulb-container {
           <button type="button" class="portal-btn" onclick="closeAccountPortal()"><i class="fas fa-xmark"></i>
             Đóng</button>
           <button type="button" class="portal-btn primary" onclick="createVipOrder();openUserModal(true);"><i
-              class="fas fa-crown"></i> Gia hạn VIP</button>
+              class="fas fa-crown"></i> Mua thêm lượt</button>
         </div>
       </div>
 
@@ -4031,15 +4033,15 @@ body.portal-open .lightbulb-container {
             <div class="portal-progress-line"><span id="portalVipProgress"></span></div>
             <div class="portal-vip-meta">
               <div><small>Ngày kích hoạt</small><strong id="portalVipStart">Chưa kích hoạt</strong></div>
-              <div><small>Ngày hết hạn</small><strong id="portalVipEnd">Chưa có</strong></div>
-              <button type="button" class="portal-btn" onclick="createVipOrder();openUserModal(true);">Gia hạn
+              <div><small>Lượt còn lại</small><strong id="portalVipEnd">0 lượt</strong></div>
+              <button type="button" class="portal-btn" onclick="createVipOrder();openUserModal(true);">Mua thêm
                 ngay</button>
             </div>
           </div>
           <div class="portal-panel portal-balance">
             <i class="fas fa-crown"></i>
             <div><span style="color:#64748b;">Gói thành viên</span><strong>Nâng cấp VIP</strong>
-              <p>Duy trì quyền truy cập AI sau khi thời gian dùng thử kết thúc.</p>
+              <p>Nạp thêm lượt để tiếp tục sử dụng AI khi hết lượt.</p>
             </div>
             <button type="button" class="portal-btn" style="width:100%;"
               onclick="createVipOrder();openUserModal(true);">Xem gói VIP</button>
@@ -4098,7 +4100,7 @@ body.portal-open .lightbulb-container {
           <div class="portal-panel-head">
             <div>
               <h3>Lịch sử giao dịch</h3>
-              <p>Nạp tiền, mua VIP và tài nguyên lẻ</p>
+              <p>Nạp tiền, mua VIP theo lượt và tài nguyên lẻ</p>
             </div>
           </div>
           <div class="portal-table-wrap">
@@ -4131,8 +4133,8 @@ body.portal-open .lightbulb-container {
         <div class="portal-grid cards">
           <div class="portal-card"><small>Tổng doanh thu</small><strong id="adminRevenueMetric">0 đ</strong><span>Giao
               dịch đã thanh toán</span><i class="fas fa-sack-dollar"></i></div>
-          <div class="portal-card"><small>Người dùng VIP</small><strong id="adminVipMetric">0</strong><span>VIP còn hiệu
-              lực</span><i class="fas fa-crown"></i></div>
+          <div class="portal-card"><small>Người dùng VIP</small><strong id="adminVipMetric">0</strong><span>Còn lượt
+              sử dụng</span><i class="fas fa-crown"></i></div>
           <div class="portal-card"><small>Lượt dùng AI</small><strong id="adminUsageMetric">0</strong><span>Tổng lượt đã
               ghi nhận</span><i class="fas fa-users-viewfinder"></i></div>
           <div class="portal-card"><small>Tổng tài khoản</small><strong id="adminUsersMetric">0</strong><span>Supabase
@@ -4188,12 +4190,27 @@ body.portal-open .lightbulb-container {
           <div class="portal-panel-head">
             <div>
               <h3>Quản lý người dùng</h3>
-              <p>Theo dõi trạng thái VIP, email và ngày hết hạn.</p>
+              <p>Theo dõi trạng thái VIP, email và lượt còn lại.</p>
             </div><button class="portal-btn primary" onclick="exportAdminUsers()"><i class="fas fa-download"></i> Xuất
               báo cáo</button>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="adminUsersTable"></table>
+          </div>
+        </section>
+      </section>
+
+      <section id="adminInvoices" class="portal-page">
+        <section class="portal-panel">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Quản lý hóa đơn</h3>
+              <p>Theo dõi mã thanh toán, khách hàng, số lượt và trạng thái giao dịch.</p>
+            </div><button class="portal-btn primary" onclick="exportAdminInvoices()"><i class="fas fa-download"></i>
+              Xuất hóa đơn</button>
+          </div>
+          <div class="portal-table-wrap">
+            <table class="portal-table" id="adminInvoicesTable"></table>
           </div>
         </section>
       </section>
@@ -4211,11 +4228,11 @@ body.portal-open .lightbulb-container {
               <div class="portal-settings-row">
                 <div class="portal-field"><label>Giá gói VIP (VND)</label><input id="adminPlanPrice" type="number"
                     min="0"></div>
-                <div class="portal-field"><label>Thời hạn VIP (ngày)</label><input id="adminPlanDuration" type="number"
+                <div class="portal-field"><label>Lượt AI mỗi gói</label><input id="adminPlanCredits" type="number"
                     min="1"></div>
                 <div class="portal-field"><label>Thời gian dùng thử (ngày)</label><input id="adminTrialDays"
                     type="number" min="1" max="365"></div>
-                <div class="portal-field"><label>Lượt AI mỗi ngày</label><input id="adminPlanLimit" type="number"
+                <div class="portal-field"><label>Lượt AI trial mỗi ngày</label><input id="adminPlanLimit" type="number"
                     min="1"></div>
               </div>
             </section>
@@ -4237,7 +4254,7 @@ body.portal-open .lightbulb-container {
               <div class="portal-panel-head">
                 <div>
                   <h3><i class="fas fa-sliders" style="color:#f59e0b;"></i> Giới hạn lượt dùng</h3>
-                  <p>Hạn mức theo ngày</p>
+                  <p>Hạn mức trial và lượt mua thêm</p>
                 </div>
               </div>
               <div class="portal-limit-box"><strong>Tài khoản thường</strong>
@@ -4411,7 +4428,7 @@ body.portal-open .lightbulb-container {
     <div id="ai-chat-messages"></div>
 
     <!-- Input -->
-    <div id="chat-access-note">Cần thời gian dùng thử hoặc VIP đang hoạt động để sử dụng AI.</div>
+    <div id="chat-access-note">Cần thời gian dùng thử hoặc VIP còn lượt để sử dụng AI.</div>
     <div id="ai-chat-footer">
       <div id="ai-input-row">
         <textarea id="ai-chat-input" placeholder="Nhập tên tạp chí, ISSN, hoặc câu hỏi..." rows="1"
@@ -4839,14 +4856,14 @@ body.portal-open .lightbulb-container {
         ? 'VIP Vĩnh viễn (Admin)'
         : account.is_trial
           ? `Đang dùng thử miễn phí ${trialDays} ngày`
-          : account.is_vip ? 'VIP đang hoạt động' : 'Dùng thử đã hết hạn';
+          : getRemainingCredits(account) > 0 ? 'VIP đang hoạt động' : 'Đã hết lượt VIP';
       status.className = account.is_vip ? 'vip-active' : 'vip-inactive';
       const expiryRow = document.getElementById('vipExpiryRow');
-      const expiry = account.subscription?.expires_at;
+      const expiry = account.is_trial ? account.subscription?.trial_ends_at : null;
       expiryRow.style.display = expiry && !isAdmin ? 'flex' : 'none';
       if (expiry && !isAdmin) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleDateString('vi-VN');
       const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
-      document.getElementById('vipUsage').textContent = isAdmin ? 'Vô hạn' : `${account.usage_today || 0}/${limit}`;
+      document.getElementById('vipUsage').textContent = isAdmin ? 'Vô hạn' : account.is_trial ? `${account.usage_today || 0}/${limit} hôm nay` : `${getRemainingCredits(account)} lượt`;
       document.getElementById('chat-access-note').style.display = account.is_vip ? 'none' : 'block';
       renderPortalAccount(account);
     }
@@ -4873,13 +4890,17 @@ body.portal-open .lightbulb-container {
       return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString('vi-VN');
     }
 
+    function getRemainingCredits(account) {
+      const value = account?.remaining_credits ?? account?.subscription?.ai_credits_remaining;
+      return Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+    }
+
     function renderPortalAccount(account) {
       const user = account?.user || currentSession?.user || {};
       const sessionUser = currentSession?.user || {};
       const name = sessionUser.user_metadata?.display_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Người dùng';
       const firstLetter = name.trim().charAt(0).toUpperCase() || 'U';
       const admin = isAdminAccount();
-      const expiry = account?.subscription?.expires_at;
       const paidPayments = (account?.payments || []).filter(payment => payment.status === 'paid');
       const start = account?.is_trial
         ? account?.subscription?.trial_started_at
@@ -4887,7 +4908,13 @@ body.portal-open .lightbulb-container {
       const limit = account?.subscription?.vip_plans?.daily_ai_limit || 30;
       const trialDays = Number(account?.subscription?.vip_plans?.trial_days || 30);
       const used = Number(account?.usage_today || 0);
-      const percent = admin ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+      const remainingCredits = getRemainingCredits(account);
+      const lastPaidCredits = Number(paidPayments.find(payment => Number(payment.credits_granted || 0) > 0)?.credits_granted
+        || account?.subscription?.vip_plans?.ai_credit_amount || remainingCredits || 0);
+      const creditTotal = Math.max(1, remainingCredits + Math.max(0, lastPaidCredits - remainingCredits));
+      const percent = admin ? 0 : account?.is_trial
+        ? Math.min(100, Math.round((used / Math.max(1, limit)) * 100))
+        : Math.min(100, Math.round(((creditTotal - remainingCredits) / creditTotal) * 100));
 
       document.getElementById('accountPortal').classList.toggle('admin-enabled', admin);
       document.getElementById('portalRoleLabel').textContent = admin ? 'Hệ thống quản trị' : 'Tài khoản người dùng';
@@ -4906,10 +4933,10 @@ body.portal-open .lightbulb-container {
           : account?.is_vip ? '<i class="fas fa-circle-check"></i>&nbsp; ACTIVE'
             : '<i class="fas fa-clock"></i>&nbsp; INACTIVE';
       document.getElementById('portalVipStart').textContent = admin ? 'Hệ thống' : formatPortalDate(start);
-      document.getElementById('portalVipEnd').textContent = admin ? 'Vô hạn (Vĩnh viễn)' : formatPortalDate(expiry, 'Chưa có');
-      document.getElementById('portalVipPercent').textContent = admin ? 'Vô hạn' : `${percent}%`;
+      document.getElementById('portalVipEnd').textContent = admin ? 'Vô hạn' : account?.is_trial ? formatPortalDate(account?.subscription?.trial_ends_at, 'Chưa có') : `${remainingCredits} lượt`;
+      document.getElementById('portalVipPercent').textContent = admin ? 'Vô hạn' : account?.is_trial ? `${percent}%` : `${remainingCredits} lượt`;
       document.getElementById('portalVipProgress').style.width = admin ? '100%' : `${percent}%`;
-      document.getElementById('portalVipProgressLabel').textContent = admin ? 'Lượt dùng hôm nay: Vô hạn' : `Lượt dùng hôm nay (${used}/${limit})`;
+      document.getElementById('portalVipProgressLabel').textContent = admin ? 'Lượt dùng: Vô hạn' : account?.is_trial ? `Lượt dùng hôm nay (${used}/${limit})` : `Đã dùng ${Math.max(0, creditTotal - remainingCredits)}/${creditTotal} lượt`;
     }
 
     function openAccountPortal(page = 'userOverview') {
@@ -4980,7 +5007,8 @@ body.portal-open .lightbulb-container {
         userPassword: ['Bảo mật tài khoản', 'Đổi mật khẩu để bảo vệ tài khoản của bạn.'],
         adminDashboard: ['Trình điều khiển', 'Dữ liệu thực từ thanh toán, tài khoản và lượt dùng AI.'],
         adminUsers: ['Quản lý người dùng', 'Theo dõi số lượng tài khoản và trạng thái VIP.'],
-        adminSettings: ['Cài đặt hệ thống', 'Cấu hình giá VIP, thời hạn và lượt dùng trong ngày.']
+        adminInvoices: ['Quản lý hóa đơn', 'Theo dõi thanh toán, số lượt cộng và trạng thái giao dịch.'],
+        adminSettings: ['Cài đặt hệ thống', 'Cấu hình giá VIP và số lượt sử dụng.']
       };
       const [title, subtitle] = labels[pageId] || labels.userOverview;
       document.getElementById('portalPageTitle').textContent = title;
@@ -4995,7 +5023,9 @@ body.portal-open .lightbulb-container {
       const body = rows.length ? rows.map(row => {
         const success = row.status === 'paid';
         const date = row.paid_at || row.created_at;
-        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Nội dung"><strong>Thanh toán VIP</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.payment_code || row.plan_id || '')}</small></td><td data-label="Số tiền">${Number(row.amount_vnd || 0).toLocaleString('vi-VN')} đ</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
+        const credits = Number(row.credits_granted || 0);
+        const detail = credits ? `${credits.toLocaleString('vi-VN')} lượt` : row.payment_code || row.plan_id || '';
+        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Nội dung"><strong>Thanh toán VIP</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(detail)}</small></td><td data-label="Số tiền">${Number(row.amount_vnd || 0).toLocaleString('vi-VN')} đ</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
       }).join('') : '<tr><td colspan="4" style="text-align:center;color:#64748b;">Chưa có giao dịch.</td></tr>';
       return `<thead><tr><th>Ngày</th><th>Nội dung</th><th>Số tiền</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
     }
@@ -5006,9 +5036,21 @@ body.portal-open .lightbulb-container {
         const plan = row.is_trial ? 'Free Trial' : row.subscription?.vip_plans?.name || row.subscription?.plan_id || 'Standard';
         const active = row.is_vip || row.is_trial;
         const status = row.is_trial ? 'Dùng thử' : row.is_vip ? 'VIP' : 'Không hoạt động';
-        return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td><span class="portal-pill">${escapeHTML(plan)}</span></td><td>${escapeHTML(formatPortalDate(row.subscription?.expires_at, '-'))}</td><td><span class="portal-pill ${active ? 'green' : 'orange'}">${status}</span></td></tr>`;
+        const remaining = row.is_trial ? formatPortalDate(row.subscription?.trial_ends_at, '-') : `${Number(row.subscription?.ai_credits_remaining || 0).toLocaleString('vi-VN')} lượt`;
+        return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td><span class="portal-pill">${escapeHTML(plan)}</span></td><td>${escapeHTML(remaining)}</td><td><span class="portal-pill ${active ? 'green' : 'orange'}">${status}</span></td></tr>`;
       }).join('') : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Chưa có người dùng.</td></tr>';
-      return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Gói dịch vụ</th><th>Ngày hết hạn</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
+      return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Gói dịch vụ</th><th>Lượt / Trial</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
+    }
+
+    function invoiceTableMarkup(rows) {
+      const labels = { paid: 'Đã thanh toán', pending: 'Đang chờ', expired: 'Hết hạn', cancelled: 'Đã hủy', failed: 'Thất bại' };
+      const body = rows.length ? rows.map(row => {
+        const success = row.status === 'paid';
+        const date = row.paid_at || row.created_at;
+        const credits = Number(row.credits_granted || 0);
+        return `<tr><td>${escapeHTML(formatPortalDate(date, '-'))}</td><td><strong>${escapeHTML(row.payment_code || row.id || '')}</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.plan_id || '')}</small></td><td>${escapeHTML(row.name || 'Người dùng')}<small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.email || '')}</small></td><td>${Number(row.amount_vnd || 0).toLocaleString('vi-VN')} đ</td><td>${credits ? `${credits.toLocaleString('vi-VN')} lượt` : '-'}</td><td><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
+      }).join('') : '<tr><td colspan="6" style="text-align:center;color:#64748b;">Chưa có hóa đơn.</td></tr>';
+      return `<thead><tr><th>Ngày</th><th>Mã hóa đơn</th><th>Khách hàng</th><th>Số tiền</th><th>Lượt cộng</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
     }
 
     function renderPortalTables() {
@@ -5018,6 +5060,8 @@ body.portal-open .lightbulb-container {
       const users = adminDashboardData?.users || [];
       document.getElementById('adminRecentVipTable').innerHTML = userTableMarkup(users.filter(user => user.is_vip).slice(0, 5));
       document.getElementById('adminUsersTable').innerHTML = userTableMarkup(users);
+      const invoicesTable = document.getElementById('adminInvoicesTable');
+      if (invoicesTable) invoicesTable.innerHTML = invoiceTableMarkup(adminDashboardData?.payments || []);
     }
 
     function lineChartMarkup(values, labels) {
@@ -5083,7 +5127,7 @@ body.portal-open .lightbulb-container {
       }
       document.getElementById('userUsageChart').innerHTML = lineChartMarkup(usageValues, usageLabels);
 
-      const paid = adminDashboardData?.payments || [];
+      const paid = (adminDashboardData?.payments || []).filter(row => row.status === 'paid');
       let periods = [];
       let revenueValues = [];
       if (adminChartMode === 'day') {
@@ -5139,11 +5183,11 @@ body.portal-open .lightbulb-container {
       const plan = (data.plans || []).find(item => item.id === 'chatbox_ai') || data.plans?.[0];
       if (plan) {
         document.getElementById('adminPlanPrice').value = plan.price_vnd;
-        document.getElementById('adminPlanDuration').value = plan.duration_days;
+        document.getElementById('adminPlanCredits').value = plan.ai_credit_amount || plan.daily_ai_limit || 30;
         document.getElementById('adminTrialDays').value = plan.trial_days || 30;
         document.getElementById('adminPlanLimit').value = plan.daily_ai_limit;
         document.getElementById('adminPlanName').textContent = `${plan.name} (${plan.active ? 'đang hoạt động' : 'đã tắt'})`;
-        document.getElementById('adminLimitSummary').textContent = `${plan.daily_ai_limit} lượt/ngày · Trial ${plan.trial_days || 30} ngày`;
+        document.getElementById('adminLimitSummary').textContent = `${plan.ai_credit_amount || plan.daily_ai_limit || 30} lượt/gói · Trial ${plan.daily_ai_limit} lượt/ngày trong ${plan.trial_days || 30} ngày`;
       }
       renderPortalTables();
       renderPortalCharts();
@@ -5168,7 +5212,7 @@ body.portal-open .lightbulb-container {
           body: JSON.stringify({
             id: plan?.id || 'chatbox_ai',
             price_vnd: Number(document.getElementById('adminPlanPrice').value),
-            duration_days: Number(document.getElementById('adminPlanDuration').value),
+            ai_credit_amount: Number(document.getElementById('adminPlanCredits').value),
             trial_days: Number(document.getElementById('adminTrialDays').value),
             daily_ai_limit: Number(document.getElementById('adminPlanLimit').value)
           })
@@ -5186,13 +5230,35 @@ body.portal-open .lightbulb-container {
 
     function exportAdminUsers() {
       const users = adminDashboardData?.users || [];
-      const lines = [['Tên', 'Email', 'Vai trò', 'VIP', 'Ngày hết hạn'], ...users.map(user => [
-        user.name, user.email, user.role, user.is_vip ? 'Có' : 'Không', formatPortalDate(user.subscription?.expires_at, '')
+      const lines = [['Tên', 'Email', 'Vai trò', 'VIP', 'Lượt còn lại', 'Trial đến'], ...users.map(user => [
+        user.name, user.email, user.role, user.is_vip ? 'Có' : 'Không',
+        Number(user.subscription?.ai_credits_remaining || 0),
+        formatPortalDate(user.subscription?.trial_ends_at, '')
       ])];
       const csv = lines.map(line => line.map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
       const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
       link.download = `nguoi-dung-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function exportAdminInvoices() {
+      const rows = adminDashboardData?.payments || [];
+      const lines = [['Ngày', 'Mã hóa đơn', 'Khách hàng', 'Email', 'Gói', 'Số tiền', 'Lượt cộng', 'Trạng thái'], ...rows.map(row => [
+        formatPortalDate(row.paid_at || row.created_at, ''),
+        row.payment_code || row.id || '',
+        row.name || '',
+        row.email || '',
+        row.plan_id || '',
+        Number(row.amount_vnd || 0),
+        Number(row.credits_granted || 0),
+        row.status || ''
+      ])];
+      const csv = lines.map(line => line.map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = `hoa-don-${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     }
@@ -5762,7 +5828,7 @@ body.portal-open .lightbulb-container {
       const account = currentAccount || await refreshAccount();
       if (!account?.is_vip) {
         openUserModal(true);
-        setUserMessage('Tài khoản chưa có VIP. Bạn có thể thanh toán 25.000đ để dùng AI trong 30 ngày.');
+        setUserMessage('Tài khoản chưa có VIP hoặc đã hết lượt. Bạn có thể thanh toán 25.000đ để mua thêm lượt AI.');
         return;
       }
       isChatOpen = true;
@@ -5936,7 +6002,13 @@ body.portal-open .lightbulb-container {
         const replyText = data.result || "Không có phản hồi từ Trợ lý AI.";
 
         if (data.usage && currentAccount) {
-          currentAccount.usage_today = data.usage.used;
+          currentAccount.usage_today = data.usage.usage_today ?? data.usage.used ?? currentAccount.usage_today;
+          if (typeof data.usage.remaining_credits !== 'undefined') {
+            currentAccount.remaining_credits = data.usage.remaining_credits;
+            currentAccount.subscription = currentAccount.subscription || {};
+            currentAccount.subscription.ai_credits_remaining = data.usage.remaining_credits;
+            currentAccount.is_vip = isAdminAccount() || currentAccount.is_trial || Number(data.usage.remaining_credits || 0) > 0;
+          }
           renderAccount(currentAccount);
         }
 
@@ -5947,8 +6019,10 @@ body.portal-open .lightbulb-container {
         if (err.status === 403) currentAccount = null;
         removeTyping(tid);
         const message = err.data?.error === 'vip_required'
-          ? 'Tài khoản VIP đã hết hạn.'
-          : err.data?.error === 'daily_limit'
+          ? 'Tài khoản chưa có VIP hoặc đã hết lượt.'
+          : err.data?.error === 'credits_exhausted'
+            ? 'Bạn đã dùng hết lượt VIP. Vui lòng mua thêm lượt để tiếp tục.'
+            : err.data?.error === 'daily_limit'
             ? 'Bạn đã dùng hết lượt AI hôm nay.'
             : err.status === 401
               ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
