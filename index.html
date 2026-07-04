@@ -4374,8 +4374,8 @@ body.portal-open .lightbulb-container {
                     min="0"></div>
                 <div class="portal-field"><label>Lượt AI mỗi gói</label><input id="adminPlanCredits" type="number"
                     min="1"></div>
-                <div class="portal-field"><label>Giá 1 lượt từ số dư (VND)</label><input id="adminWalletUnitPrice"
-                    type="number" min="1"></div>
+                <div class="portal-field"><label>Tự gia hạn theo giá gói</label><input id="adminWalletUnitPrice"
+                    type="number" min="1" disabled></div>
                 <div class="portal-field"><label>Thời gian dùng thử (ngày)</label><input id="adminTrialDays"
                     type="number" min="1" max="365"></div>
                 <div class="portal-field"><label>Lượt AI trial mỗi ngày</label><input id="adminPlanLimit" type="number"
@@ -5375,11 +5375,11 @@ body.portal-open .lightbulb-container {
       if (plan) {
         document.getElementById('adminPlanPrice').value = plan.price_vnd;
         document.getElementById('adminPlanCredits').value = plan.ai_credit_amount || plan.daily_ai_limit || 30;
-        document.getElementById('adminWalletUnitPrice').value = plan.ai_wallet_unit_price_vnd || 1000;
+        document.getElementById('adminWalletUnitPrice').value = plan.price_vnd || plan.ai_wallet_unit_price_vnd || 1000;
         document.getElementById('adminTrialDays').value = plan.trial_days || 30;
         document.getElementById('adminPlanLimit').value = plan.daily_ai_limit;
         document.getElementById('adminPlanName').textContent = `${plan.name} (${plan.active ? 'đang hoạt động' : 'đã tắt'})`;
-        document.getElementById('adminLimitSummary').textContent = `${plan.ai_credit_amount || plan.daily_ai_limit || 30} lượt/gói · ${formatVnd(plan.ai_wallet_unit_price_vnd || 1000)}/lượt từ số dư · Trial ${plan.daily_ai_limit} lượt/ngày trong ${plan.trial_days || 30} ngày`;
+        document.getElementById('adminLimitSummary').textContent = `${plan.ai_credit_amount || plan.daily_ai_limit || 30} lượt/gói · Số dư tự gia hạn khi đủ ${formatVnd(plan.price_vnd || 0)} · Trial ${plan.daily_ai_limit} lượt/ngày trong ${plan.trial_days || 30} ngày`;
       }
       renderPortalTables();
       renderPortalCharts();
@@ -5505,7 +5505,7 @@ body.portal-open .lightbulb-container {
             id: plan?.id || 'chatbox_ai',
             price_vnd: Number(document.getElementById('adminPlanPrice').value),
             ai_credit_amount: Number(document.getElementById('adminPlanCredits').value),
-            ai_wallet_unit_price_vnd: Number(document.getElementById('adminWalletUnitPrice').value),
+            ai_wallet_unit_price_vnd: Number(document.getElementById('adminPlanPrice').value),
             trial_days: Number(document.getElementById('adminTrialDays').value),
             daily_ai_limit: Number(document.getElementById('adminPlanLimit').value)
           })
@@ -6373,10 +6373,10 @@ body.portal-open .lightbulb-container {
             currentAccount.subscription.wallet_balance_vnd = data.usage.wallet_balance_vnd;
           }
           if (typeof data.usage.remaining_credits !== 'undefined' || typeof data.usage.wallet_balance_vnd !== 'undefined') {
-            const unitPrice = Number(data.usage.wallet_unit_price_vnd || currentAccount.subscription?.vip_plans?.ai_wallet_unit_price_vnd || 1000);
+            const renewPrice = Number(data.usage.wallet_renew_price_vnd || currentAccount.subscription?.vip_plans?.price_vnd || 0);
             currentAccount.is_vip = isAdminAccount() || currentAccount.is_trial
               || Number(currentAccount.remaining_credits || 0) > 0
-              || Number(currentAccount.wallet_balance_vnd || 0) >= unitPrice;
+              || Number(currentAccount.wallet_balance_vnd || 0) >= renewPrice;
           }
           renderAccount(currentAccount);
         }
@@ -6390,7 +6390,7 @@ body.portal-open .lightbulb-container {
         const message = err.data?.error === 'vip_required'
           ? 'Tài khoản chưa có VIP hoặc đã hết lượt.'
           : err.data?.error === 'credits_exhausted'
-            ? 'Bạn đã dùng hết lượt VIP và số dư không đủ. Vui lòng mua thêm lượt hoặc nạp số dư.'
+            ? 'Bạn đã dùng hết lượt VIP và số dư không đủ để tự gia hạn gói. Vui lòng mua thêm lượt hoặc nạp số dư.'
             : err.data?.error === 'daily_limit'
             ? 'Bạn đã dùng hết lượt AI hôm nay.'
             : err.status === 401

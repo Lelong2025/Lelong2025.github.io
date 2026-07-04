@@ -106,7 +106,7 @@ declare
   v_user record;
   v_used integer;
   v_remaining integer;
-  v_unit_price integer;
+  v_plan_price integer;
 begin
   for v_user in
     select
@@ -127,8 +127,8 @@ begin
 
     v_remaining := greatest(coalesce(v_user.total_credits, 0) - coalesce(v_used, 0), 0);
 
-    select greatest(coalesce(vp.ai_wallet_unit_price_vnd, 1000), 1)
-    into v_unit_price
+    select greatest(coalesce(vp.price_vnd, 0), 1)
+    into v_plan_price
     from public.vip_plans vp
     where vp.id = v_user.plan_id;
 
@@ -146,7 +146,7 @@ begin
         ai_credits_remaining = v_remaining,
         status = case
           when v_remaining > 0
-            or public.subscriptions.wallet_balance_vnd >= coalesce(v_unit_price, 1000)
+            or public.subscriptions.wallet_balance_vnd >= coalesce(v_plan_price, 0)
           then 'active'
           else 'inactive'
         end,
@@ -163,7 +163,8 @@ declare
   v_subscription public.subscriptions%rowtype;
   v_has_paid boolean;
   v_limit integer;
-  v_unit_price integer;
+  v_plan_price integer;
+  v_credit_amount integer;
   v_today date := current_date;
   v_usage integer;
 begin
@@ -181,23 +182,36 @@ begin
     where user_id = p_user_id and status = 'paid'
   ) into v_has_paid;
 
-  select greatest(coalesce(p.ai_wallet_unit_price_vnd, 1000), 1) into v_unit_price
+  select greatest(coalesce(p.price_vnd, 0), 1),
+         greatest(coalesce(p.ai_credit_amount, p.daily_ai_limit, 30), 1)
+  into v_plan_price, v_credit_amount
   from public.vip_plans p
   where p.id = v_subscription.plan_id;
 
   if v_has_paid or coalesce(v_subscription.wallet_balance_vnd, 0) > 0 then
-    if coalesce(v_subscription.ai_credits_remaining, 0) <= 0
-      and coalesce(v_subscription.wallet_balance_vnd, 0) < coalesce(v_unit_price, 1000) then
+    if coalesce(v_subscription.ai_credits_remaining, 0) <= 0 then
+      if coalesce(v_subscription.wallet_balance_vnd, 0) < coalesce(v_plan_price, 0) then
+        update public.subscriptions
+        set status = 'inactive', updated_at = now()
+        where user_id = p_user_id;
+        return jsonb_build_object(
+          'allowed', false,
+          'reason', 'credits_exhausted',
+          'remaining_credits', 0,
+          'wallet_balance_vnd', coalesce(v_subscription.wallet_balance_vnd, 0),
+          'wallet_renew_price_vnd', coalesce(v_plan_price, 0),
+          'wallet_unit_price_vnd', coalesce(v_plan_price, 0)
+        );
+      end if;
+
       update public.subscriptions
-      set status = 'inactive', updated_at = now()
-      where user_id = p_user_id;
-      return jsonb_build_object(
-        'allowed', false,
-        'reason', 'credits_exhausted',
-        'remaining_credits', 0,
-        'wallet_balance_vnd', coalesce(v_subscription.wallet_balance_vnd, 0),
-        'wallet_unit_price_vnd', coalesce(v_unit_price, 1000)
-      );
+      set wallet_balance_vnd = wallet_balance_vnd - coalesce(v_plan_price, 0),
+          ai_credits_remaining = coalesce(v_credit_amount, 30),
+          status = 'active',
+          updated_at = now()
+      where user_id = p_user_id
+      returning ai_credits_remaining, wallet_balance_vnd
+      into v_subscription.ai_credits_remaining, v_subscription.wallet_balance_vnd;
     end if;
 
     insert into public.ai_usage (user_id, usage_date, message_count)
@@ -205,29 +219,16 @@ begin
     on conflict (user_id, usage_date)
     do update set message_count = public.ai_usage.message_count + 1;
 
-    if coalesce(v_subscription.ai_credits_remaining, 0) > 0 then
-      update public.subscriptions
-      set ai_credits_remaining = ai_credits_remaining - 1,
-          status = case
-            when ai_credits_remaining - 1 > 0 or wallet_balance_vnd >= coalesce(v_unit_price, 1000) then 'active'
-            else 'inactive'
-          end,
-          updated_at = now()
-      where user_id = p_user_id
-      returning ai_credits_remaining, wallet_balance_vnd
-      into v_subscription.ai_credits_remaining, v_subscription.wallet_balance_vnd;
-    else
-      update public.subscriptions
-      set wallet_balance_vnd = wallet_balance_vnd - coalesce(v_unit_price, 1000),
-          status = case
-            when wallet_balance_vnd - coalesce(v_unit_price, 1000) >= coalesce(v_unit_price, 1000) then 'active'
-            else 'inactive'
-          end,
-          updated_at = now()
-      where user_id = p_user_id
-      returning ai_credits_remaining, wallet_balance_vnd
-      into v_subscription.ai_credits_remaining, v_subscription.wallet_balance_vnd;
-    end if;
+    update public.subscriptions
+    set ai_credits_remaining = ai_credits_remaining - 1,
+        status = case
+          when ai_credits_remaining - 1 > 0 or wallet_balance_vnd >= coalesce(v_plan_price, 0) then 'active'
+          else 'inactive'
+        end,
+        updated_at = now()
+    where user_id = p_user_id
+    returning ai_credits_remaining, wallet_balance_vnd
+    into v_subscription.ai_credits_remaining, v_subscription.wallet_balance_vnd;
 
     select message_count into v_usage
     from public.ai_usage
@@ -238,7 +239,8 @@ begin
       'usage_today', coalesce(v_usage, 0),
       'remaining_credits', coalesce(v_subscription.ai_credits_remaining, 0),
       'wallet_balance_vnd', coalesce(v_subscription.wallet_balance_vnd, 0),
-      'wallet_unit_price_vnd', coalesce(v_unit_price, 1000)
+      'wallet_renew_price_vnd', coalesce(v_plan_price, 0),
+      'wallet_unit_price_vnd', coalesce(v_plan_price, 0)
     );
   end if;
 
@@ -271,7 +273,8 @@ begin
     'usage_today', coalesce(v_usage, 0),
     'remaining_credits', coalesce(v_subscription.ai_credits_remaining, 0),
     'wallet_balance_vnd', coalesce(v_subscription.wallet_balance_vnd, 0),
-    'wallet_unit_price_vnd', coalesce(v_unit_price, 1000)
+    'wallet_renew_price_vnd', coalesce(v_plan_price, 0),
+    'wallet_unit_price_vnd', coalesce(v_plan_price, 0)
   );
 end;
 $$;

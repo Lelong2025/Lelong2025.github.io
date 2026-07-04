@@ -399,15 +399,15 @@ function paidAccessFromDatabase({ payments = [], usageRows = [], subscription = 
   const storedCredits = Number(subscription?.ai_credits_remaining || 0);
   const remainingCredits = paidCreditOrders.length ? computedCredits : storedCredits;
   const walletBalance = Number(subscription?.wallet_balance_vnd || 0);
-  const walletUnitPrice = Number(subscription?.vip_plans?.ai_wallet_unit_price_vnd || 1000);
+  const walletRenewPrice = Math.max(Number(subscription?.vip_plans?.price_vnd || 0), 1);
   const hasPaid = paidPayments.length > 0;
-  const paidActive = hasPaid && (remainingCredits > 0 || walletBalance >= walletUnitPrice);
+  const paidActive = hasPaid && (remainingCredits > 0 || walletBalance >= walletRenewPrice);
   return {
     hasPaid,
     paidActive,
     remainingCredits,
     walletBalance,
-    walletUnitPrice,
+    walletRenewPrice,
     totalCredits,
     usedAfterPaid,
     firstPaidDate
