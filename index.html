@@ -4126,8 +4126,6 @@ body.portal-open .lightbulb-container {
         <button id="portalTransactionsNav" type="button" data-page="userTransactions"
           onclick="switchPortalPage('userTransactions')"><i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao
             dịch</span></button>
-        <button type="button" data-page="userPassword" onclick="switchPortalPage('userPassword')"><i
-            class="fas fa-shield-halved"></i><span>Đổi mật khẩu</span></button>
         <button id="adminDashboardNav" type="button" data-admin-only data-page="adminDashboard"
           onclick="switchPortalPage('adminDashboard')"><i class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
         <button type="button" data-admin-only data-page="adminUsers" onclick="switchPortalPage('adminUsers')"><i
@@ -4257,25 +4255,7 @@ body.portal-open .lightbulb-container {
         </section>
       </section>
 
-      <section id="userPassword" class="portal-page">
-        <section class="portal-panel" style="max-width:640px;">
-          <div class="portal-panel-head">
-            <div>
-              <h3>Đổi mật khẩu</h3>
-              <p>Mật khẩu tối thiểu 8 ký tự.</p>
-            </div>
-          </div>
-          <form class="portal-form" onsubmit="changePortalPassword(event)">
-            <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password"
-                autocomplete="current-password" placeholder="••••••••"></div>
-            <div class="portal-field"><label>Mật khẩu mới</label><input id="portalNewPasswordPage" type="password"
-                minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
-            <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalConfirmPasswordPage"
-                type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
-            <button class="portal-btn primary" type="submit">Lưu mật khẩu mới</button>
-          </form>
-        </section>
-      </section>
+
 
       <section id="adminDashboard" class="portal-page">
         <div class="portal-grid cards">
@@ -4424,13 +4404,20 @@ body.portal-open .lightbulb-container {
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
-                  <h3>Tùy chọn nâng cao</h3>
-                  <p>Bảo trì, thử nghiệm và hóa đơn tự động</p>
+                  <h3><i class="fas fa-lock" style="color:#f59e0b;"></i> Đổi mật khẩu</h3>
+                  <p>Cập nhật thông tin bảo mật cho tài khoản admin</p>
                 </div>
               </div>
-              <div class="portal-form">
-                <p>Các tùy chọn này chưa có trường dữ liệu tương ứng nên không hiển thị số liệu giả.</p>
-              </div>
+              <form class="portal-form" onsubmit="changePortalPassword(event)">
+                <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password"
+                    autocomplete="current-password" placeholder="••••••••"></div>
+                <div class="portal-field"><label>Mật khẩu mới</label><input id="portalAdminNewPassword" type="password"
+                    minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+                <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalAdminConfirmPassword"
+                    type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+                <button class="portal-btn primary" type="submit">Cập nhật mật khẩu</button>
+                <p class="vip-message" style="text-align:center;margin:0;"></p>
+              </form>
             </section>
           </div>
         </div>
@@ -5196,7 +5183,6 @@ body.portal-open .lightbulb-container {
       const labels = {
         userOverview: ['Chào mừng trở lại!', 'Quản lý tài khoản và theo dõi gói VIP của bạn tại đây.'],
         userTransactions: ['Lịch sử giao dịch', 'Theo dõi toàn bộ hoạt động thanh toán trên tài khoản.'],
-        userPassword: ['Bảo mật tài khoản', 'Đổi mật khẩu để bảo vệ tài khoản của bạn.'],
         adminDashboard: ['Trình điều khiển', 'Dữ liệu thực từ thanh toán, tài khoản và lượt dùng AI.'],
         adminUsers: ['Quản lý người dùng', 'Theo dõi số lượng tài khoản và trạng thái VIP.'],
         adminInvoices: ['Quản lý hóa đơn', 'Theo dõi thanh toán, số lượt cộng và trạng thái giao dịch.'],
@@ -5792,7 +5778,7 @@ body.portal-open .lightbulb-container {
       const passwordFields = [...form.querySelectorAll('input[type="password"]')];
       const nextPassword = passwordFields[passwordFields.length - 2]?.value || '';
       const confirmPassword = passwordFields[passwordFields.length - 1]?.value || '';
-      const message = document.getElementById('portalPasswordMessage');
+      const message = form.querySelector('.vip-message') || document.getElementById('portalPasswordMessage');
       if (nextPassword !== confirmPassword) {
         if (message) {
           message.textContent = 'Mật khẩu xác nhận chưa khớp.';
