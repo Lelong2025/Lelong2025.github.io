@@ -2116,6 +2116,101 @@ body.portal-open .lightbulb-container {
     display: block;
 }
 
+.wallet-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, .62);
+    backdrop-filter: blur(12px);
+}
+
+.wallet-modal.open {
+    display: flex;
+}
+
+.wallet-card {
+    width: min(100%, 430px);
+    border: 1px solid rgba(59, 130, 246, .14);
+    border-radius: 22px;
+    background: #fff;
+    color: #1e293b;
+    padding: 24px;
+    box-shadow: 0 30px 90px rgba(2, 6, 23, .28);
+}
+
+[data-theme="dark"] .wallet-card {
+    background: #111827;
+    color: #f1f5f9;
+    border-color: rgba(59, 130, 246, .18);
+}
+
+.wallet-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.wallet-card-head h3 {
+    margin: 0 0 5px;
+    font-size: 22px;
+    letter-spacing: -.02em;
+}
+
+.wallet-card-head p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+[data-theme="dark"] .wallet-card-head p {
+    color: #94a3b8;
+}
+
+.wallet-presets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.wallet-presets button {
+    min-height: 40px;
+    border: 1px solid #dbe3ec;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.wallet-presets button:hover {
+    border-color: var(--indigo);
+    color: var(--indigo);
+    background: rgba(59, 130, 246, .06);
+}
+
+[data-theme="dark"] .wallet-presets button {
+    border-color: #334155;
+    background: #0f172a;
+    color: #cbd5e1;
+}
+
+.wallet-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.wallet-actions button {
+    flex: 1;
+}
+
 @keyframes paymentReveal {
     from {
         opacity: 0;
@@ -3979,6 +4074,34 @@ body.portal-open .lightbulb-container {
     </section>
   </div>
 
+  <div id="walletTopupModal" class="wallet-modal" onclick="if(event.target === this) closeWalletTopupModal()">
+    <section class="wallet-card" role="dialog" aria-modal="true" aria-labelledby="walletTopupTitle">
+      <div class="wallet-card-head">
+        <div>
+          <h3 id="walletTopupTitle"><i class="fas fa-wallet"></i> Nạp số dư</h3>
+          <p>Số dư sẽ được tự động trừ khi bạn dùng hết lượt AI.</p>
+        </div>
+        <button class="vip-close" type="button" onclick="closeWalletTopupModal()" aria-label="Đóng">&times;</button>
+      </div>
+      <form class="vip-form" onsubmit="submitWalletTopup(event)">
+        <div class="portal-field">
+          <label for="walletTopupAmount">Số tiền nạp (VND)</label>
+          <input id="walletTopupAmount" type="number" min="1000" step="1000" value="50000" inputmode="numeric">
+        </div>
+        <div class="wallet-presets">
+          <button type="button" onclick="setWalletTopupAmount(50000)">50.000đ</button>
+          <button type="button" onclick="setWalletTopupAmount(100000)">100.000đ</button>
+          <button type="button" onclick="setWalletTopupAmount(200000)">200.000đ</button>
+        </div>
+        <p id="walletTopupMessage" class="vip-message" style="margin:0;"></p>
+        <div class="wallet-actions">
+          <button class="vip-secondary" type="button" onclick="closeWalletTopupModal()">Hủy</button>
+          <button class="vip-primary" type="submit"><i class="fas fa-qrcode"></i>&nbsp; Tạo mã nạp</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <!-- ===== USER / ADMIN PORTAL ===== -->
   <section id="accountPortal" class="portal-shell" aria-hidden="true">
     <button type="button" class="portal-nav-backdrop" aria-label="Đóng menu" onclick="togglePortalNav(false)"></button>
@@ -5472,14 +5595,44 @@ body.portal-open .lightbulb-container {
       await createPaymentOrder('vip_credits');
     }
 
-    async function createWalletTopupOrder() {
-      const raw = prompt('Nhập số tiền muốn nạp vào số dư (VND)', '50000');
-      if (raw === null) return;
-      const amount = Number(String(raw).replace(/[^\d]/g, ''));
+    function createWalletTopupOrder() {
+      openWalletTopupModal();
+    }
+
+    function openWalletTopupModal() {
+      const modal = document.getElementById('walletTopupModal');
+      const input = document.getElementById('walletTopupAmount');
+      const message = document.getElementById('walletTopupMessage');
+      if (message) {
+        message.textContent = '';
+        message.className = 'vip-message';
+      }
+      modal.classList.add('open');
+      setTimeout(() => input?.focus(), 50);
+    }
+
+    function closeWalletTopupModal() {
+      document.getElementById('walletTopupModal')?.classList.remove('open');
+    }
+
+    function setWalletTopupAmount(amount) {
+      const input = document.getElementById('walletTopupAmount');
+      if (input) input.value = amount;
+    }
+
+    async function submitWalletTopup(event) {
+      event.preventDefault();
+      const input = document.getElementById('walletTopupAmount');
+      const message = document.getElementById('walletTopupMessage');
+      const amount = Number(input?.value || 0);
       if (!Number.isSafeInteger(amount) || amount < 1000) {
-        setUserMessage('Số tiền nạp tối thiểu là 1.000đ.', 'error');
+        if (message) {
+          message.textContent = 'Số tiền nạp tối thiểu là 1.000đ.';
+          message.className = 'vip-message error';
+        }
         return;
       }
+      closeWalletTopupModal();
       await createPaymentOrder('wallet_topup', amount);
     }
 
