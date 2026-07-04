@@ -42,41 +42,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
-
-  <!-- SEO Meta Tags -->
-  <title>Tra Cứu Thông Tin Tạp Chí</title>
-  <meta name="description"
-    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Hỗ trợ tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, trạng thái danh mục Scopus nhanh chóng, chính xác." />
-  <meta name="keywords"
-    content="tra cứu tạp chí, điểm khung hdgsnn 2025, jcr impact factor, phân hạng Q, danh mục scopus, tạp chí khoa học" />
-  <meta name="author" content="Lelong2025" />
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://lelong2025.github.io/" />
-  <meta property="og:title" content="Tra Cứu Thông Tin Tạp Chí" />
-  <meta property="og:description"
-    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, danh mục Scopus." />
-  <meta property="og:image" content="https://lelong2025.github.io/logo.png" />
-
-  <!-- Google Search Console Verification Code Placeholder -->
-  <!-- Thay thế content bằng mã xác minh của bạn từ Google Search Console nếu cần -->
-  <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />
-
-  <link rel="canonical" href="https://lelong2025.github.io/" />
-
-  <!-- Schema.org JSON-LD Structured Data for Google Search -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Tra Cứu Thông Tin Tạp Chí",
-    "url": "https://lelong2025.github.io/",
-    "potentialAction": {
-      "@type": "SearchAction",
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -126,6 +92,7 @@
   <link rel="icon" type="image/x-icon" href="logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap');
 
 /* ══════════════════════════════════════════
    DESIGN TOKENS — DARK (Navy Blue theme)
@@ -3992,89 +3959,6 @@ body.portal-open .lightbulb-container {
       <i class="fas fa-moon" aria-hidden="true"></i>
       <i class="fas fa-sun" aria-hidden="true"></i>
     </button>
-    <button id="accountButton" class="account-button" onclick="openUserModal()">
-      <i class="fas fa-user"></i> Đăng nhập
-    </button>
-
-  </div>
-
-  <!-- ===== ĐĂNG NHẬP / TÀI KHOẢN VIP ===== -->
-  <div id="userModal" class="vip-modal" onclick="if(event.target === this) closeUserModal()">
-    <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
-      <div class="vip-card-head">
-        <h2 id="userModalTitle"><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
-        <button class="vip-close" onclick="closeUserModal()" aria-label="Đóng">&times;</button>
-      </div>
-
-      <div id="authView">
-        <div id="authWelcome" class="auth-welcome">
-          <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
-          <h3 id="authHeading">Chào mừng trở lại</h3>
-          <p id="authLead">Đăng nhập để tiếp tục sử dụng Trợ lý Tạp chí AI.</p>
-        </div>
-        <div id="authTabs" class="vip-tabs">
-          <button id="loginTab" class="active" type="button" onclick="setAuthMode('login')"><i
-              class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
-          <button id="registerTab" type="button" onclick="setAuthMode('register')"><i
-              class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
-        </div>
-        <form id="authForm" class="vip-form" onsubmit="submitAuth(event)">
-          <div id="authNameField" class="auth-field" style="display:none">
-            <label for="authName">Tên hiển thị</label>
-            <div class="auth-input-wrap"><i class="fas fa-user"></i><input id="authName" type="text" maxlength="80"
-                autocomplete="name" placeholder="Tên của bạn"></div>
-          </div>
-          <div class="auth-field">
-            <label for="authEmail">Địa chỉ email</label>
-            <div class="auth-input-wrap"><i class="fas fa-envelope"></i><input id="authEmail" type="email" required
-                autocomplete="email" placeholder="name@example.com"></div>
-          </div>
-          <div class="auth-field">
-            <label for="authPassword">Mật khẩu</label>
-            <div class="auth-input-wrap">
-              <i class="fas fa-lock"></i>
-              <input id="authPassword" type="password" required minlength="8" autocomplete="current-password"
-                placeholder="Ít nhất 8 ký tự">
-              <button class="password-toggle" type="button" onclick="togglePasswordVisibility('authPassword', this)"
-                aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
-            </div>
-          </div>
-          <button id="authSubmit" class="vip-primary auth-submit" type="submit"><i class="fas fa-arrow-right"></i>&nbsp;
-            <span id="authSubmitLabel">Đăng nhập</span></button>
-          <div class="auth-form-footer"><button id="passwordResetRequest" class="vip-link" type="button"
-              onclick="requestPasswordReset()">Quên mật khẩu?</button></div>
-        </form>
-        <form id="resetView" class="vip-form" style="display:none" onsubmit="saveNewPassword(event)">
-          <div class="auth-welcome" style="margin-bottom:4px;">
-            <div class="auth-welcome-icon"><i class="fas fa-key"></i></div>
-            <h3>Đặt mật khẩu mới</h3>
-            <p>Mật khẩu cần có ít nhất 8 ký tự.</p>
-          </div>
-          <div class="auth-field">
-            <label for="newPassword">Mật khẩu mới</label>
-            <div class="auth-input-wrap"><i class="fas fa-lock"></i><input id="newPassword" type="password" required
-                minlength="8" autocomplete="new-password" placeholder="Nhập mật khẩu an toàn"
-                oninput="updatePasswordRules(this.value)"><button class="password-toggle" type="button"
-                onclick="togglePasswordVisibility('newPassword', this)" aria-label="Hiện mật khẩu"><i
-                  class="fas fa-eye"></i></button></div>
-          </div>
-          <div id="passwordRules" class="password-rules">
-            <span class="password-rule" data-rule="length"><i class="fas fa-circle"></i>Ít nhất 8 ký tự</span>
-            <span class="password-rule" data-rule="lower"><i class="fas fa-circle"></i>Chữ thường</span>
-            <span class="password-rule" data-rule="upper"><i class="fas fa-circle"></i>Chữ hoa</span>
-            <span class="password-rule" data-rule="number"><i class="fas fa-circle"></i>Chữ số</span>
-            <span class="password-rule" data-rule="special"><i class="fas fa-circle"></i>Ký tự đặc biệt</span>
-          </div>
-          <div class="auth-field">
-            <label for="confirmNewPassword">Xác nhận mật khẩu mới</label>
-            <div class="auth-input-wrap"><i class="fas fa-shield-halved"></i><input id="confirmNewPassword"
-                type="password" required minlength="8" autocomplete="new-password"
-                placeholder="Nhập lại mật khẩu"><button class="password-toggle" type="button"
-                onclick="togglePasswordVisibility('confirmNewPassword', this)" aria-label="Hiện mật khẩu"><i
-                  class="fas fa-eye"></i></button></div>
-          </div>
-          <button id="saveNewPasswordButton" class="vip-primary auth-submit" type="submit"><i
-              class="fas fa-floppy-disk"></i>&nbsp; Lưu mật khẩu mới</button>
     <button id="accountButton" class="account-button" onclick="openUserModal()">
       <i class="fas fa-user"></i> Đăng nhập
     </button>
