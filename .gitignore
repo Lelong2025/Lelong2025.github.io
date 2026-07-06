@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Build output
+dist/
+backend/dist/
+
+# Environment variables — NEVER commit real .env files
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+
+# Vite cache
+.vite/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.suo
+*.user
+.idea/
+.vscode/settings.json
+*.log

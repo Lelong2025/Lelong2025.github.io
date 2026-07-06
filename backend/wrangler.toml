@@ -1,0 +1,8 @@
+name = "old-band-adb5"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+compatibility_flags = ["nodejs_compat"]
+
+# Runtime configuration belongs in `.dev.vars` for Cloudflare or environment
+# variables on Render. Do not commit credentials to this file.

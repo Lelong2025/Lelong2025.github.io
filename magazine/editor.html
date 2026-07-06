@@ -1,0 +1,933 @@
+﻿<!DOCTYPE html>
+<html lang="vi" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LHU Journal of Science - Hệ thống soạn thảo & AI Review Sắp xếp số báo</title>
+    <script type="module" src="/src/magazine/editor-bridge.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.8/dist/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Times+New+Roman&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Times New Roman', 'Times', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/src/magazine/editor.css">
+</head>
+
+<body
+    class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col transition-colors duration-200 overflow-hidden">
+
+    <div class="flex flex-1 overflow-hidden h-full relative" id="main-app-container">
+        <!-- Sidebar Backdrop for Mobile Overlay -->
+        <div id="sidebar-backdrop" onclick="toggleSidebar()"
+            class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-20 hidden transition-opacity duration-300"></div>
+
+        <!-- Leftmost sidebar: Issue and Articles Management (Hỗ trợ kéo thả & tính toán số trang) -->
+        <aside id="sidebar-panel"
+            class="hidden w-72 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-col shrink-0 z-30 transition-all duration-300 max-lg:fixed max-lg:top-0 max-lg:bottom-0 max-lg:left-0 max-lg:h-full max-lg:shadow-2xl">
+            <!-- Issue Picker & Actions -->
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="flex justify-between items-center">
+                    <label
+                        class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Số
+                        báo hiện hành</label>
+                </div>
+                <div class="flex space-x-2">
+                    <select id="issue-selector" data-client-hidden
+                        class="flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 font-semibold">
+                        <option value="">Chưa có số báo</option>
+                    </select>
+                    <button onclick="createNewIssue()" data-client-hidden
+                        class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 rounded-lg text-xs"
+                        title="Tạo số báo mới">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <div class="flex justify-between items-center text-[11px] pt-1">
+                    <span class="text-slate-500 dark:text-slate-400"><i class="fa-solid fa-layer-group mr-1"></i> Tổng
+                        bài: <strong id="sidebar-total-articles"
+                            class="text-slate-700 dark:text-slate-200">0</strong></span>
+                    <button onclick="exportIssue()" data-client-hidden
+                        class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold hover:underline">
+                        <i class="fa-solid fa-file-export mr-0.5"></i>Xuất số báo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Article Draggable List Section -->
+            <div class="p-3 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-800/50">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Danh sách bài báo sắp
+                    xếp</span>
+                <button onclick="createNewArticle()"
+                    class="text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded flex items-center shadow-sm">
+                    <i class="fa-solid fa-plus mr-1"></i> Thêm bài
+                </button>
+            </div>
+
+            <!-- List items container with custom drag-and-drop indicator -->
+            <div id="articles-list"
+                class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60 p-2 space-y-1.5"
+                ondragover="allowDrop(event)">
+                <!-- JavaScript renders articles list dynamically here -->
+            </div>
+
+            <div
+                class="p-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-500 dark:text-slate-400">
+                <div class="flex items-start space-x-1.5">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                    <p>Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi thứ tự. Số trang dồn sẽ
+                        được cập nhật tự động tức thời.</p>
+                </div>
+            </div>
+            <div id="client-submissions-section" data-admin-only
+                class="hidden border-t border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <div class="mb-2 flex items-center justify-between">
+                    <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bài client đã gửi</h3>
+                    <button type="button" onclick="loadSubmissions?.()"
+                        class="text-[10px] font-bold text-blue-600 hover:underline">Reload</button>
+                </div>
+                <div id="client-submissions-list" class="max-h-56 space-y-2 overflow-y-auto"></div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            <!-- Mobile Tab Switcher -->
+            <div
+                class="flex lg:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 w-full shrink-0 z-20">
+                <button id="tab-editor" onclick="switchMobileTab('editor')"
+                    class="flex-1 py-3 text-center text-xs font-bold border-b-2 flex items-center justify-center space-x-1.5 transition-all cursor-pointer border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Soạn thảo</span>
+                </button>
+                <button id="tab-preview" onclick="switchMobileTab('preview')"
+                    class="flex-1 py-3 text-center text-xs font-bold border-b-2 flex items-center justify-center space-x-1.5 transition-all cursor-pointer border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Xem trước A4</span>
+                </button>
+                <button id="tab-ai" onclick="switchMobileTab('ai')"
+                    class="flex-1 py-3 text-center text-xs font-bold border-b-2 flex items-center justify-center space-x-1.5 transition-all cursor-pointer border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>AI Review</span>
+                </button>
+            </div>
+
+            <!-- COLUMN 1: A4 Realtime Live Preview (Scrollable) -->
+            <section id="preview-section"
+                class="flex-1 w-full bg-slate-200 dark:bg-slate-950 p-4 overflow-y-auto flex flex-col items-center max-lg:hidden">
+                <!-- Preview Toolbar -->
+                <div
+                    class="preview-toolbar w-full max-w-[210mm] mb-3 flex justify-between items-center text-xs bg-white dark:bg-slate-800 py-2 px-3 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700 shrink-0">
+                    <div
+                        class="hidden sm:flex items-center space-x-2 text-slate-600 dark:text-slate-300 font-medium shrink-0">
+                        <span
+                            class="inline-flex items-center justify-center w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="preview-mode-title" class="font-semibold">Bản in A4 (Live Preview)</span>
+                    </div>
+                    <div
+                        class="flex items-center space-x-1 overflow-x-auto flex-nowrap w-full sm:w-auto scrollbar-none pb-0.5 shrink-0">
+                        <button id="btn-toggle-preview-mode" onclick="togglePreviewMode()"
+                            class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded text-[11px] font-bold flex items-center transition-colors whitespace-nowrap"
+                            title="Chuyển giữa bài hiện tại và toàn bộ số báo">
+                            <i class="fa-solid fa-book-open"></i>
+                            <span class="hidden md:inline ml-1">Xem toàn bộ số báo</span>
+                        </button>
+                        <select id="issue-header-language" onchange="setIssueHeaderLanguage(this.value)"
+                            class="rounded border border-slate-200 bg-slate-50 px-1 py-1 text-[10px]"
+                            title="Tiêu đề trang chẵn mặc định cho số báo">
+                            <option value="vi">Số: VI</option>
+                            <option value="en">Số: EN</option>
+                        </select>
+                        <select id="article-header-language" onchange="setArticleHeaderLanguage(this.value)"
+                            class="rounded border border-slate-200 bg-slate-50 px-1 py-1 text-[10px]"
+                            title="Ghi đè riêng cho bài hiện tại">
+                            <option value="issue">Bài: theo số</option>
+                            <option value="vi">Bài: VI</option>
+                            <option value="en">Bài: EN</option>
+                        </select>
+                        <button onclick="printCurrentArticle()"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-[11px] font-semibold flex items-center transition-colors whitespace-nowrap">
+                            <i class="fa-solid fa-print"></i>
+                            <span class="hidden md:inline ml-1">In bài</span>
+                        </button>
+                        <button id="export-word-btn" onclick="exportCurrentArticleWord()"
+                            class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-semibold flex items-center whitespace-nowrap"
+                            title="Xuất DOCX trực tiếp từ nội dung Quill">
+                            <i class="fa-solid fa-file-word"></i>
+                            <span class="hidden md:inline ml-1">Word</span>
+                        </button>
+                        <button id="export-pdf-btn" onclick="exportVectorPdf()"
+                            class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-semibold flex items-center whitespace-nowrap"
+                            title="Xuất PDF vector, không chụp ảnh">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <span class="hidden md:inline ml-1">PDF</span>
+                        </button>
+                        <button onclick="openLhjLogin()"
+                            class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold flex items-center whitespace-nowrap"
+                            title="Dang bai len lhj.vn">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            <span class="hidden md:inline ml-1">LHJ</span>
+                        </button>
+                        <button onclick="zoomPreview(1)"
+                            class="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-xs"
+                            title="Phóng to">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                        </button>
+                        <button onclick="zoomPreview(-1)"
+                            class="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-xs"
+                            title="Thu nhỏ">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- A4 Simulation Page container -->
+                <div id="a4-scale-wrapper" class="w-full flex justify-center items-start overflow-visible">
+                    <div id="a4-container" class="transition-transform duration-200 origin-top">
+                        <div class="a4-page font-serif text-black leading-relaxed text-justify">
+
+                            <div class="cover-content">
+
+                                <!-- LHU Journal Header Plate -->
+                                <div class="border-b border-slate-800 pb-2.5 mb-5 flex items-center justify-between">
+                                    <div class="flex items-center space-x-2.5">
+                                        <img src="/assets/magazine/image.png" alt="JSLHU Logo" style="height:60px;">
+                                        <div class="text-left">
+                                            <h2
+                                                style="font-size:21px;font-family:Cambria;color:#2a4e8a;letter-spacing:1px;line-height:1.1">
+                                                JOURNAL OF SCIENCE</h2>
+                                            <h3
+                                                style="font-size:15px;font-family:'Times New Roman',serif;color:#2a4e8a;font-weight:bold">
+                                                OF LAC HONG UNIVERSITY</h3>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right" style="line-height:1.35;color:#2a4e8a">
+                                        <div style="font-size:15px;font-weight:bold">ISSN: 2525 - 2186</div>
+                                        <div style="font-size:15px" id="preview-header-meta">Tạp chí Khoa học Lạc Hồng,
+                                            2025, 20, 001-005</div>
+                                    </div>
+                                </div>
+
+                                <!-- VIETNAMESE SECTION -->
+                                <div class="space-y-3">
+                                    <!-- Dynamic Vietnamese Title with AI Highlighting box as seen in image_c58edb.png -->
+                                    <div id="target-titleVn" class="ai-highlight-target">
+                                        <h1 id="pv-title-vn"
+                                            class="text-center font-bold text-lg text-blue-900 uppercase leading-snug font-serif">
+                                            TIÊU ĐỀ BÀI BÁO (TIẾNG VIỆT)
+                                        </h1>
+                                    </div>
+
+                                    <p id="pv-authors-vn" class="text-right text-xs font-semibold italic mt-1">
+                                        Tác giả 1, Tác giả 2
+                                    </p>
+
+                                    <p
+                                        class="text-right text-[10px] text-slate-700 font-sans italic max-w-xl ml-auto leading-normal">
+                                        Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng
+                                        Nai,
+                                        Vietnam<br>
+                                        <span class="font-semibold text-blue-900">*Tác giả liên hệ:</span> <span
+                                            id="pv-contact-email" class="underline">email@domain.com</span>
+                                    </p>
+
+                                    <!-- Bilingual Grid Container -->
+                                    <div
+                                        class="grid grid-cols-12 gap-4 pt-3 border-t border-b border-slate-300 py-2.5 mt-3 text-[11px] font-sans">
+                                        <div class="col-span-4 border-r border-slate-200 pr-3 space-y-1.5">
+                                            <h4
+                                                class="font-bold border-b border-slate-300 pb-0.5 uppercase tracking-wider text-[10px]">
+                                                Thông tin bài báo</h4>
+                                            <div class="space-y-0.5 text-slate-800 text-[10px]">
+                                                <div><strong>Ngày nhận:</strong> <span
+                                                        id="pv-date-received">--/--/----</span>
+                                                </div>
+                                                <div><strong>Ngày hoàn thiện:</strong> <span
+                                                        id="pv-date-revised">--/--/----</span></div>
+                                                <div><strong>Ngày chấp nhận:</strong> <span
+                                                        id="pv-date-accepted">--/--/----</span></div>
+                                                <div><strong>Ngày đăng:</strong> <span
+                                                        id="pv-date-published">--/--/----</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="pt-1.5" id="target-keywordsVn">
+                                                <h4
+                                                    class="font-bold border-b border-slate-300 pb-0.5 uppercase tracking-wider text-[10px] mb-0.5">
+                                                    Từ khóa</h4>
+                                                <p id="pv-keywords-vn"
+                                                    class="italic text-left whitespace-pre-line text-slate-700 leading-relaxed text-[10px]">
+                                                    Nhập các từ
+                                                    khóa
+                                                    tiếng Việt...</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-span-8 space-y-1 text-justify" id="target-abstractVn">
+                                            <h4
+                                                class="font-bold uppercase tracking-wider text-[10px] border-b border-slate-300 pb-0.5">
+                                                Tóm tắt</h4>
+                                            <p id="pv-abstract-vn"
+                                                class="text-slate-800 leading-relaxed text-[10px] whitespace-pre-line font-serif">
+                                                Nhập nội dung tóm tắt (Abstract) bằng tiếng Việt để hiển thị xem trước ở
+                                                đây...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ENGLISH SECTION -->
+                                <div class="space-y-3 mt-6">
+                                    <div id="target-titleEn" class="ai-highlight-target">
+                                        <h2 id="pv-title-en"
+                                            class="text-center font-bold text-base text-blue-900 uppercase leading-snug font-serif">
+                                            ARTICLE TITLE IN ENGLISH
+                                        </h2>
+                                    </div>
+
+                                    <p id="pv-authors-en" class="text-right text-[11px] font-semibold italic mt-0.5">
+                                        Author 1, Author 2
+                                    </p>
+
+                                    <p
+                                        class="text-right text-[9px] text-slate-700 font-sans italic max-w-xl ml-auto leading-normal">
+                                        Lac Hong University, No. 10 Huynh Van Nghe Street, Buu Long Ward, Bien Hoa, Dong
+                                        Nai
+                                        Province, Vietnam<br>
+                                        <span class="font-semibold text-blue-900">*Corresponding Author:</span> <span
+                                            id="pv-contact-email-en" class="underline">email@domain.com</span>
+                                    </p>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-4 pt-3 border-t border-b border-slate-300 py-2.5 mt-3 text-[11px] font-sans">
+                                        <div class="col-span-4 border-r border-slate-200 pr-3 space-y-1.5">
+                                            <h4
+                                                class="font-bold border-b border-slate-300 pb-0.5 uppercase tracking-wider text-[10px]">
+                                                Article Information</h4>
+                                            <div class="space-y-0.5 text-slate-800 text-[10px]">
+                                                <div><strong>Received:</strong> <span
+                                                        id="pv-date-received-en">--/--/----</span>
+                                                </div>
+                                                <div><strong>Revised:</strong> <span
+                                                        id="pv-date-revised-en">--/--/----</span>
+                                                </div>
+                                                <div><strong>Accepted:</strong> <span
+                                                        id="pv-date-accepted-en">--/--/----</span>
+                                                </div>
+                                                <div><strong>Published:</strong> <span
+                                                        id="pv-date-published-en">--/--/----</span></div>
+                                            </div>
+
+                                            <div class="pt-1.5" id="target-keywordsEn">
+                                                <h4
+                                                    class="font-bold border-b border-slate-300 pb-0.5 uppercase tracking-wider text-[10px] mb-0.5">
+                                                    Keywords</h4>
+                                                <p id="pv-keywords-en"
+                                                    class="italic text-left whitespace-pre-line text-slate-700 leading-relaxed text-[10px]">
+                                                    Enter English
+                                                    keywords...</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-span-8 space-y-1 text-justify" id="target-abstractEn">
+                                            <h4
+                                                class="font-bold uppercase tracking-wider text-[10px] border-b border-slate-300 pb-0.5">
+                                                Abstract</h4>
+                                            <p id="pv-abstract-en"
+                                                class="text-slate-800 leading-relaxed text-[10px] whitespace-pre-line font-serif">
+                                                Enter abstract content in English...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="preview-page-footer odd">
+                                <span class="footer-date">JSLHU, Issue 20, 2025</span>
+                                <span id="pv-page-footer-num" class="footer-page">1</span>
+                            </div>
+
+                        </div>
+                        <div id="content-pages"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMN 2: AI REVIEW PANEL (Middle column as requested in image_c58edb.png) -->
+            <section id="ai-review-section"
+                class="w-full lg:w-96 border-l border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-y-auto flex flex-col flex-1 lg:flex-none lg:shrink-0 max-lg:hidden">
+                <div
+                    class="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10 shadow-xs">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <h2 id="review-panel-title"
+                                class="font-bold text-xs text-rose-600 dark:text-rose-400 flex items-center">
+                                <i class="fa-solid fa-square-poll-vertical mr-1.5 text-rose-500"></i>AI Suggest
+                            </h2>
+                            <p id="review-panel-subtitle" class="text-[10px] text-slate-400">Gợi ý bám sát chuẩn tạp chí khoa học</p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-1.5">
+                            <button id="ai-collapse-toggle" onclick="toggleAiPanel()"
+                                class="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                                title="An AI Review">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                            <button id="ai-status-badge"
+                                class="px-2 py-0.5 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-full text-[9px] font-bold">
+                                Đang Chờ Check
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-[11px] font-bold dark:bg-slate-900/70">
+                        <button id="review-tab-ai" type="button" onclick="switchReviewTab('ai')"
+                            class="rounded-md px-2 py-1.5 text-rose-700 bg-white shadow-sm dark:bg-slate-800 dark:text-rose-300">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI Suggest
+                        </button>
+                        <button id="review-tab-issue" type="button" onclick="switchReviewTab('issue')"
+                            class="rounded-md px-2 py-1.5 text-slate-500 hover:text-blue-700 dark:text-slate-400 dark:hover:text-blue-300">
+                            <i class="fa-solid fa-layer-group mr-1"></i>Số báo & Bài báo
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ai-tab-panel" class="flex min-h-0 flex-1 flex-col">
+                    <div class="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                        <button onclick="runAiReview()"
+                            class="w-full bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md transition-all">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Chạy AI Review Toàn diện</span>
+                        </button>
+                    </div>
+
+                    <div class="p-3.5 space-y-3 flex-1 overflow-y-auto" id="ai-suggestions-container">
+                        <div class="text-center py-12 text-slate-400 dark:text-slate-500">
+                            <i class="fa-solid fa-wand-magic-sparkles text-3xl mb-3 text-indigo-400 animate-pulse"></i>
+                            <p class="text-xs font-semibold">Nhấn "Chạy AI Review Toàn diện" để bắt đầu đánh
+                                giá học thuật tự động.</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-10 flex space-x-2 shadow-md">
+                        <button onclick="applySelectedSuggestions()" id="apply-ai-btn"
+                            class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center justify-center space-x-1"
+                            disabled>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Áp dụng thay đổi đã chọn</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="issue-tab-panel" class="hidden min-h-0 flex-1 overflow-hidden"></div>
+            </section>
+
+            <!-- COLUMN 3: Right panel: Input Editor Form -->
+            <section id="editor-section"
+                class="w-full lg:w-[440px] bg-white dark:bg-slate-800 overflow-y-auto flex flex-col flex-1 lg:flex-none lg:shrink-0">
+                <div
+                    class="p-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur flex justify-between items-center z-10">
+                    <div>
+                        <h2 class="font-bold text-xs text-slate-700 dark:text-slate-200 flex items-center">
+                            <i class="fa-solid fa-pen-to-square text-blue-600 mr-1.5"></i>Trình Soạn Thảo
+                        </h2>
+                        <p class="text-[10px] text-slate-500">Nhập dữ liệu bài báo song ngữ</p>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span
+                            class="text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold"
+                            id="form-calculated-pages">0 bài báo - Tổng cộng 0 trang</span>
+                    </div>
+                </div>
+
+                <div class="p-4 space-y-4">
+                    <!-- Page Budget Configuration -->
+                    <div
+                        class="bg-blue-50/60 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-100 dark:border-blue-900/40 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h3
+                                class="text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider flex items-center">
+                                <i class="fa-solid fa-file-invoice mr-1"></i> Số trang thực tế dự tính
+                            </h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="input-page-count" min="1" max="100"
+                                class="w-16 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs text-center font-bold focus:ring-2 focus:ring-blue-500"
+                                value="5" oninput="updateCurrentArticlePages(this.value)">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400">trang thực tế (Dùng tính toán
+                                số trang dồn tự động)</span>
+                        </div>
+                    </div>
+
+                    <!-- Vietnamese Title Input -->
+                    <div class="space-y-1">
+                        <label
+                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
+                            đề (Tiếng Việt): *</label>
+                        <textarea id="input-title-vn" rows="2"
+                            class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 transition-all font-semibold"
+                            placeholder="ỨNG DỤNG MACHINE LEARNING TRONG GIÁM SÁT..."
+                            oninput="syncFormToPreview()"></textarea>
+                    </div>
+
+                    <!-- English Title Input -->
+                    <div class="space-y-1">
+                        <label
+                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
+                            đề (Tiếng Anh): *</label>
+                        <textarea id="input-title-en" rows="2"
+                            class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 transition-all font-semibold italic"
+                            placeholder="APPLYING MACHINE LEARNING FOR SAFETY MONITORING..."
+                            oninput="syncFormToPreview()"></textarea>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label
+                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
+                            đề header riêng:</label>
+                        <input type="text" id="input-header-title"
+                            class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                            placeholder="Để trống nếu dùng tiêu đề bài" oninput="syncFormToPreview()">
+                    </div>
+
+                    <!-- Authors Input -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tác
+                                giả: *</label>
+                            <input type="text" id="input-authors"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Nguyễn Văn A" oninput="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Liên
+                                hệ (Email): *</label>
+                            <input type="email" id="input-email"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="email@domain.com" oninput="syncFormToPreview()">
+                        </div>
+                    </div>
+
+                    <div
+                        class="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-900/40">
+                        <div class="flex items-center justify-between">
+                            <span
+                                class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hồ
+                                sơ tác giả</span>
+                            <button type="button" onclick="openAuthorDialog()"
+                                class="rounded bg-blue-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-blue-700">
+                                <i class="fa-solid fa-plus mr-1"></i>Tác giả
+                            </button>
+                        </div>
+                        <div id="author-profiles-list" class="space-y-1.5"></div>
+                    </div>
+
+                    <!-- Received/Accepted Dates Input -->
+                    <div
+                        class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700 text-xs">
+                        <div class="space-y-0.5">
+                            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">Ngày
+                                nhận:</label>
+                            <input type="date" id="input-date-received"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-1 text-[11px]"
+                                onchange="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-0.5">
+                            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">Ngày hoàn
+                                thiện:</label>
+                            <input type="date" id="input-date-revised"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-1 text-[11px]"
+                                onchange="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-0.5 mt-1">
+                            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">Ngày chấp
+                                nhận:</label>
+                            <input type="date" id="input-date-accepted"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-1 text-[11px]"
+                                onchange="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-0.5 mt-1">
+                            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">Ngày xuất
+                                bản:</label>
+                            <input type="date" id="input-date-published"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-1 text-[11px]"
+                                onchange="syncFormToPreview()">
+                        </div>
+                    </div>
+
+                    <!-- Abstract Vietnamese Input -->
+                    <div class="space-y-1">
+                        <label
+                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tóm
+                            tắt (Tiếng Việt): *</label>
+                        <textarea id="input-abstract-vn" rows="3"
+                            class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nghiên cứu này trình bày về..." oninput="syncFormToPreview()"></textarea>
+                    </div>
+
+                    <!-- Abstract English Input -->
+                    <div class="space-y-1">
+                        <label
+                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tóm
+                            tắt
+                            (Tiếng Anh): *</label>
+                        <textarea id="input-abstract-en" rows="3"
+                            class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                            placeholder="This research describes..." oninput="syncFormToPreview()"></textarea>
+                    </div>
+
+                    <!-- Bilingual Keywords Input -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Từ
+                                khóa (Việt):</label>
+                            <input type="text" id="input-keywords-vn"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Trí tuệ nhân tạo, LHU" oninput="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Keywords
+                                (EN):</label>
+                            <input type="text" id="input-keywords-en"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="AI, Lac Hong, ML" oninput="syncFormToPreview()">
+                        </div>
+                    </div>
+
+                    <!-- Main Body Content Textarea with Advanced Launcher Button! -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nội
+                                dung chính bài báo:</label>
+                            <span class="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold">Rich Text
+                                Format</span>
+                        </div>
+                        <button onclick="openRichTextWorkspace()"
+                            class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-file-word text-sm"></i>
+                            <span>Mở Trình Soạn Thảo WYSIWYG Chuyên Sâu ↗</span>
+                        </button>
+                        <p class="text-[9.5px] text-slate-400 text-center leading-normal mt-1">Đầy đủ tính năng: tạo
+                            bảng biểu chuẩn APA, căn lề học thuật, tạo danh sách và kiểu chữ in đậm/nghiêng.</p>
+                    </div>
+
+                    <div class="pt-3.5 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                        <button onclick="deleteCurrentArticle()"
+                            class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 font-semibold text-xs rounded-lg flex items-center transition-all">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Xóa bài báo hiện hành
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ADVANCED DUAL-PANE RICH TEXT WRITING WORKSPACE (Slide-over/Overlay full view) -->
+    <div id="rich-text-workspace" class="fixed inset-0 bg-slate-900 z-50 hidden flex-col transition-all duration-300">
+        <!-- Workspace Header -->
+        <header
+            class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div class="flex items-start space-x-3 min-w-0">
+                <div
+                    class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2 rounded-xl text-center flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-file-word text-sm"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words"
+                        id="workspace-article-title">Phòng Soạn Thảo Chuyên Sâu - JSLHU</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Không gian viết bài độc lập & Xem trước A4 song hành
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0 justify-end sm:justify-start">
+                <button onclick="openTableDialog()"
+                    class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded text-[10.5px] font-bold flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-table mr-1 text-indigo-500"></i> Thêm bảng
+                </button>
+                <button onclick="closeRichTextWorkspace()"
+                    class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-md transition-all whitespace-nowrap">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Lưu & Quay lại
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace Dual-Pane Content -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Right Pane: Rich Text WYSIWYG Editor with Full Toolbar -->
+            <div
+                class="order-2 w-full lg:w-1/2 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col h-full">
+                <!-- Quill toolbar: cùng nền tảng với LHU_Magazine.html -->
+                <div id="quill-toolbar">
+                    <span class="ql-formats">
+                        <select class="ql-header">
+                            <option value="1"></option>
+                            <option value="2"></option>
+                            <option value="3"></option>
+                            <option selected></option>
+                        </select>
+                    </span>
+                    <span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button
+                            class="ql-underline"></button><button class="ql-strike"></button></span>
+                    <span class="ql-formats"><select class="ql-align"></select></span>
+                    <span class="ql-formats"><button class="ql-indent" value="-1"></button><button class="ql-indent"
+                            value="+1"></button></span>
+                    <span class="ql-formats"><button class="ql-list" value="ordered"></button><button class="ql-list"
+                            value="bullet"></button></span>
+                    <span class="ql-formats"><button class="ql-link"></button><button class="ql-image"></button><button
+                            class="ql-clean"></button></span>
+                </div>
+                <!-- Rich Editor Editable Div Area -->
+                <div id="rich-editor-field"></div>
+            </div>
+
+            <!-- Left Pane: Realtime A4 Page Preview -->
+            <div class="order-1 hidden lg:flex lg:w-1/2 bg-slate-900 overflow-y-auto p-6 flex-col items-center">
+                <!-- Tiny label representing A4 preview link -->
+                <div
+                    class="text-[10px] text-indigo-400 font-bold uppercase mb-2 bg-indigo-950/80 px-3 py-1 rounded-full border border-indigo-900/40">
+                    <i class="fa-solid fa-eye mr-1"></i> A4 Realtime WYSIWYG Preview
+                </div>
+
+                <div id="workspace-a4-preview-container" class="origin-top scale-90">
+                    <!-- Mimics A4 preview here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="table-dialog" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/70 p-4">
+        <div
+            class="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">Trình dựng bảng</h3>
+                    <p class="mt-0.5 text-[11px] text-slate-500">Bảng chỉ được thêm vào bài sau khi bạn hoàn tất và xác
+                        nhận.</p>
+                </div>
+                <button type="button" onclick="closeTableDialog()" class="text-slate-400 hover:text-slate-700"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="border-b border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <div class="flex flex-wrap items-end gap-3">
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Số hàng<input
+                            id="table-row-count" type="number" min="1" max="50" value="3"
+                            class="mt-1 block w-24 rounded-lg border border-slate-300 px-3 py-2 dark:bg-slate-700"></label>
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Số cột<input
+                            id="table-column-count" type="number" min="1" max="20" value="3"
+                            class="mt-1 block w-24 rounded-lg border border-slate-300 px-3 py-2 dark:bg-slate-700"></label>
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Co giãn<select
+                            id="table-autofit"
+                            class="mt-1 block rounded-lg border border-slate-300 px-3 py-2 dark:bg-slate-700">
+                            <option value="window">Vừa chiều rộng</option>
+                            <option value="content">Theo nội dung</option>
+                            <option value="fixed">Cột bằng nhau</option>
+                        </select></label>
+                    <button type="button" onclick="buildDraftTable()"
+                        class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white"><i
+                            class="fa-solid fa-wand-magic-sparkles mr-1"></i>Dựng lại bảng</button>
+                </div>
+            </div>
+            <div id="table-builder-workspace" class="hidden flex-1 overflow-auto p-5">
+                <div class="mb-3 flex flex-wrap items-center gap-1.5">
+                    <button type="button" onclick="mergeDraftSelection()" class="table-tool-button"><i
+                            class="fa-solid fa-object-group mr-1"></i>Merge ô</button>
+                    <button type="button" onclick="splitDraftCell()" class="table-tool-button">Tách ô</button>
+                    <button type="button" onclick="formatDraftSelection('bold')"
+                        class="table-tool-button font-bold">B</button>
+                    <button type="button" onclick="formatDraftSelection('italic')"
+                        class="table-tool-button italic">I</button>
+                    <button type="button" onclick="formatDraftSelection('align','left')"
+                        class="table-tool-button">Trái</button>
+                    <button type="button" onclick="formatDraftSelection('align','center')"
+                        class="table-tool-button">Giữa</button>
+                    <button type="button" onclick="formatDraftSelection('align','right')"
+                        class="table-tool-button">Phải</button>
+                    <span class="ml-2 text-[10px] text-slate-500">Kéo chuột để chọn vùng ô · Nhấp phải để chỉnh
+                        viền</span>
+                </div>
+                <div id="table-draft-canvas"
+                    class="overflow-auto rounded-xl border border-dashed border-indigo-300 bg-white p-5"></div>
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                <button type="button" onclick="closeTableDialog()"
+                    class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600">Hủy</button>
+                <button id="confirm-draft-table" type="button" onclick="insertDraftTableAtCursor()" disabled
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><i
+                        class="fa-solid fa-plus mr-1"></i>Thêm vào nội dung</button>
+            </div>
+        </div>
+        <div id="table-border-menu"
+            class="fixed z-[70] hidden w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl">
+            <p class="px-2 pb-1 text-[10px] font-bold uppercase text-slate-400">Viền vùng đã chọn</p>
+            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                <button onclick="applyDraftBorder('top')" class="table-tool-button">Trên</button><button
+                    onclick="applyDraftBorder('bottom')" class="table-tool-button">Dưới</button>
+                <button onclick="applyDraftBorder('left')" class="table-tool-button">Trái</button><button
+                    onclick="applyDraftBorder('right')" class="table-tool-button">Phải</button>
+                <button onclick="applyDraftBorder('insideH')" class="table-tool-button">Ngang trong</button><button
+                    onclick="applyDraftBorder('insideV')" class="table-tool-button">Dọc trong</button>
+                <button onclick="applyDraftBorder('all')" class="table-tool-button">Tất cả</button><button
+                    onclick="applyDraftBorder('none')" class="table-tool-button text-rose-600">Xóa viền</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Export Summary -->
+    <div id="export-modal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
+            <div
+                class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center">
+                    <i class="fa-solid fa-cloud-arrow-down text-blue-600 mr-2"></i> Xuất bản / Mục lục Số báo
+                </h3>
+                <button onclick="closeExportModal()"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div
+                    class="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
+                    <p class="font-semibold"><i class="fa-solid fa-circle-check mr-1"></i> Số trang toàn quyển đã được
+                        đồng bộ tự động liên tục theo đúng trình tự sắp xếp.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">MỤC LỤC CHI TIẾT SỐ BÁO</h4>
+                    <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-700"
+                        id="export-list-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-end space-x-2">
+                <button onclick="closeExportModal()"
+                    class="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-xs font-semibold transition-colors">Đóng</button>
+                <button onclick="exportJSON()"
+                    class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-sm transition-all"><i
+                        class="fa-solid fa-file-code mr-1"></i>Tải JSON</button>
+                <button id="btn-export-issue-word" onclick="exportIssueWord()"
+                    class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"><i
+                        class="fa-solid fa-file-word mr-1"></i>Xuất file Word số báo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="media-library-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/70 p-4">
+        <div
+            class="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">Thu vien anh cua toi</h3>
+                    <p class="text-[11px] text-slate-400">Upload anh moi hoac chon lai anh da dung.</p>
+                </div>
+                <button type="button" onclick="closeMediaLibrary()"
+                    class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div
+                class="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <input id="media-upload-input" type="file" accept="image/*"
+                    class="block flex-1 text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white">
+                <button type="button" onclick="handleMediaUpload()"
+                    class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700">Upload</button>
+            </div>
+            <div id="media-library-grid"
+                class="grid grid-cols-2 gap-3 overflow-y-auto p-5 sm:grid-cols-4 md:grid-cols-5"></div>
+        </div>
+    </div>
+
+    <div id="author-dialog" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/70 p-4">
+        <div class="w-full max-w-xl rounded-2xl bg-white shadow-2xl dark:bg-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <h3 class="text-sm font-bold text-slate-800 dark:text-white">Them tac gia</h3>
+                <button type="button" onclick="closeAuthorDialog()"
+                    class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="grid gap-3 p-5 text-xs sm:grid-cols-[100px_1fr]">
+                <div class="space-y-2">
+                    <img id="author-photo-preview" alt=""
+                        class="h-32 w-24 rounded-lg border border-slate-200 object-cover dark:border-slate-700">
+                    <input id="author-photo-input" type="file" accept="image/*" class="w-full text-[10px]"
+                        onchange="uploadAuthorPhotoFromInput()">
+                    <input id="author-photo-url" type="hidden">
+                </div>
+                <div class="space-y-2">
+                    <input id="author-name-input" type="text"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
+                        placeholder="Ho ten tac gia">
+                    <input id="author-info-input" type="text"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
+                        placeholder="Don vi / thong tin tac gia">
+                    <input id="author-email-input" type="email"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
+                        placeholder="Email">
+                    <input id="author-orcid-input" type="text"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
+                        placeholder="ORCID">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                <button type="button" onclick="closeAuthorDialog()"
+                    class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">Huy</button>
+                <button type="button" onclick="addAuthorProfile()"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Them tac
+                    gia</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert / Toast Message Overlay -->
+    <div id="toast-box"
+        class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none bg-slate-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm">
+        <span class="p-1 bg-blue-500 rounded-full"><i
+                class="fa-solid fa-info text-[10px] w-4 h-4 text-center"></i></span>
+        <span id="toast-text">Thông báo mặc định</span>
+    </div>
+
+    <!-- Core Application Logic -->
+    <script type="module" src="/src/magazine/magazine.js"></script>
+    <script type="module">
+        import { initMixingShell } from '/src/shared/shell.js';
+        initMixingShell({ active: 'editor' });
+    </script>
+</body>
+
+</html>
+
