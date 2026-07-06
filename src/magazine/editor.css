@@ -122,6 +122,34 @@
     font-family: "Times New Roman", Times, serif;
 }
 
+body.has-mixing-shell #rich-text-workspace {
+    top: var(--mixing-header-height, 64px);
+    left: var(--mixing-sidebar-collapsed, 76px);
+    right: 0;
+    bottom: 0;
+    z-index: 2147482997;
+}
+
+body.has-mixing-shell #media-library-modal,
+body.has-mixing-shell #author-dialog {
+    top: var(--mixing-header-height, 64px);
+    left: var(--mixing-sidebar-collapsed, 76px);
+}
+
+#rich-text-workspace > #table-dialog {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+}
+
+@media (max-width: 860px) {
+    body.has-mixing-shell #rich-text-workspace,
+    body.has-mixing-shell #media-library-modal,
+    body.has-mixing-shell #author-dialog {
+        left: 0;
+    }
+}
+
 #rich-editor-field .ql-editor {
     overflow-y: auto;
     padding: 24px;

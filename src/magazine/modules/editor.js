@@ -183,6 +183,7 @@ export function openRichTextWorkspace() {
 }
 
 export function closeRichTextWorkspace() {
+    closeTableDialog();
     syncRichEditorToState();
     const workspace = document.getElementById('rich-text-workspace');
     if (workspace) {
@@ -261,6 +262,10 @@ export function restoreEditorSelection() {
 export function openTableDialog() {
     rememberEditorSelection();
     const dialog = document.getElementById('table-dialog');
+    const workspace = document.getElementById('rich-text-workspace');
+    if (dialog && workspace && !workspace.classList.contains('hidden') && dialog.parentElement !== workspace) {
+        workspace.appendChild(dialog);
+    }
     if (dialog) {
         dialog.classList.remove('hidden');
         dialog.classList.add('flex');

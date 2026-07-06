@@ -3852,7 +3852,7 @@ body.portal-open .lightbulb-container {
 
 .portal-shell.open {
     display: block !important;
-    padding-top: 110px !important; /* Offset for mixing-shell */
+    padding-top: 64px !important; /* Offset for mixing-shell */
     overflow-y: auto !important;
 }
 
