@@ -3,6 +3,8 @@
 :root {
   --mixing-sidebar-width: 264px;
   --mixing-sidebar-collapsed: 76px;
+  --mixing-sidebar-rail-width: 56px;
+  --mixing-sidebar-gutter: 10px;
   --mixing-header-height: 64px;
   --mixing-shell-bg: rgba(2, 6, 23, 0.86);
   --mixing-shell-border: rgba(59, 130, 246, 0.16);
@@ -50,8 +52,7 @@
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-.mixing-shell::before,
-.mixing-shell-sidebar::before {
+.mixing-shell::before {
   content: '';
   position: absolute;
   top: 0;
@@ -87,57 +88,36 @@
 
 .mixing-shell-sidebar {
   position: fixed;
-  inset: var(--mixing-header-height) auto 0 0;
+  top: calc(var(--mixing-header-height) + ((100vh - var(--mixing-header-height)) / 2));
+  left: var(--mixing-sidebar-gutter);
+  bottom: auto;
   z-index: 2147483000;
-  width: var(--mixing-sidebar-collapsed);
+  width: var(--mixing-sidebar-rail-width);
+  min-height: 0;
+  max-height: calc(100vh - var(--mixing-header-height) - 32px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 12px;
+  padding: 7px;
   background: rgba(2, 6, 23, 0.92);
-  border-right: 1px solid var(--mixing-shell-border);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 16px;
   overflow: hidden;
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transform: translateY(-50%);
   transition: width 0.22s ease, transform 0.22s ease, background 0.3s ease, border-color 0.3s ease;
 }
 
 [data-theme="light"] .mixing-shell-sidebar {
   background: rgba(248, 250, 252, 0.94);
+  border-color: rgba(29, 78, 216, 0.16);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.85);
 }
 
 .mixing-shell-sidebar:hover,
 .mixing-shell-sidebar:focus-within {
   width: var(--mixing-sidebar-width);
-}
-
-.mixing-shell-sidebar__brand-row {
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
-}
-
-.mixing-shell-sidebar__title {
-  width: 100%;
-  overflow: hidden;
-  color: #cbd5e1;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-align: center;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-[data-theme="light"] .mixing-shell-sidebar__title {
-  color: #475569;
 }
 
 .mixing-shell__brand {
@@ -198,12 +178,6 @@
   font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.mixing-shell-sidebar:hover .mixing-shell-sidebar__title,
-.mixing-shell-sidebar:focus-within .mixing-shell-sidebar__title {
-  opacity: 1;
-  transform: translateX(0);
 }
 
 .mixing-shell__icon-btn {
@@ -400,6 +374,124 @@
   transform: translateY(-50%);
 }
 
+.mixing-shell .switch {
+  font-size: 17px;
+  position: relative;
+  display: inline-block;
+  width: 64px;
+  height: 34px;
+  flex: 0 0 64px;
+  cursor: pointer;
+}
+
+.mixing-shell .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mixing-shell .switch > .theme-switch__container {
+  display: none;
+}
+
+.mixing-shell .switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: auto;
+  background-color: #73c0fc;
+  transition: 0.4s;
+  border-radius: 30px;
+}
+
+.mixing-shell .switch .slider::before {
+  position: absolute;
+  content: "";
+  height: 30px;
+  width: 30px;
+  border-radius: 20px;
+  left: 2px;
+  bottom: 2px;
+  z-index: 3;
+  background-color: #e8e8e8;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.24);
+  transition: 0.4s;
+}
+
+.mixing-shell .switch .sun svg {
+  position: absolute;
+  top: 6px;
+  left: 36px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  animation: mixingSwitchRotate 15s linear infinite;
+}
+
+.mixing-shell .switch .moon svg {
+  fill: #73c0fc;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  animation: mixingSwitchTilt 5s linear infinite;
+}
+
+.mixing-shell .switch .input:checked + .slider {
+  background-color: #183153;
+}
+
+.mixing-shell .switch .input:focus + .slider {
+  box-shadow: 0 0 1px #183153;
+}
+
+.mixing-shell .switch .input:checked + .slider::before {
+  transform: translateX(30px);
+}
+
+@keyframes mixingSwitchRotate {
+  0% {
+    transform: rotate(0);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mixingSwitchTilt {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-10deg);
+  }
+
+  75% {
+    transform: rotate(10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mixing-shell .switch .sun svg,
+  .mixing-shell .switch .moon svg,
+  .mixing-shell .switch .slider,
+  .mixing-shell .switch .slider::before {
+    animation: none;
+    transition: none;
+  }
+}
+
 .mixing-shell__account {
   position: relative;
   min-width: 0;
@@ -581,9 +673,10 @@
   display: grid;
   gap: 6px;
   min-width: 0;
+  max-height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 0;
+  padding: 0;
   scrollbar-width: none;
 }
 
@@ -595,39 +688,44 @@
 
 .mixing-shell__link {
   position: relative;
-  min-height: 44px;
+  width: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 11px;
-  padding: 0;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0 10px;
   border-radius: 8px;
   color: #94a3b8;
   text-decoration: none;
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition: width 0.22s ease, background 0.18s ease, color 0.18s ease;
 }
 
 .mixing-shell-sidebar:hover .mixing-shell__link,
 .mixing-shell-sidebar:focus-within .mixing-shell__link {
-  justify-content: flex-start;
-  padding: 0 12px;
+  width: 100%;
+  padding: 0 10px;
 }
 
 .mixing-shell__link i {
   width: 20px;
   flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-size: 15px;
 }
 
 .mixing-shell__link span {
+  margin-left: 11px;
   max-width: 0;
   overflow: hidden;
   opacity: 0;
-  transform: translateX(-6px);
+  transform: translateX(-4px);
   transition: max-width 0.18s ease, opacity 0.16s ease, transform 0.16s ease;
 }
 
@@ -655,13 +753,11 @@
 .mixing-shell__link[aria-current="page"] {
   color: #eff6ff;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.26), rgba(14, 165, 233, 0.12));
-  box-shadow: inset 3px 0 0 #60a5fa;
 }
 
 [data-theme="light"] .mixing-shell__link[aria-current="page"] {
   color: #1d4ed8;
   background: rgba(29, 78, 216, 0.09);
-  box-shadow: inset 3px 0 0 #1d4ed8;
 }
 
 .mixing-shell__link.is-disabled {
@@ -694,8 +790,20 @@
   }
 
   .mixing-shell-sidebar {
+    top: var(--mixing-header-height);
+    left: 0;
+    bottom: 0;
     width: min(82vw, 286px);
+    max-height: none;
+    padding: 14px 12px;
+    border-radius: 0;
+    border-width: 0 1px 0 0;
     transform: translateX(-105%);
+  }
+
+  .mixing-shell-sidebar:hover,
+  .mixing-shell-sidebar:focus-within {
+    width: min(82vw, 286px);
   }
 
   .mixing-shell-nav-open .mixing-shell-sidebar {
@@ -706,12 +814,6 @@
     display: block;
   }
 
-  .mixing-shell-sidebar__brand-row {
-    justify-content: flex-start;
-    padding: 0 2px;
-  }
-
-  .mixing-shell-sidebar__title,
   .mixing-shell__link span {
     max-width: none;
     opacity: 1;
@@ -719,6 +821,8 @@
   }
 
   .mixing-shell__link {
+    width: 100%;
+    min-height: 44px;
     justify-content: flex-start;
     padding: 0 12px;
   }
@@ -737,8 +841,32 @@
 }
 
 @media (max-width: 560px) {
-  .mixing-shell .theme-switch {
-    --toggle-size: 10px;
+  .mixing-shell .switch {
+    font-size: 15px;
+    width: 58px;
+    height: 31px;
+    flex-basis: 58px;
+  }
+
+  .mixing-shell .switch .slider::before {
+    height: 27px;
+    width: 27px;
+  }
+
+  .mixing-shell .switch .sun svg {
+    top: 5px;
+    left: 33px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .mixing-shell .switch .moon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mixing-shell .switch .input:checked + .slider::before {
+    transform: translateX(27px);
   }
 
   .mixing-shell__actions {

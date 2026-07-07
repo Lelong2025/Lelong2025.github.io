@@ -6,7 +6,6 @@ import {
 } from './utils.js';
 import { activeArticle, effectiveHeaderLanguage, footerDateText, preparePreviewForOutput, formatKeywords } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
-import { submitCurrentArticle } from './cloud.js';
 
 export function safeExportName(art, extension) {
     const base = (art.titleVn || art.titleEn || 'Ban_thao_bai_bao').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 90);
@@ -235,7 +234,6 @@ export async function exportCurrentArticleWordManual() {
         const zip = await buildDefaultDocx(data);
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
-        await submitCurrentArticle('docx', blob);
     } catch (error) {
         console.error(error);
         showToast('Lỗi xuất Word: ' + (error.message || 'Không xác định'));
@@ -274,6 +272,27 @@ export async function exportCurrentArticleWordFromTemplate() {
         const bodyContentXml = quillHtmlToWordXml(data.contentHtml, contentImages.map);
         data.content = bodyContentXml;
 
+        if (contentImages.relationships) {
+            const relsPath = 'word/_rels/document.xml.rels';
+            const relsFile = zip.file(relsPath);
+            if (!relsFile) throw new Error('Template thiếu document.xml.rels để liên kết ảnh nội dung.');
+            const relsXml = relsFile.asText().replace(
+                '</Relationships>',
+                `${contentImages.relationships}</Relationships>`
+            );
+            zip.file(relsPath, relsXml);
+
+            const contentTypesPath = '[Content_Types].xml';
+            let contentTypesXml = zip.file(contentTypesPath).asText();
+            if (!contentTypesXml.includes('Extension="jpg"')) {
+                contentTypesXml = contentTypesXml.replace(
+                    '</Types>',
+                    '<Default Extension="jpg" ContentType="image/jpeg"/></Types>'
+                );
+            }
+            zip.file(contentTypesPath, contentTypesXml);
+        }
+
         let docXml = zip.file('word/document.xml').asText();
         docXml = normalizeAndReplaceDocxXml(docXml, data);
         zip.file('word/document.xml', docXml);
@@ -283,14 +302,16 @@ export async function exportCurrentArticleWordFromTemplate() {
             const file = zip.file(name);
             if (file) {
                 let hxml = file.asText();
-                hxml = normalizeAndReplaceDocxXml(hxml, data);
+                hxml = normalizeAndReplaceDocxXml(hxml, {
+                    ...data,
+                    title: data.headerTitle || data.title || data.title_en
+                });
                 zip.file(name, hxml);
             }
         });
 
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
-        await submitCurrentArticle('docx', blob);
         showToast("Đã tải tệp Word từ template thành công!");
     } catch (error) {
         console.error(error);
@@ -315,7 +336,7 @@ export function normalizeAndReplaceDocxXml(xml, data) {
     const doc = parser.parseFromString(xml, 'application/xml');
 
     const placeholders = [
-        'title', 'title_en', 'authors_vi', 'authors_en', 'authors',
+        'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
         'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'content'
     ];
 
@@ -347,6 +368,7 @@ export function normalizeAndReplaceDocxXml(xml, data) {
             if (fullText.includes(key)) {
                 let val = '';
                 if (ph === 'title') val = data.title;
+                else if (ph === 'headerTitle') val = data.headerTitle || data.title || data.title_en;
                 else if (ph === 'title_en') val = data.title_en || data.title;
                 else if (ph === 'authors_vi') val = data.authors;
                 else if (ph === 'authors_en') val = data.authors_en;
@@ -405,7 +427,6 @@ export async function exportVectorPdf() {
         await preparePreviewForOutput();
         document.body.classList.add('pdf-output-mode');
         window.print();
-        await submitCurrentArticle('pdf', null);
     } catch (error) {
         console.error(error);
         showToast('Lỗi chuẩn bị PDF: ' + (error.message || 'Không xác định'));
@@ -699,7 +720,10 @@ export async function exportIssueWord() {
                     const xmlFile = baseZip.file(`word/${info.originalFilename}`);
                     if (xmlFile) {
                         let fileXml = xmlFile.asText();
-                        fileXml = normalizeAndReplaceDocxXml(fileXml, data);
+                        const partData = info.originalFilename.includes('header')
+                            ? { ...data, title: data.headerTitle || data.title || data.title_en }
+                            : data;
+                        fileXml = normalizeAndReplaceDocxXml(fileXml, partData);
                         localRelMap.forEach((mInfo, mOldId) => {
                             fileXml = fileXml.replace(new RegExp(`r:id="${mOldId}"`, 'g'), `r:id="${mInfo.uniqueId}"`);
                             fileXml = fileXml.replace(new RegExp(`r:embed="${mOldId}"`, 'g'), `r:embed="${mInfo.uniqueId}"`);

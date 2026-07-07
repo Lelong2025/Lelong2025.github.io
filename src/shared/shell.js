@@ -1,11 +1,14 @@
 import './shell.css'
 import { auth } from './utils/auth.js'
+import { supabase } from './utils/supabase.js'
 import { apiFetch } from './utils/api.js'
+import { hideSharedPageLoader, showSharedPageLoader } from './loader.js'
 
 const ADMIN_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', href: '/portal/?page=dashboard' },
   { id: 'tapchi', label: 'Tra cứu tạp chí', href: '/tapchi/' },
   { id: 'editor', label: 'Hệ thống soạn báo', href: '/magazine/editor.html' },
+  { id: 'publishing', label: 'Quản lý xuất bản', href: '/magazine/publishing.html' },
   { id: 'invoices', label: 'Quản lý hóa đơn', href: '/portal/?page=invoices' },
   { id: 'users', label: 'Người dùng', href: '/portal/?page=users' },
   { id: 'settings', label: 'Cài đặt', href: '/portal/?page=settings' },
@@ -23,7 +26,9 @@ const GUEST_NAV_ITEMS = [
   { id: 'editor', label: 'Soạn báo', href: '/magazine/editor.html' },
 ]
 
-export async function initMixingShell({ active = inferActiveRoute(), showEditor = true } = {}) {
+const INITIAL_NAV_ITEMS = CLIENT_NAV_ITEMS.filter(item => ['dashboard', 'tapchi', 'editor'].includes(item.id))
+
+export async function initMixingShell({ active = inferActiveRoute(), showEditor = true, deferInitialLoaderHide = false } = {}) {
   if (document.getElementById('mixing-shell')) return
 
   document.body.classList.add('has-mixing-shell')
@@ -39,9 +44,6 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
   sidebar.className = 'mixing-shell-sidebar'
   sidebar.id = 'mixing-shell-sidebar'
   sidebar.innerHTML = `
-    <div class="mixing-shell-sidebar__brand-row">
-      <span class="mixing-shell-sidebar__title">Menu</span>
-    </div>
     <nav class="mixing-shell__nav" id="mixing-shell-nav" aria-label="Điều hướng hệ thống"></nav>
   `
 
@@ -63,12 +65,15 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
       </a>
 
       <div class="mixing-shell__actions">
-        <a class="mixing-shell__credits" href="/portal/?page=dashboard" aria-label="Mua thêm lượt" hidden>
+        <a class="mixing-shell__credits" href="/portal/?page=dashboard" data-shell-action="buy-credits" aria-label="Mua thêm lượt" hidden>
           <i class="fa-solid fa-bolt"></i>
           <span>Mua thêm lượt</span>
         </a>
-        <label class="theme-switch" id="mixing-shell-theme" aria-label="Chuyển giao diện sáng tối">
-          <input type="checkbox" class="theme-switch__checkbox" id="mixing-shell-theme-checkbox">
+        <label class="switch" id="mixing-shell-theme" aria-label="Chuyển giao diện sáng tối">
+          <span class="sun"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="#ffd43b"><circle r="5" cy="12" cx="12"></circle><path d="m21 13h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-17 0h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm13.66-5.66a1 1 0 0 1-.66-.29 1 1 0 0 1 0-1.41l.71-.71a1 1 0 1 1 1.41 1.41l-.71.71a1 1 0 0 1-.75.29zm-12.02 12.02a1 1 0 0 1-.71-.29 1 1 0 0 1 0-1.41l.71-.66a1 1 0 0 1 1.41 1.41l-.71.71a1 1 0 0 1-.7.24zm6.36-14.36a1 1 0 0 1-1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1-1 1zm0 17a1 1 0 0 1-1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1-1 1zm-5.66-14.66a1 1 0 0 1-.7-.29l-.71-.71a1 1 0 0 1 1.41-1.41l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1-.71.29zm12.02 12.02a1 1 0 0 1-.7-.29l-.66-.71a1 1 0 0 1 1.36-1.36l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1-.71.24z"></path></g></svg></span>
+          <span class="moon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="m223.5 32c-123.5 0-223.5 100.3-223.5 224s100 224 223.5 224c60.6 0 115.5-24.2 155.8-63.4 5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6-96.9 0-175.5-78.8-175.5-176 0-65.8 36-123.1 89.3-153.3 6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"></path></svg></span>
+          <input type="checkbox" class="input" id="mixing-shell-theme-checkbox">
+          <span class="slider"></span>
           <div class="theme-switch__container">
             <div class="theme-switch__clouds"></div>
             <div class="theme-switch__stars-container">
@@ -95,6 +100,9 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
   document.body.prepend(header)
   document.body.prepend(sidebar)
   document.body.prepend(backdrop)
+  syncThemeIcon()
+  renderShellNav(document.getElementById('mixing-shell-nav'), INITIAL_NAV_ITEMS, { active, showEditor })
+  showInitialLoaderIfNeeded({ deferHide: deferInitialLoaderHide })
 
   header.querySelector('#mixing-shell-theme-checkbox')?.addEventListener('change', toggleTheme)
   header.addEventListener('click', handleShellClick)
@@ -123,15 +131,7 @@ async function updateShellUser(header, options = {}) {
   const visibleItems = navItems.filter(item => options.showEditor !== false || item.id !== 'editor')
   header.querySelector('.mixing-shell__credits')?.toggleAttribute('hidden', !user)
 
-  if (navEl) {
-    navEl.innerHTML = visibleItems.map(item => `
-      <a class="mixing-shell__link${item.href === '#' ? ' is-disabled' : ''}" href="${item.href}" data-shell-nav="${item.id}"
-         aria-current="${item.id === active ? 'page' : 'false'}" title="${escapeHTML(item.label)}">
-        <i class="fa-solid ${escapeHTML(getNavIcon(item.id))}"></i>
-        <span>${escapeHTML(item.label)}</span>
-      </a>
-    `).join('')
-  }
+  renderShellNav(navEl, visibleItems, { active, showEditor: options.showEditor })
 
   if (user) {
     const name = getUserName(user)
@@ -167,11 +167,31 @@ async function updateShellUser(header, options = {}) {
   }
 }
 
+function renderShellNav(navEl, items, options = {}) {
+  if (!navEl) return
+  const active = options.active || inferActiveRoute()
+  const visibleItems = items.filter(item => options.showEditor !== false || item.id !== 'editor')
+  navEl.innerHTML = visibleItems.map(item => `
+    <a class="mixing-shell__link${item.href === '#' ? ' is-disabled' : ''}" href="${item.href}" data-shell-nav="${item.id}"
+       aria-current="${item.id === active ? 'page' : 'false'}" title="${escapeHTML(item.label)}">
+      <i class="fa-solid ${escapeHTML(getNavIcon(item.id))}"></i>
+      <span>${escapeHTML(item.label)}</span>
+    </a>
+  `).join('')
+}
+
 async function loadAccount() {
   try {
     return await apiFetch('/api/account')
   } catch (_) {
-    return null
+    try {
+      const user = await auth.getUser()
+      if (!user || !supabase) return null
+      const { data } = await supabase.from('profiles').select('role, display_name, email').eq('user_id', user.id).maybeSingle()
+      return data
+    } catch (_) {
+      return null
+    }
   }
 }
 
@@ -183,7 +203,11 @@ async function handleShellClick(event) {
     return
   }
 
-  if (event.target.closest('.mixing-shell__link')) closeSidebarDrawer()
+  const navLink = event.target.closest('.mixing-shell__link')
+  if (navLink) {
+    maybeShowNavigationLoader(event, navLink)
+    closeSidebarDrawer()
+  }
 
   const profile = event.target.closest('#mixing-shell-profile')
   if (profile) {
@@ -206,11 +230,66 @@ async function handleShellClick(event) {
     openAuth()
     return
   }
+  if (action === 'buy-credits') {
+    event.preventDefault()
+    await openCreditsPurchase()
+    return
+  }
   if (action === 'logout') {
     await auth.signOut()
     closeAccountMenu(header)
     await updateShellUser(header)
   }
+}
+
+async function openCreditsPurchase() {
+  if (typeof window.__MIXING_BUY_CREDITS__ === 'function') {
+    await window.__MIXING_BUY_CREDITS__()
+    return
+  }
+  window.dispatchEvent(new CustomEvent('mixing:buy-credits'))
+  if (typeof window.__MIXING_BUY_CREDITS__ !== 'function') {
+    window.location.href = '/portal/?page=dashboard'
+  }
+}
+
+function showInitialLoaderIfNeeded({ deferHide = false } = {}) {
+  if (isTapchiPath(window.location.pathname)) return
+  const startedAt = Date.now()
+  const minimumMs = 420
+  showSharedPageLoader({ label: 'Đang tải...' })
+  const hide = () => {
+    const remaining = Math.max(0, minimumMs - (Date.now() - startedAt))
+    window.setTimeout(() => {
+      document.documentElement.classList.remove('magazine-booting')
+      document.documentElement.classList.remove('publishing-booting')
+      hideSharedPageLoader()
+    }, remaining)
+  }
+  if (deferHide) {
+    window.addEventListener('mixing:page-ready', () => window.requestAnimationFrame(hide), { once: true })
+    return
+  }
+  if (document.readyState === 'complete') {
+    window.requestAnimationFrame(hide)
+  } else {
+    window.addEventListener('load', hide, { once: true })
+  }
+}
+
+function maybeShowNavigationLoader(event, link) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  const href = link.getAttribute('href')
+  if (!href || href.startsWith('#')) return
+  const target = new URL(href, window.location.href)
+  if (target.origin !== window.location.origin || isTapchiPath(target.pathname)) return
+  const current = new URL(window.location.href)
+  if (target.pathname === current.pathname && target.search === current.search && target.hash === current.hash) return
+  showSharedPageLoader({ label: 'Đang chuyển trang...' })
+}
+
+function isTapchiPath(pathname = '') {
+  return pathname.startsWith('/tapchi')
 }
 
 function openAuth() {
@@ -242,6 +321,7 @@ function getNavIcon(id) {
     dashboard: 'fa-chart-line',
     tapchi: 'fa-magnifying-glass',
     editor: 'fa-pen-nib',
+    publishing: 'fa-layer-group',
     invoices: 'fa-file-invoice-dollar',
     users: 'fa-users',
     settings: 'fa-gear',
@@ -286,18 +366,27 @@ function applyStoredTheme() {
     || normalizeTheme(localStorage.getItem('theme'))
     || normalizeTheme(document.documentElement.dataset.theme)
     || 'dark'
-  document.documentElement.dataset.theme = stored
-  localStorage.setItem('mixing-theme', stored)
-  localStorage.setItem('theme', stored)
+  setTheme(stored)
   syncThemeIcon()
 }
 
-function toggleTheme() {
-  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'
+function toggleTheme(event) {
+  const next = event?.currentTarget
+    ? (event.currentTarget.checked ? 'dark' : 'light')
+    : (document.documentElement.dataset.theme === 'light' ? 'dark' : 'light')
+  setTheme(next)
+  syncThemeIcon()
+}
+
+function setTheme(theme) {
+  const next = normalizeTheme(theme) || 'dark'
   document.documentElement.dataset.theme = next
+  document.documentElement.classList.toggle('dark', next === 'dark')
   localStorage.setItem('mixing-theme', next)
   localStorage.setItem('theme', next)
-  syncThemeIcon()
+  const legacyToggle = document.getElementById('dark-mode-toggle')
+  if (legacyToggle) legacyToggle.checked = next === 'dark'
+  window.dispatchEvent(new CustomEvent('mixing:theme-change', { detail: { theme: next } }))
 }
 
 function normalizeTheme(value) {
@@ -313,6 +402,7 @@ function inferActiveRoute() {
   const path = window.location.pathname
   if (path.startsWith('/portal')) return inferPortalActiveRoute()
   if (path.startsWith('/tapchi')) return 'tapchi'
+  if (path.endsWith('/magazine/publishing.html')) return 'publishing'
   if (path.endsWith('/magazine/editor.html')) return 'editor'
   if (path.startsWith('/magazine')) return 'editor'
   return 'dashboard'

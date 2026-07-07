@@ -88,6 +88,46 @@ export function applyRoleUi() {
     document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !admin));
     document.querySelectorAll('[data-client-hidden]').forEach(el => el.classList.toggle('hidden', !admin));
     document.querySelectorAll('[data-client-only]').forEach(el => el.classList.toggle('hidden', admin));
+
+    const workspaceHeading = document.getElementById('sidebar-workspace-heading');
+    if (workspaceHeading) workspaceHeading.textContent = admin ? 'Số báo hiện hành' : 'Bài báo của tôi';
+
+    const totalIcon = document.getElementById('sidebar-total-icon');
+    if (totalIcon) {
+        totalIcon.classList.toggle('fa-layer-group', admin);
+        totalIcon.classList.toggle('fa-file-lines', !admin);
+    }
+
+    const totalLabel = document.getElementById('sidebar-total-label');
+    if (totalLabel) totalLabel.textContent = admin ? 'Tổng bài:' : 'Đang soạn:';
+
+    const articleListHeading = document.getElementById('article-list-heading');
+    if (articleListHeading) articleListHeading.textContent = admin ? 'Danh sách bài báo sắp xếp' : 'Danh sách bài báo';
+
+    const articleListNote = document.getElementById('article-list-note');
+    if (articleListNote) {
+        articleListNote.innerHTML = admin
+            ? 'Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi thứ tự. Số trang dồn sẽ được cập nhật tự động tức thời.'
+            : 'Chọn bài báo để tiếp tục chỉnh sửa nội dung, xem trước và xuất bản nháp.';
+    }
+
+    const issueTabLabel = document.getElementById('review-tab-issue-label');
+    if (issueTabLabel) issueTabLabel.textContent = admin ? 'Số báo & Bài báo' : 'Bài báo của tôi';
+
+    const reviewPanelTitle = document.getElementById('review-panel-title');
+    const reviewPanelSubtitle = document.getElementById('review-panel-subtitle');
+    if (state.appState.reviewPanelTab === 'issue') {
+        if (reviewPanelTitle) {
+            reviewPanelTitle.innerHTML = admin
+                ? '<i class="fa-solid fa-layer-group mr-1.5 text-blue-500"></i>Số báo & Bài báo'
+                : '<i class="fa-solid fa-file-lines mr-1.5 text-blue-500"></i>Bài báo của tôi';
+        }
+        if (reviewPanelSubtitle) {
+            reviewPanelSubtitle.textContent = admin
+                ? 'Quản lý số báo, bài báo và bài client đã gửi'
+                : 'Quản lý các bài báo đang soạn';
+        }
+    }
 }
 
 export function activeArticleForSubmission() {
@@ -128,28 +168,78 @@ export async function uploadExportBlob(blob, extension, submissionId) {
     return path;
 }
 
-export async function submitCurrentArticle(format, blob = null) {
-    const art = activeArticleForSubmission();
-    if (!art || !state.cloudUser || !window.lhuSupabase) return;
-    const submissionId = randomId();
-    const ext = format === 'pdf' ? 'pdf' : 'docx';
-    const filePath = blob ? await uploadExportBlob(blob, ext, submissionId) : null;
-    const payload = {
-        id: submissionId,
-        owner_id: state.cloudUser.id,
-        article_snapshot: snapshotArticle(art),
-        exported_format: ext,
-        exported_file_path: filePath,
-        exported_at: new Date().toISOString(),
-        status: 'submitted'
-    };
-    const { error } = await window.lhuSupabase.from('article_submissions').insert(payload);
-    if (error) {
-        console.warn('Cannot create submission:', error);
-        showToast('Da xuat file, nhung chua gui duoc bai ve admin.');
+export function articleSubmissionFingerprint(art) {
+    if (!art) return '';
+    const copy = JSON.parse(JSON.stringify(art));
+    delete copy.lastSubmittedAt;
+    delete copy.lastSubmittedFingerprint;
+    delete copy.sourceExportedAt;
+    delete copy.submittedBy;
+    delete copy.submittedFromRole;
+    return JSON.stringify(copy);
+}
+
+export function renderSubmissionCard(art = activeArticleForSubmission()) {
+    const card = document.getElementById('client-submission-card');
+    const status = document.getElementById('client-submission-status');
+    const button = document.getElementById('client-submit-editorial-btn');
+    if (!card || !status || !button) return;
+    card.classList.toggle('hidden', !isClient());
+    if (!isClient()) return;
+
+    if (!art) {
+        status.textContent = 'Hãy chọn một bài báo để gửi.';
+        button.disabled = true;
         return;
     }
-    showToast(isClient() ? 'Da xuat va gui bai ve admin.' : 'Da luu ban xuat bai bao.');
+
+    button.disabled = false;
+    const changed = Boolean(art.lastSubmittedAt)
+        && art.lastSubmittedFingerprint !== articleSubmissionFingerprint(art);
+    if (!art.lastSubmittedAt) {
+        status.textContent = 'Bài này chưa được gửi cho Ban biên tập.';
+        button.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i>Gửi Ban biên tập';
+    } else if (changed) {
+        status.textContent = `Có thay đổi chưa gửi · Lần gần nhất ${formatDateTime(art.lastSubmittedAt)}`;
+        button.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>Gửi bản cập nhật';
+    } else {
+        status.textContent = `Đã gửi lúc ${formatDateTime(art.lastSubmittedAt)}`;
+        button.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Gửi lại';
+    }
+}
+
+export async function submitCurrentArticle() {
+    const art = activeArticleForSubmission();
+    if (!isClient() || !art || !state.cloudUser || !window.lhuSupabase) return;
+    const updating = Boolean(art.lastSubmittedAt);
+    const confirmed = window.confirm(updating
+        ? 'Gửi bản cập nhật mới nhất của bài này cho Ban biên tập?'
+        : 'Gửi dữ liệu bài báo có thể chỉnh sửa cho Ban biên tập?');
+    if (!confirmed) return;
+
+    const submittedAt = new Date().toISOString();
+    const payload = {
+        owner_id: state.cloudUser.id,
+        source_article_id: art.id,
+        article_snapshot: snapshotArticle(art),
+        exported_format: null,
+        exported_file_path: null,
+        exported_at: submittedAt,
+        submitted_at: submittedAt,
+        status: 'submitted'
+    };
+    const { error } = await window.lhuSupabase.from('article_submissions')
+        .upsert(payload, { onConflict: 'owner_id,source_article_id' });
+    if (error) {
+        console.warn('Cannot create submission:', error);
+        showToast('Chưa gửi được bài cho Ban biên tập. Hãy kiểm tra migration Supabase.');
+        return;
+    }
+    art.lastSubmittedAt = submittedAt;
+    art.lastSubmittedFingerprint = articleSubmissionFingerprint(art);
+    saveToLocalStorage();
+    renderSubmissionCard(art);
+    showToast(updating ? 'Đã gửi bản cập nhật cho Ban biên tập.' : 'Đã gửi bài cho Ban biên tập.');
     loadSubmissions();
 }
 
@@ -157,8 +247,8 @@ export async function loadSubmissions() {
     if (!window.lhuSupabase || !state.cloudUser) return [];
     let query = window.lhuSupabase
         .from('article_submissions')
-        .select('id, owner_id, article_snapshot, exported_format, exported_file_path, exported_at, status')
-        .order('exported_at', { ascending: false })
+        .select('id, owner_id, source_article_id, article_snapshot, exported_format, exported_file_path, exported_at, submitted_at, status')
+        .order('submitted_at', { ascending: false })
         .limit(100);
     if (!isAdmin()) query = query.eq('owner_id', state.cloudUser.id);
     const { data, error } = await query;
@@ -167,6 +257,17 @@ export async function loadSubmissions() {
         state.clientSubmissions = [];
     } else {
         state.clientSubmissions = data || [];
+        if (isClient()) {
+            const issue = state.appState.issues[state.appState.currentIssueId];
+            (issue?.articles || []).forEach(art => {
+                const row = state.clientSubmissions.find(item => item.source_article_id === art.id);
+                if (!row) return;
+                art.lastSubmittedAt = row.submitted_at || row.exported_at;
+                art.lastSubmittedFingerprint = articleSubmissionFingerprint(row.article_snapshot);
+            });
+            saveToLocalStorage();
+            renderSubmissionCard();
+        }
     }
     renderSubmissionsList();
     return state.clientSubmissions;

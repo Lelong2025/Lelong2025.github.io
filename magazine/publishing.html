@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark" class="publishing-booting">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý xuất bản - LHU Journal</title>
+  <script>
+    try {
+      const theme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || 'dark';
+      document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.classList.toggle('dark', theme !== 'light');
+    } catch (_) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/src/shared/loader.css">
+  <link rel="stylesheet" href="/src/magazine/publishing.css">
+  <script type="module" src="/src/magazine/publishing.js"></script>
+</head>
+<body>
+  <div id="shared-page-loader" class="shared-page-loader">
+    <div class="shared-loader" role="status" aria-live="polite" aria-label="Đang tải quản lý xuất bản">
+      <div class="shared-loader__book"><ul class="shared-loader__pages">
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+        <li class="shared-loader__page"><svg fill="currentColor" viewBox="0 0 90 120"><path d="M90 0v120H11A11 11 0 0 1 0 109V11A11 11 0 0 1 11 0Z"/></svg></li>
+      </ul></div><span class="shared-loader__label">Đang tải...</span>
+    </div>
+  </div>
+  <main class="publishing-page">
+    <header class="publishing-hero">
+      <div>
+        <span class="eyebrow">LHU Journal</span>
+        <h1>Quản lý xuất bản</h1>
+        <p>Quản lý số báo, bản biên tập và các bài do client gửi đến.</p>
+      </div>
+      <button id="publishing-refresh" class="secondary-btn" type="button"><i class="fa-solid fa-rotate"></i> Làm mới</button>
+    </header>
+
+    <section class="metric-grid" id="publishing-metrics"></section>
+
+    <nav class="publishing-tabs" aria-label="Khu vực quản lý">
+      <button class="active" type="button" data-publishing-tab="issues"><i class="fa-solid fa-layer-group"></i> Số báo</button>
+      <button type="button" data-publishing-tab="articles"><i class="fa-solid fa-newspaper"></i> Kho bài báo</button>
+    </nav>
+
+    <section id="publishing-issues-panel" class="publishing-panel">
+      <div class="panel-heading">
+        <div><h2>Số báo</h2><p>Đổi tên, sắp xếp và quản lý các bài thuộc từng số.</p></div>
+        <button id="create-issue-btn" class="primary-btn" type="button"><i class="fa-solid fa-plus"></i> Tạo số báo</button>
+      </div>
+      <div id="issues-grid" class="issues-grid"></div>
+    </section>
+
+    <section id="publishing-articles-panel" class="publishing-panel hidden">
+      <div class="panel-heading">
+        <div><h2>Kho bài báo</h2><p>Bài của admin và bài client được phân nhóm theo người gửi.</p></div>
+        <select id="article-status-filter" class="publishing-select">
+          <option value="all">Tất cả trạng thái</option>
+          <option value="unassigned">Chưa xếp số</option>
+          <option value="assigned">Đã xếp số</option>
+          <option value="updates">Có cập nhật mới</option>
+        </select>
+      </div>
+      <div id="articles-groups" class="article-groups"></div>
+    </section>
+  </main>
+
+  <div id="publishing-modal" class="publishing-modal hidden" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="publishing-modal-title">
+      <header><div><h2 id="publishing-modal-title"></h2><p id="publishing-modal-lead"></p></div><button id="publishing-modal-close" type="button" aria-label="Đóng">&times;</button></header>
+      <div id="publishing-modal-body" class="modal-body"></div>
+      <footer id="publishing-modal-footer"></footer>
+    </section>
+  </div>
+
+  <div id="publishing-toast" class="publishing-toast" role="status"></div>
+</body>
+</html>

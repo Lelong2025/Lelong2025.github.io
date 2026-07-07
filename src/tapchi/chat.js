@@ -7,7 +7,8 @@ import {
   openUserModal,
   publicDb,
   refreshAccount,
-  renderAccount
+  renderAccount,
+  setAuthMode
 } from './account.js'
 import { formatISSN } from './format.js'
     // ========== RULE-BASED CHATBOT (MIỄN PHÍ - KHÔNG CẦN API) ==========
@@ -39,8 +40,10 @@ export async function toggleChat() {
         const trialDays = await loadPublicConfig();
         setAuthMode('register');
         openUserModal();
-        document.getElementById('authHeading').textContent = 'Dùng thử Chatbox AI miễn phí';
-        document.getElementById('authLead').textContent = `Tạo tài khoản để nhận ${trialDays} ngày dùng thử và bắt đầu trò chuyện cùng Trợ lý Tạp chí AI.`;
+        const authHeading = document.getElementById('auth-title');
+        const authLead = document.getElementById('auth-lead');
+        if (authHeading) authHeading.textContent = 'Dùng thử Chatbox AI miễn phí';
+        if (authLead) authLead.textContent = `Tạo tài khoản để nhận ${trialDays} ngày dùng thử và bắt đầu trò chuyện cùng Trợ lý Tạp chí AI.`;
         setUserMessage(`Đăng ký miễn phí · ${trialDays} ngày dùng thử · Không cần thanh toán trước`, 'success');
         return;
       }

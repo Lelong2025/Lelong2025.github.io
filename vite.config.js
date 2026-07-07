@@ -11,6 +11,7 @@ export default defineConfig({
         portal: resolve(__dirname, 'portal/index.html'),
         magazineLogin: resolve(__dirname, 'magazine/index.html'),
         magazineEditor: resolve(__dirname, 'magazine/editor.html'),
+        magazinePublishing: resolve(__dirname, 'magazine/publishing.html'),
       },
     },
   },

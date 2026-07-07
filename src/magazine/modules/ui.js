@@ -88,6 +88,7 @@ export function switchReviewTab(tabName) {
     state.appState.reviewPanelTab = tabName;
 
     const isIssueTab = tabName === 'issue';
+    const client = isClient();
     const aiPanel = document.getElementById('ai-tab-panel');
     const issuePanel = document.getElementById('issue-tab-panel');
     const title = document.getElementById('review-panel-title');
@@ -103,14 +104,20 @@ export function switchReviewTab(tabName) {
     }
     if (title) {
         title.innerHTML = isIssueTab
-            ? '<i class="fa-solid fa-layer-group mr-1.5 text-blue-500"></i>Số báo & Bài báo'
+            ? (client
+                ? '<i class="fa-solid fa-file-lines mr-1.5 text-blue-500"></i>Bài báo của tôi'
+                : '<i class="fa-solid fa-layer-group mr-1.5 text-blue-500"></i>Số báo & Bài báo')
             : '<i class="fa-solid fa-square-poll-vertical mr-1.5 text-rose-500"></i>AI Suggest';
         title.classList.toggle('text-rose-600', !isIssueTab);
         title.classList.toggle('dark:text-rose-400', !isIssueTab);
         title.classList.toggle('text-blue-700', isIssueTab);
         title.classList.toggle('dark:text-blue-300', isIssueTab);
     }
-    if (subtitle) subtitle.textContent = isIssueTab ? 'Quản lý số báo, bài báo và bài client đã gửi' : 'Gợi ý bám sát chuẩn tạp chí khoa học';
+    if (subtitle) {
+        subtitle.textContent = isIssueTab
+            ? (client ? 'Quản lý các bài báo đang soạn' : 'Quản lý số báo, bài báo và bài client đã gửi')
+            : 'Gợi ý bám sát chuẩn tạp chí khoa học';
+    }
     if (statusBadge) statusBadge.classList.toggle('hidden', isIssueTab);
 
     const activeClasses = ['bg-white', 'shadow-sm', 'dark:bg-slate-800'];
@@ -122,6 +129,8 @@ export function switchReviewTab(tabName) {
         mutedClasses.forEach(cls => aiTab.classList.toggle(cls, isIssueTab));
     }
     if (issueTab) {
+        const issueTabLabel = document.getElementById('review-tab-issue-label');
+        if (issueTabLabel) issueTabLabel.textContent = client ? 'Bài báo của tôi' : 'Số báo & Bài báo';
         issueTab.classList.toggle('text-blue-700', isIssueTab);
         issueTab.classList.toggle('dark:text-blue-300', isIssueTab);
         activeClasses.forEach(cls => issueTab.classList.toggle(cls, isIssueTab));
@@ -227,7 +236,17 @@ export function recalculateContinuousPages() {
 export function syncCurrentArticlePageCountFromPreview(art) {
     if (!art) return;
 
-    const renderedPages = document.querySelectorAll('#a4-container > .a4-page, #content-pages > .a4-page').length;
+    const previewContainer = document.getElementById('a4-container');
+    if (!previewContainer) return;
+
+    const firstPages = Array.from(previewContainer.children)
+        .filter(child => child.classList.contains('a4-page')).length;
+    const contentPagesHost = Array.from(previewContainer.children)
+        .find(child => child.id === 'content-pages');
+    const contentPages = contentPagesHost
+        ? Array.from(contentPagesHost.children).filter(child => child.classList.contains('a4-page')).length
+        : 0;
+    const renderedPages = firstPages + contentPages;
     const actualPageCount = Math.max(1, renderedPages);
     const previousPageCount = parseInt(art.pageCount || 1);
 
@@ -432,6 +451,7 @@ export function loadArticleIntoEditor(id) {
     renderLivePreview(art);
     renderAiReviewPanel(art);
     renderAuthorProfiles(art);
+    window.renderSubmissionCard?.(art);
 }
 
 export function clearEditorForm() {
@@ -451,6 +471,7 @@ export function clearEditorForm() {
     document.getElementById('input-keywords-vn').value = '';
     document.getElementById('input-keywords-en').value = '';
     updateIssueStatusText(null);
+    window.renderSubmissionCard?.(null);
 
     document.getElementById('ai-suggestions-container').innerHTML = `
         <div class="text-center py-12 text-slate-400">
@@ -484,6 +505,7 @@ export function syncFormToPreview() {
 
     saveToLocalStorage();
     renderLivePreview(art);
+    window.renderSubmissionCard?.(art);
 
     const activeItem = document.querySelector(`[data-id="${art.id}"] h4`);
     if (activeItem) {
@@ -860,6 +882,13 @@ export function deleteCurrentArticle() {
     const articles = currentIssue.articles;
     const idx = articles.findIndex(a => a.id === state.appState.currentArticleId);
     if (idx !== -1) {
+        const article = articles[idx];
+        const articleName = article.titleVn || article.titleEn || 'Bài báo chưa đặt tên';
+        const confirmed = window.confirm(
+            `Bạn có chắc muốn xóa bài báo hiện hành “${articleName}” không?\n\nThao tác này không thể hoàn tác.`
+        );
+        if (!confirmed) return;
+
         articles.splice(idx, 1);
 
         if (articles.length > 0) {
@@ -921,15 +950,16 @@ export function activeArticle() {
 }
 
 export function toggleDarkMode() {
-    if (document.documentElement.classList.contains('dark')) {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-    } else {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-    }
+    const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    localStorage.setItem('mixing-theme', next);
+    localStorage.setItem('theme', next);
     const dmToggle = document.getElementById('dark-mode-toggle');
-    if (dmToggle) dmToggle.checked = document.documentElement.classList.contains('dark');
+    if (dmToggle) dmToggle.checked = next === 'dark';
+    const shellToggle = document.getElementById('mixing-shell-theme-checkbox');
+    if (shellToggle) shellToggle.checked = next === 'dark';
+    window.dispatchEvent(new CustomEvent('mixing:theme-change', { detail: { theme: next } }));
 }
 
 export function switchMobileTab(tabName) {
@@ -1032,18 +1062,26 @@ export function preparePreviewForOutput() {
 export function toggleAiPanel() {
     state.appState.aiPanelCollapsed = !state.appState.aiPanelCollapsed;
     saveToLocalStorage();
+    const panel = document.getElementById('ai-review-section');
+    if (panel && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        panel.classList.add('review-panel-collapsing');
+        window.setTimeout(() => panel.classList.remove('review-panel-collapsing'), 180);
+    }
     applyAiPanelCollapsed();
 }
 
 export function applyAiPanelCollapsed() {
     const panel = document.getElementById('ai-review-section');
-    const button = document.getElementById('ai-collapse-toggle');
+    const button = document.getElementById('review-panel-collapse-toggle') || document.getElementById('ai-collapse-toggle');
     if (!panel) return;
     const collapsed = Boolean(state.appState.aiPanelCollapsed);
+    panel.classList.toggle('review-panel-collapsed', collapsed);
     panel.classList.toggle('ai-panel-collapsed', collapsed);
     if (button) {
         button.innerHTML = collapsed ? '<i class="fa-solid fa-chevron-left"></i>' : '<i class="fa-solid fa-chevron-right"></i>';
-        button.title = collapsed ? 'Hien AI Review' : 'An AI Review';
+        const label = collapsed ? 'Mở bảng công cụ' : 'Thu gọn bảng công cụ';
+        button.title = label;
+        button.setAttribute('aria-label', label);
     }
 }
 

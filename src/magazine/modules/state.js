@@ -23,8 +23,11 @@ export async function handleLogout() {
     if (window.lhuSupabase) {
         await window.lhuSupabase.auth.signOut();
     }
-    localStorage.clear();
-    window.location.replace('index.html');
+    state.cloudUser = null;
+    state.cloudProfile = null;
+    state.cloudSyncEnabled = false;
+    document.body.classList.add('magazine-auth-required');
+    window.openMixingAuth?.('login');
 }
 
 export function saveToLocalStorage() {

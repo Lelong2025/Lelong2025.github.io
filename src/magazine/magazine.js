@@ -30,7 +30,7 @@ import { runAiReview, applySelectedSuggestions } from './modules/ai.js';
 import {
     loadProfile, ensureClientWorkspace, applyRoleUi, loadSubmissions, renderSubmissionsList,
     openLhjLogin, openMediaLibrary, closeMediaLibrary, handleMediaUpload,
-    uploadAuthorPhotoFromInput
+    uploadAuthorPhotoFromInput, submitCurrentArticle, renderSubmissionCard, isClient
 } from './modules/cloud.js';
 
 // Expose states to global window scope for inline scripts
@@ -121,6 +121,8 @@ Object.assign(window, {
     applySelectedSuggestions: applySelectedSuggestions,
     renderSubmissionsList,
     loadSubmissions,
+    submitCurrentArticle,
+    renderSubmissionCard,
     openLhjLogin,
     openMediaLibrary,
     closeMediaLibrary,
@@ -138,11 +140,12 @@ async function boot() {
         }
     }
 
-    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    const savedTheme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || document.documentElement.dataset.theme || 'dark';
+    const theme = savedTheme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('mixing-theme', theme);
+    localStorage.setItem('theme', theme);
 
     state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
 
@@ -182,11 +185,21 @@ async function boot() {
     // Initialize layout and articles list
     initApp();
     applyRoleUi();
-    loadSubmissions();
+    if (isClient()) loadSubmissions();
+}
+
+function markEditorReady() {
+    window.dispatchEvent(new CustomEvent('mixing:page-ready'));
+}
+
+function startEditor() {
+    boot()
+        .catch(error => console.error('Không thể khởi tạo trình soạn báo:', error))
+        .finally(markEditorReady);
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
+    document.addEventListener('DOMContentLoaded', startEditor);
 } else {
-    boot();
+    startEditor();
 }

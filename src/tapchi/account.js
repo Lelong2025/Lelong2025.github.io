@@ -80,25 +80,20 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     function redirectToSharedAuth(mode = 'login') {
-      const target = new URL('/', location.origin);
-      if (mode === 'reset' || passwordRecoveryRequested) {
-        target.search = location.search;
-        target.hash = location.hash;
-        if (!target.searchParams.has('recovery') && !target.searchParams.has('type')) {
-          target.searchParams.set('recovery', '1');
-        }
+      const nextMode = mode === 'register' || mode === 'reset' ? mode : 'login';
+      if (typeof window.openMixingAuth === 'function') {
+        window.openMixingAuth(nextMode);
       } else {
-        target.hash = mode === 'register' ? 'register' : 'login';
+        window.dispatchEvent(new CustomEvent('mixing:open-auth', { detail: { mode: nextMode } }));
       }
-      window.location.href = target.toString();
     }
 
     function setAuthMode(mode) {
+      currentAuthMode = mode;
       if (!hasLocalAuthForm()) {
         redirectToSharedAuth(mode);
         return;
       }
-      currentAuthMode = mode;
       const registering = mode === 'register';
       document.getElementById('loginTab').classList.toggle('active', !registering);
       document.getElementById('registerTab').classList.toggle('active', registering);
@@ -119,11 +114,12 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
 
     function showPasswordRecovery() {
       if (!hasLocalAuthForm()) {
+        passwordRecoveryActive = true;
         redirectToSharedAuth('reset');
         return;
       }
       passwordRecoveryActive = true;
-      document.getElementById('userModal').classList.add('open');
+      document.getElementById('accountVipModal')?.classList.add('open');
       document.getElementById('authView').style.display = 'block';
       document.getElementById('accountView').style.display = 'none';
       document.getElementById('paymentBox').classList.remove('open');
@@ -150,10 +146,13 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         return;
       }
       if (!currentSession && !hasLocalAuthForm()) {
-        redirectToSharedAuth('login');
+        if (forceModal) currentAuthMode = 'login';
+        redirectToSharedAuth(currentAuthMode);
         return;
       }
-      document.getElementById('userModal').classList.add('open');
+      const userModal = document.getElementById('accountVipModal');
+      if (!userModal) return;
+      userModal.classList.add('open');
       const recovering = passwordRecoveryActive || passwordRecoveryRequested;
       const authView = document.getElementById('authView');
       const accountView = document.getElementById('accountView');
@@ -163,7 +162,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     function closeUserModal() {
-      document.getElementById('userModal').classList.remove('open');
+      document.getElementById('accountVipModal')?.classList.remove('open');
       void cancelPendingPayment();
     }
 
@@ -299,7 +298,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         setAuthMode('login');
         document.getElementById('authView').style.display = 'block';
         document.getElementById('accountView').style.display = 'none';
-        document.getElementById('userModal').classList.add('open');
+        document.getElementById('accountVipModal')?.classList.add('open');
         setUserMessage('Đổi mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.', 'success');
       } catch (error) {
         const message = /auth session missing/i.test(error.message || '')
@@ -1500,9 +1499,17 @@ export {
 
 export function initAccountEvents() {
   const on = (selector, event, handler) => document.querySelector(selector)?.addEventListener(event, handler)
+  window.openUserModal = openUserModal
+  window.__MIXING_BUY_CREDITS__ = async () => {
+    await createVipOrder()
+    openUserModal(true)
+  }
 
-  on('#accountButton', 'click', () => openUserModal())
-  on('#userModal', 'click', event => { if (event.target === event.currentTarget) closeUserModal() })
+  on('#accountButton', 'click', () => {
+    if (!currentSession) setAuthMode('login');
+    else openUserModal();
+  })
+  on('#accountVipModal', 'click', event => { if (event.target === event.currentTarget) closeUserModal() })
   on('#loginTab', 'click', () => setAuthMode('login'))
   on('#registerTab', 'click', () => setAuthMode('register'))
   on('#passwordResetRequest', 'click', requestPasswordReset)

@@ -195,8 +195,33 @@ export function closeRichTextWorkspace() {
     const art = currentIssue.articles.find(a => a.id === state.appState.currentArticleId);
     if (art) {
         loadArticleIntoEditor(art.id);
+        refreshPaginationAfterEditorClose(art);
     }
     showToast("Đã lưu và đồng bộ hóa nội dung chính bài báo!");
+}
+
+function refreshPaginationAfterEditorClose(art) {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(async () => {
+        if (document.fonts?.ready) await document.fonts.ready;
+
+        const previewImages = Array.from(document.querySelectorAll('#a4-container img'));
+        await Promise.all(previewImages.map(image => {
+            if (image.complete) return Promise.resolve();
+            return new Promise(resolve => {
+                image.addEventListener('load', resolve, { once: true });
+                image.addEventListener('error', resolve, { once: true });
+            });
+        }));
+
+        const currentArticle = state.appState.issues[state.appState.currentIssueId]
+            ?.articles.find(item => item.id === art.id);
+        if (!currentArticle || state.appState.currentArticleId !== art.id) return;
+
+        renderLivePreview(currentArticle);
+        recalculateContinuousPages();
+        renderArticlesList();
+        saveToLocalStorage();
+    }));
 }
 
 export function formatDoc(cmd, value = null) {

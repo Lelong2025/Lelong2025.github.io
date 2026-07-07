@@ -1,10 +1,41 @@
 ﻿<!DOCTYPE html>
-<html lang="vi" class="h-full">
+<html lang="vi" class="h-full magazine-booting">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LHU Journal of Science - Hệ thống soạn thảo & AI Review Sắp xếp số báo</title>
+    <script>
+        (function applyInitialTheme() {
+            try {
+                var theme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || 'dark';
+                theme = theme === 'light' ? 'light' : 'dark';
+                document.documentElement.dataset.theme = theme;
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+            } catch (_) {
+                document.documentElement.dataset.theme = 'dark';
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <style>
+        :root {
+            --mixing-header-height: 64px;
+            --mixing-sidebar-collapsed: 76px;
+        }
+
+        body.has-mixing-shell {
+            padding-top: var(--mixing-header-height) !important;
+            padding-left: var(--mixing-sidebar-collapsed) !important;
+        }
+
+        @media (max-width: 860px) {
+            body.has-mixing-shell {
+                padding-left: 0 !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/src/shared/loader.css">
     <script type="module" src="/src/magazine/editor-bridge.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.8/dist/pizzip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -36,7 +67,28 @@
 </head>
 
 <body
-    class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col transition-colors duration-200 overflow-hidden">
+    class="has-mixing-shell bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col transition-colors duration-200 overflow-hidden">
+
+    <div id="shared-page-loader" class="shared-page-loader">
+        <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+            <symbol id="magazine-loader-page" viewBox="0 0 90 120">
+                <path d="M90,0 L90,120 L11,120 C4.92486775,120 0,115.075132 0,109 L0,11 C0,4.92486775 4.92486775,0 11,0 L90,0 Z M71.5,81 L18.5,81 C17.1192881,81 16,82.1192881 16,83.5 C16,84.8254834 17.0315359,85.9100387 18.3356243,85.9946823 L18.5,86 L71.5,86 C72.8807119,86 74,84.8807119 74,83.5 C74,82.1745166 72.9684641,81.0899613 71.6643757,81.0053177 L71.5,86 Z M71.5,57 L18.5,57 C17.1192881,57 16,58.1192881 16,59.5 C16,60.8254834 17.0315359,60.9100387 18.3356243,61.9946823 L18.5,62 L71.5,62 C72.8807119,62 74,60.8807119 74,59.5 C74,58.1192881 72.8807119,57 71.5,57 Z M71.5,33 L18.5,33 C17.1192881,33 16,34.1192881 16,35.5 C16,36.8254834 17.0315359,37.9100387 18.3356243,37.9946823 L18.5,38 L71.5,38 C72.8807119,38 74,36.8807119 74,35.5 C74,34.1192881 72.8807119,33 71.5,33 Z"></path>
+            </symbol>
+        </svg>
+        <div class="shared-loader" role="status" aria-live="polite" aria-label="Đang tải...">
+            <div class="shared-loader__book">
+                <ul class="shared-loader__pages">
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                </ul>
+            </div>
+            <span class="shared-loader__label">Đang tải...</span>
+        </div>
+    </div>
 
     <div class="flex flex-1 overflow-hidden h-full relative" id="main-app-container">
         <!-- Sidebar Backdrop for Mobile Overlay -->
@@ -49,7 +101,7 @@
             <!-- Issue Picker & Actions -->
             <div class="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3">
                 <div class="flex justify-between items-center">
-                    <label
+                    <label id="sidebar-workspace-heading"
                         class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Số
                         báo hiện hành</label>
                 </div>
@@ -65,8 +117,9 @@
                     </button>
                 </div>
                 <div class="flex justify-between items-center text-[11px] pt-1">
-                    <span class="text-slate-500 dark:text-slate-400"><i class="fa-solid fa-layer-group mr-1"></i> Tổng
-                        bài: <strong id="sidebar-total-articles"
+                    <span class="text-slate-500 dark:text-slate-400"><i id="sidebar-total-icon"
+                            class="fa-solid fa-layer-group mr-1"></i> <span id="sidebar-total-label">Tổng
+                            bài:</span> <strong id="sidebar-total-articles"
                             class="text-slate-700 dark:text-slate-200">0</strong></span>
                     <button onclick="exportIssue()" data-client-hidden
                         class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold hover:underline">
@@ -77,7 +130,7 @@
 
             <!-- Article Draggable List Section -->
             <div class="p-3 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-800/50">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Danh sách bài báo sắp
+                <span id="article-list-heading" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Danh sách bài báo sắp
                     xếp</span>
                 <button onclick="createNewArticle()"
                     class="text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded flex items-center shadow-sm">
@@ -96,18 +149,9 @@
                 class="p-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-500 dark:text-slate-400">
                 <div class="flex items-start space-x-1.5">
                     <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
-                    <p>Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi thứ tự. Số trang dồn sẽ
+                    <p id="article-list-note">Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi thứ tự. Số trang dồn sẽ
                         được cập nhật tự động tức thời.</p>
                 </div>
-            </div>
-            <div id="client-submissions-section" data-admin-only
-                class="hidden border-t border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
-                <div class="mb-2 flex items-center justify-between">
-                    <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bài client đã gửi</h3>
-                    <button type="button" onclick="loadSubmissions?.()"
-                        class="text-[10px] font-bold text-blue-600 hover:underline">Reload</button>
-                </div>
-                <div id="client-submissions-list" class="max-h-56 space-y-2 overflow-y-auto"></div>
             </div>
         </aside>
 
@@ -380,8 +424,8 @@
                 class="w-full lg:w-96 border-l border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-y-auto flex flex-col flex-1 lg:flex-none lg:shrink-0 max-lg:hidden">
                 <div
                     class="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10 shadow-xs">
-                    <div class="mb-2 flex items-center justify-between gap-2">
-                        <div class="min-w-0">
+                    <div class="review-panel-header mb-2 flex items-center justify-between gap-2">
+                        <div class="review-panel-heading min-w-0">
                             <h2 id="review-panel-title"
                                 class="font-bold text-xs text-rose-600 dark:text-rose-400 flex items-center">
                                 <i class="fa-solid fa-square-poll-vertical mr-1.5 text-rose-500"></i>AI Suggest
@@ -389,25 +433,25 @@
                             <p id="review-panel-subtitle" class="text-[10px] text-slate-400">Gợi ý bám sát chuẩn tạp chí khoa học</p>
                         </div>
                         <div class="flex shrink-0 items-center gap-1.5">
-                            <button id="ai-collapse-toggle" onclick="toggleAiPanel()"
-                                class="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
-                                title="An AI Review">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </button>
                             <button id="ai-status-badge"
                                 class="px-2 py-0.5 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-full text-[9px] font-bold">
                                 Đang Chờ Check
                             </button>
+                            <button id="review-panel-collapse-toggle" onclick="toggleAiPanel()"
+                                class="review-panel-collapse-btn rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                                title="Thu gọn bảng công cụ" aria-label="Thu gọn bảng công cụ">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-[11px] font-bold dark:bg-slate-900/70">
+                    <div class="review-panel-tabs grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-[11px] font-bold dark:bg-slate-900/70">
                         <button id="review-tab-ai" type="button" onclick="switchReviewTab('ai')"
                             class="rounded-md px-2 py-1.5 text-rose-700 bg-white shadow-sm dark:bg-slate-800 dark:text-rose-300">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI Suggest
                         </button>
                         <button id="review-tab-issue" type="button" onclick="switchReviewTab('issue')"
                             class="rounded-md px-2 py-1.5 text-slate-500 hover:text-blue-700 dark:text-slate-400 dark:hover:text-blue-300">
-                            <i class="fa-solid fa-layer-group mr-1"></i>Số báo & Bài báo
+                            <i class="fa-solid fa-layer-group mr-1"></i><span id="review-tab-issue-label">Số báo & Bài báo</span>
                         </button>
                     </div>
                 </div>
@@ -462,6 +506,24 @@
                 </div>
 
                 <div class="p-4 space-y-4">
+                    <div id="client-submission-card" data-client-only
+                        class="hidden rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                                    <i class="fa-solid fa-building-columns mr-1"></i>Ban biên tập
+                                </div>
+                                <p id="client-submission-status" class="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+                                    Bài này chưa được gửi cho Ban biên tập.
+                                </p>
+                            </div>
+                            <button id="client-submit-editorial-btn" type="button" onclick="submitCurrentArticle()"
+                                class="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                <i class="fa-solid fa-paper-plane mr-1"></i>Gửi Ban biên tập
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Page Budget Configuration -->
                     <div
                         class="bg-blue-50/60 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-100 dark:border-blue-900/40 space-y-2">
@@ -921,12 +983,86 @@
         <span id="toast-text">Thông báo mặc định</span>
     </div>
 
+    <div class="vip-modal" id="auth-modal" aria-hidden="true">
+        <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+            <div class="vip-card-head">
+                <h2><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
+                <button class="vip-close" id="auth-close" type="button" aria-label="Đóng">&times;</button>
+            </div>
+
+            <div class="auth-welcome">
+                <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
+                <h3 id="auth-title">Chào mừng trở lại</h3>
+                <p id="auth-lead">Đăng nhập để dùng các chức năng tài khoản trong hệ thống.</p>
+            </div>
+
+            <div class="vip-tabs" role="tablist">
+                <button id="auth-login-tab" class="active" type="button"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
+                <button id="auth-register-tab" type="button"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
+            </div>
+
+            <form class="vip-form" id="auth-form">
+                <div class="auth-field" id="auth-name-field" style="display:none">
+                    <label for="auth-name">Tên hiển thị</label>
+                    <div class="auth-input-wrap"><i class="fas fa-user"></i><input id="auth-name" type="text"
+                            autocomplete="name" maxlength="80" placeholder="Tên của bạn" /></div>
+                </div>
+                <div class="auth-field">
+                    <label for="auth-email">Địa chỉ email</label>
+                    <div class="auth-input-wrap"><i class="fas fa-envelope"></i><input id="auth-email" type="email"
+                            autocomplete="email" placeholder="name@example.com" required /></div>
+                </div>
+                <div class="auth-field">
+                    <label for="auth-password">Mật khẩu</label>
+                    <div class="auth-input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input id="auth-password" type="password" autocomplete="current-password" minlength="8"
+                            placeholder="Ít nhất 8 ký tự" required />
+                        <button class="password-toggle" id="auth-password-toggle" type="button"
+                            aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <p class="vip-message" id="auth-message" role="alert"></p>
+                <button class="vip-primary auth-submit" id="auth-submit" type="submit">
+                    <i class="fas fa-arrow-right"></i>&nbsp;<span id="auth-submit-label">Đăng nhập</span>
+                </button>
+                <div class="auth-form-footer">
+                    <button class="vip-link" id="auth-password-reset-request" type="button">Quên mật khẩu?</button>
+                </div>
+            </form>
+
+            <form class="vip-form" id="reset-form" style="display:none">
+                <div class="auth-field">
+                    <label for="reset-password">Mật khẩu mới</label>
+                    <div class="auth-input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input id="reset-password" type="password" autocomplete="new-password" minlength="8"
+                            placeholder="Ít nhất 8 ký tự" required />
+                        <button class="password-toggle" id="reset-password-toggle" type="button"
+                            aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="auth-field">
+                    <label for="reset-confirm-password">Xác nhận mật khẩu mới</label>
+                    <div class="auth-input-wrap">
+                        <i class="fas fa-shield-halved"></i>
+                        <input id="reset-confirm-password" type="password" autocomplete="new-password" minlength="8"
+                            placeholder="Nhập lại mật khẩu" required />
+                    </div>
+                </div>
+                <p class="vip-message" id="reset-message" role="alert"></p>
+                <button class="vip-primary auth-submit" id="reset-submit" type="submit">
+                    <i class="fas fa-floppy-disk"></i>&nbsp;<span id="reset-submit-label">Lưu mật khẩu mới</span>
+                </button>
+                <div class="auth-form-footer">
+                    <button class="vip-link" id="reset-back-login" type="button">Quay lại đăng nhập</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
     <!-- Core Application Logic -->
     <script type="module" src="/src/magazine/magazine.js"></script>
-    <script type="module">
-        import { initMixingShell } from '/src/shared/shell.js';
-        initMixingShell({ active: 'editor' });
-    </script>
 </body>
 
 </html>
