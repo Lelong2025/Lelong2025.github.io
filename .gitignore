@@ -40,7 +40,7 @@ pnpm-debug.log*
 *.swp
 *.swo
 *~
-
+.docs/
 # Operating system files
 .DS_Store
 .AppleDouble

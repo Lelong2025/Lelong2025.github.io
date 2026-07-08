@@ -415,17 +415,22 @@ export function normalizeAndReplaceDocxXml(xml, data) {
         }
     }
 
+    // The source template can contain a manual page break immediately before
+    // a section paragraph that changes columns. Word applies both transitions,
+    // producing an empty page between metadata and the article body.
+    Array.from(doc.getElementsByTagName('w:br')).forEach(br => {
+        if ((br.getAttribute('w:type') || br.getAttribute('type')) !== 'page') return;
+        let breakParagraph = br.parentNode;
+        while (breakParagraph && breakParagraph.nodeName !== 'w:p') breakParagraph = breakParagraph.parentNode;
+        const nextParagraph = breakParagraph?.nextElementSibling;
+        if (nextParagraph?.getElementsByTagName('w:sectPr').length) breakParagraph.remove();
+    });
+
     const serializer = new XMLSerializer();
     let resultXml = serializer.serializeToString(doc);
 
     if (data.content !== undefined) {
         const contentToInject = data.content;
-        // The template already starts article content with a next-page section.
-        // Remove an accidental adjacent manual page break, otherwise Word skips page 2.
-        resultXml = resultXml.replace(
-            /<w:p(?:\s[^>]*)?>(?:(?!<w:p).)*?<w:br[^>]*w:type="page"[^>]*\/>[\s\S]*?<\/w:p>\s*(?=<w:p[^>]*replace-with-content="true")/,
-            ''
-        );
         resultXml = resultXml.replace(/<w:p[^>]*replace-with-content="true"[^>]*>[\s\S]*?<\/w:p>/, () => contentToInject);
     }
 

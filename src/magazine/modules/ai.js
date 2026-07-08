@@ -11,6 +11,12 @@ Hãy kiểm tra bài báo theo tiêu chuẩn:
 4. Từ khóa: Từ 4 đến 6 cụm, không trùng tiêu đề.
 5. Nội dung: Kiểm tra cấu trúc IMRAD và trích dẫn chuẩn.`;
 
+function setAiStatusBadge(statusBadge, text, className) {
+    statusBadge.textContent = text;
+    statusBadge.className = className;
+    statusBadge.classList.toggle('hidden', state.appState.reviewPanelTab === 'issue');
+}
+
 export function renderAiReviewPanel(art) {
     const container = document.getElementById('ai-suggestions-container');
     const applyBtn = document.getElementById('apply-ai-btn');
@@ -19,8 +25,7 @@ export function renderAiReviewPanel(art) {
     if (!container || !applyBtn || !statusBadge) return;
 
     if (!art.aiReviewSuggestions) {
-        statusBadge.textContent = "Chưa Check";
-        statusBadge.className = "px-2 py-0.5 bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-300 rounded-full text-[9px] font-bold";
+        setAiStatusBadge(statusBadge, "Chưa Check", "px-2 py-0.5 bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-300 rounded-full text-[9px] font-bold");
         applyBtn.disabled = true;
 
         container.innerHTML = `
@@ -33,8 +38,7 @@ export function renderAiReviewPanel(art) {
         return;
     }
 
-    statusBadge.textContent = "Đã Review";
-    statusBadge.className = "px-2 py-0.5 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-full text-[9px] font-bold animate-pulse";
+    setAiStatusBadge(statusBadge, "Đã Review", "px-2 py-0.5 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-full text-[9px] font-bold animate-pulse");
     applyBtn.disabled = false;
 
     container.innerHTML = '';
@@ -292,8 +296,7 @@ export async function runAiReview() {
     showToast("Đang kết nối OpenAI để đánh giá bài viết...");
     const statusBadge = document.getElementById('ai-status-badge');
     if (statusBadge) {
-        statusBadge.textContent = "Đang chạy...";
-        statusBadge.className = "px-2 py-0.5 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 rounded-full text-[9px] font-bold animate-bounce";
+        setAiStatusBadge(statusBadge, "Đang chạy...", "px-2 py-0.5 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 rounded-full text-[9px] font-bold animate-bounce");
     }
 
     try {
@@ -306,8 +309,7 @@ export async function runAiReview() {
     } catch (error) {
         console.error(error);
         if (statusBadge) {
-            statusBadge.textContent = "Lỗi AI";
-            statusBadge.className = "px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[9px] font-bold";
+            setAiStatusBadge(statusBadge, "Lỗi AI", "px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[9px] font-bold");
         }
         showToast(error.message || "Không thể hoàn tất AI Review.");
         return false;
