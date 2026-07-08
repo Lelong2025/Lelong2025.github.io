@@ -169,7 +169,9 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             node.classList.contains('ql-align-right') ? 'right' :
                 node.classList.contains('ql-align-justify') ? 'both' : 'both';
         if (/^H[1-3]$/.test(node.tagName)) {
-            blocks.push(wordParagraph(inlineHtmlToWord(node, { bold: true, color: '2A4E8A', size: 20 }), wordParagraphOptions(node, {
+            const headingXml = inlineHtmlToWord(node, { bold: true, italic: false, color: '2A4E8A', size: 20 })
+                .replace(/<w:i\/?\s*\/>/g, '<w:i w:val="0"/>');
+            blocks.push(wordParagraph(headingXml, wordParagraphOptions(node, {
                 style: `Heading${node.tagName.slice(1)}`, align: 'left', before: 160, after: 80, keepNext: true
             })));
         } else if (['OL', 'UL'].includes(node.tagName)) {

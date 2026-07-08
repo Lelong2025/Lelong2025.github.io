@@ -340,6 +340,7 @@ export function renderArticlesList() {
 let dragSrcElement = null;
 
 function handleDragStart(e) {
+    switchReviewTab('issue');
     dragSrcElement = this;
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';

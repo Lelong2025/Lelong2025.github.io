@@ -60,7 +60,7 @@ create table if not exists public.service_plans (
   credits integer not null check (credits > 0),
   duration_days integer check (
     (billing_type = 'credit_pack' and duration_days is null)
-    or (billing_type = 'monthly' and duration_days is not null and duration_days > 0)
+    or (billing_type = 'monthly' and duration_days is not null and duration_days > 0 and duration_days <= 31)
   ),
   payment_prefix text not null default 'CHAT',
   active boolean not null default true,
@@ -499,8 +499,9 @@ begin
     if v_service_plan.billing_type = 'monthly' then
       update public.user_entitlements
       set monthly_plan_id = v_service_plan.id,
-          monthly_started_at = now(),
-          monthly_ends_at = now() + make_interval(days => v_service_plan.duration_days),
+          monthly_started_at = greatest(now(), coalesce(trial_ends_at, now()), coalesce(monthly_ends_at, now())),
+          monthly_ends_at = greatest(now(), coalesce(trial_ends_at, now()), coalesce(monthly_ends_at, now()))
+              + make_interval(days => v_service_plan.duration_days),
           monthly_balance = v_service_plan.credits,
           updated_at = now()
       where user_id = v_payment.user_id and product_code = v_service_plan.product_code;

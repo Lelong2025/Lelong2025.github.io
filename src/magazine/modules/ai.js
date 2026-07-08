@@ -217,31 +217,17 @@ export function clearPreviewHighlights() {
 }
 
 export async function callLlamaAI(userPrompt, timeoutMs = 75000) {
-    if (!window.lhuSupabase) {
-        throw new Error('Supabase chưa được cấu hình. Vui lòng kiểm tra supabase.js.');
-    }
-    const invocation = window.lhuSupabase.functions.invoke('openai-proxy', {
-        body: {
-            messages: [{ role: 'user', content: userPrompt }],
-            model: window.LHU_OPENAI_MODEL
-        }
+    const { apiFetch } = await import('../../shared/utils/api.js');
+    const invocation = apiFetch('/api/magazine/review', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: userPrompt })
     });
     const timeout = new Promise((_, reject) => setTimeout(() => {
         const error = new Error(`Quá thời gian chờ ${Math.round(timeoutMs / 1000)} giây (Supabase AI).`);
         error.code = 408;
         reject(error);
     }, timeoutMs));
-    const { data, error: invokeError } = await Promise.race([invocation, timeout]);
-    if (invokeError) {
-        let errorData = null;
-        try { errorData = await invokeError.context?.json(); } catch (_) { }
-        const status = invokeError.context?.status;
-        const error = new Error(status === 401
-            ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
-            : errorData?.error?.message || invokeError.message || 'Không thể gọi dịch vụ AI.');
-        error.code = errorData?.error?.code || status;
-        throw error;
-    }
+    const data = await Promise.race([invocation, timeout]);
     if (typeof data?.content !== 'string' || !data.content.trim()) {
         throw new Error('Supabase AI không trả về nội dung hợp lệ.');
     }

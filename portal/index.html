@@ -430,13 +430,13 @@
               </div>
               <form id="adminServicePlanForm" class="portal-form">
                 <div class="portal-settings-row">
-                  <div class="portal-field"><label>Mã gói</label><input id="servicePlanId" required maxlength="50" placeholder="chatbox-100"></div>
+                  <div class="portal-field"><label>Mã gói</label><div style="display:flex;gap:8px"><input id="servicePlanId" required maxlength="50" placeholder="chatbox-100"><button class="portal-btn" id="randomServicePlanId" type="button" title="Tạo mã ngẫu nhiên"><i class="fas fa-shuffle"></i></button></div></div>
                   <div class="portal-field"><label>Tên gói</label><input id="servicePlanName" required maxlength="100" placeholder="100 lượt Chatbox AI"></div>
                   <div class="portal-field"><label>Dịch vụ</label><select id="servicePlanProduct" required><option value="chatbox_ai">Chatbox AI</option><option value="magazine_export">Xuất Word/PDF</option><option value="magazine_ai_review">AI Review</option></select></div>
                   <div class="portal-field"><label>Loại gói</label><select id="servicePlanBilling" required><option value="credit_pack">Gói lượt</option><option value="monthly">Gói tháng</option></select></div>
-                  <div class="portal-field"><label>Giá (VND)</label><input id="servicePlanPrice" type="number" min="0" required></div>
+                  <div class="portal-field"><label>Giá (VND)</label><input id="servicePlanPrice" type="text" inputmode="numeric" autocomplete="off" placeholder="500,000" required></div>
                   <div class="portal-field"><label id="servicePlanCreditsLabel" for="servicePlanCredits">Tổng số lượt</label><input id="servicePlanCredits" type="number" min="1" required></div>
-                  <div id="servicePlanDurationField" class="portal-field" hidden><label>Thời hạn gói tháng (ngày)</label><input id="servicePlanDuration" type="number" min="1" value="30"></div>
+                  <div id="servicePlanDurationField" class="portal-field" hidden><label>Thời hạn gói tháng (ngày)</label><input id="servicePlanDuration" type="number" min="1" max="31" value="30"></div>
                 </div>
                 <button class="portal-btn primary" type="submit"><i class="fas fa-plus"></i> Tạo gói</button>
                 <p id="servicePlanMessage" class="vip-message" style="margin:0;"></p>

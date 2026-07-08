@@ -124,6 +124,7 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeSidebarDrawer()
   })
+  window.addEventListener('mixing:payment-success', showPaymentSuccessBadge)
 
   await updateShellUser(header, { active, showEditor })
   auth.onAuthStateChange(() => updateShellUser(header, { active, showEditor }))
@@ -435,12 +436,28 @@ function pollSharedPurchase(code, expiresAt, modal) {
       const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`)
       if (order.status === 'paid') {
         closeSharedPurchaseModal()
+        showPaymentSuccessBadge()
         return
       }
     } catch (_) { }
     sharedPurchasePollTimer = window.setTimeout(tick, 4000)
   }
   void tick()
+}
+
+function showPaymentSuccessBadge() {
+  document.getElementById('mixing-payment-success-badge')?.remove()
+  const badge = document.createElement('div')
+  badge.id = 'mixing-payment-success-badge'
+  badge.className = 'mixing-payment-success-badge'
+  badge.setAttribute('role', 'status')
+  badge.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Thanh toán thành công</span>'
+  document.body.append(badge)
+  requestAnimationFrame(() => badge.classList.add('show'))
+  window.setTimeout(() => {
+    badge.classList.remove('show')
+    window.setTimeout(() => badge.remove(), 250)
+  }, 4000)
 }
 
 function showInitialLoaderIfNeeded({ deferHide = false } = {}) {

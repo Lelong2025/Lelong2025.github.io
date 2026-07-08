@@ -22,6 +22,9 @@ export default {
     if (path === "/api/chat") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleChat(req, env, ctx));
     }
+    if (path === "/api/magazine/review" && request.method === "POST") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleMagazineReview(req, env, ctx, apiCors));
+    }
     if (path === "/api/account" && request.method === "GET") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleCleanAccount(req, env, ctx, apiCors));
     }
@@ -359,6 +362,75 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
   }
 }
 
+async function handleMagazineReview(request, env, ctx, cors) {
+  let reservationId = null;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (!prompt || prompt.length > 60000) {
+      return jsonResponse({ error: "Nội dung review không hợp lệ" }, 400, cors.headers);
+    }
+
+    if (ctx.userClaims.role === "admin") {
+      const { data, error } = await ctx.supabaseAdmin.from("service_usage").insert({
+        user_id: ctx.userClaims.id,
+        product_code: "magazine_ai_review",
+        action: "article_review",
+        units: 1,
+        source: "admin",
+        status: "reserved",
+        idempotency_key: `review-${crypto.randomUUID()}`
+      }).select("id").single();
+      if (error) throw error;
+      reservationId = data.id;
+    } else {
+      const { data, error } = await ctx.supabaseAdmin.rpc("reserve_service_usage", {
+        p_user_id: ctx.userClaims.id,
+        p_product_code: "magazine_ai_review",
+        p_action: "article_review",
+        p_idempotency_key: `review-${crypto.randomUUID()}`,
+        p_metadata: {}
+      });
+      if (error) throw error;
+      if (!data?.allowed) {
+        return jsonResponse({ error: data?.reason || "Không còn lượt AI Review", ...data }, data?.reason === "daily_limit" ? 429 : 403, cors.headers);
+      }
+      reservationId = data.reservation_id || null;
+    }
+
+    const response = await fetch("https://gateway.ai.cloudflare.com/v1/0b2220df0295474315b4b6940a0785e8/tapchi-gateway/openai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "cf-aig-authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+      },
+      body: JSON.stringify({
+        model: env.OPENAI_REVIEW_MODEL || "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 4000,
+        response_format: { type: "json_object" }
+      })
+    });
+    if (!response.ok) throw new Error(`AI gateway returned ${response.status}`);
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || !content.trim()) throw new Error("AI response is empty");
+
+    if (reservationId) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+      p_user_id: ctx.userClaims.id, p_reservation_id: reservationId, p_success: true
+    });
+    return jsonResponse({ content }, 200, cors.headers);
+  } catch (error) {
+    if (reservationId) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+      p_user_id: ctx.userClaims.id, p_reservation_id: reservationId, p_success: false
+    }).catch(() => {});
+    console.error("Magazine AI review error", error.message);
+    return jsonResponse({ error: "Dịch vụ AI Review tạm thời không khả dụng" }, 502, cors.headers);
+  }
+}
+
 function buildCorsHeaders(request, env) {
   const allowedOrigins = new Set(
     (env.ALLOWED_ORIGINS || "")
@@ -564,7 +636,8 @@ async function handleCleanAccount(request, env, ctx, cors) {
     const chat = services.products.find(product => product.code === 'chatbox_ai');
     const entitlement = chat?.entitlement || {};
     const trialActive = entitlement.trial_ends_at && new Date(entitlement.trial_ends_at) > new Date();
-    const remaining = Number(entitlement.credit_balance || 0) + Number(entitlement.monthly_balance || 0);
+    const quotaRemaining = Number(entitlement.daily_remaining || 0);
+    const remaining = Number(entitlement.credit_balance || 0) + quotaRemaining;
     return jsonResponse({
       user: { id: ctx.userClaims.id, email: ctx.userClaims.email },
       role: ctx.userClaims.role,
@@ -572,7 +645,7 @@ async function handleCleanAccount(request, env, ctx, cors) {
       is_trial: Boolean(!services.is_admin && trialActive),
       remaining_credits: services.is_admin ? null : remaining,
       wallet_balance_vnd: services.wallet_balance_vnd,
-      usage_today: 0,
+      usage_today: Number(entitlement.daily_usage || 0),
       usage_history: Object.entries((usageRes.data || []).reduce((days, row) => {
         const date = String(row.created_at).slice(0, 10);
         days[date] = (days[date] || 0) + 1;
@@ -751,7 +824,7 @@ function normalizeServicePlanInput(body) {
     && ['credit_pack', 'monthly'].includes(billingType)
     && Number.isSafeInteger(plan.price_vnd) && plan.price_vnd >= 0
     && Number.isSafeInteger(plan.credits) && plan.credits > 0
-    && (billingType !== 'monthly' || (Number.isSafeInteger(durationDays) && durationDays > 0));
+    && (billingType !== 'monthly' || (Number.isSafeInteger(durationDays) && durationDays > 0 && durationDays <= 31));
   return valid ? plan : null;
 }
 

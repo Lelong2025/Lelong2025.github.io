@@ -427,13 +427,14 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const firstLetter = name.trim().charAt(0).toUpperCase() || 'U';
       const admin = isAdminAccount(account);
       const paidPayments = (account?.payments || []).filter(payment => payment.status === 'paid');
-      const start = account?.is_trial
-        ? account?.subscription?.trial_started_at
-        : paidPayments[paidPayments.length - 1]?.paid_at;
       const chatProduct = account?.services?.products?.find(product => product.code === 'chatbox_ai');
+      const chatEntitlement = chatProduct?.entitlement || {};
+      const start = account?.is_trial
+        ? chatEntitlement.trial_started_at
+        : chatEntitlement.monthly_started_at || paidPayments.find(payment => payment.product_code === 'chatbox_ai')?.paid_at;
       const limit = chatProduct?.entitlement?.trial_daily_limit || chatProduct?.trial_daily_limit || 30;
       const trialDays = Number(chatProduct?.trial_days || 14);
-      const used = Number(account?.usage_today || 0);
+      const used = Number(chatEntitlement.daily_usage ?? account?.usage_today ?? 0);
       const remainingCredits = getRemainingCredits(account);
       const walletBalance = account?.services?.is_admin
         ? 0 : Number(account?.services?.wallet_balance_vnd ?? getWalletBalance(account));
@@ -483,7 +484,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
           : account?.is_vip ? '<i class="fas fa-circle-check"></i>&nbsp; ACTIVE'
             : '<i class="fas fa-clock"></i>&nbsp; INACTIVE';
       document.getElementById('portalVipStart').textContent = admin ? 'Hệ thống' : formatPortalDate(start);
-      document.getElementById('portalVipEnd').textContent = admin ? 'Vô hạn' : account?.is_trial ? formatPortalDate(account?.subscription?.trial_ends_at, 'Chưa có') : `${remainingCredits} lượt · ${formatVnd(walletBalance)}`;
+      document.getElementById('portalVipEnd').textContent = admin ? 'Vô hạn' : account?.is_trial ? formatPortalDate(chatEntitlement.trial_ends_at, 'Chưa có') : `${remainingCredits} lượt · ${formatVnd(walletBalance)}`;
       document.getElementById('portalVipPercent').textContent = admin ? 'Vô hạn' : account?.is_trial ? `${percent}%` : `${remainingCredits} lượt`;
       document.getElementById('portalVipProgress').style.width = admin ? '100%' : `${percent}%`;
       document.getElementById('portalVipProgressLabel').textContent = admin ? 'Lượt dùng: Vô hạn' : account?.is_trial ? `Lượt dùng hôm nay (${used}/${limit})` : `Đã dùng ${Math.max(0, creditTotal - remainingCredits)}/${creditTotal} lượt`;
@@ -1548,6 +1549,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       document.getElementById('paymentBox').classList.remove('open');
       document.getElementById('paymentQr').removeAttribute('src');
       setUserMessage('Thanh toán thành công! VIP đã được kích hoạt.', 'success');
+      window.dispatchEvent(new CustomEvent('mixing:payment-success'));
       await refreshAccount();
       renderPortalTables();
       renderPortalCharts();
@@ -1655,7 +1657,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             name: document.getElementById('servicePlanName').value,
             product_code: document.getElementById('servicePlanProduct').value,
             billing_type: billingType,
-            price_vnd: Number(document.getElementById('servicePlanPrice').value),
+            price_vnd: Number(document.getElementById('servicePlanPrice').value.replace(/\D/g, '')),
             credits: Number(document.getElementById('servicePlanCredits').value),
             duration_days: billingType === 'monthly' ? Number(document.getElementById('servicePlanDuration').value || 30) : null,
             active: true
@@ -1861,6 +1863,15 @@ export function initAccountEvents() {
   on('[data-action="save-admin-settings"]', 'click', saveAdminSettings)
   on('#adminServicePlanForm', 'submit', createAdminServicePlan)
   on('#servicePlanBilling', 'change', syncServicePlanDurationField)
+  on('#randomServicePlanId', 'click', () => {
+    const product = document.getElementById('servicePlanProduct')?.value || 'plan'
+    const suffix = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).slice(0, 6)
+    document.getElementById('servicePlanId').value = `${product.replaceAll('_', '-')}-${suffix}`
+  })
+  on('#servicePlanPrice', 'input', event => {
+    const digits = event.currentTarget.value.replace(/\D/g, '').slice(0, 12)
+    event.currentTarget.value = digits ? Number(digits).toLocaleString('en-US') : ''
+  })
   syncServicePlanDurationField()
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-toggle-service-plan]')

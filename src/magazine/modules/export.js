@@ -420,6 +420,12 @@ export function normalizeAndReplaceDocxXml(xml, data) {
 
     if (data.content !== undefined) {
         const contentToInject = data.content;
+        // The template already starts article content with a next-page section.
+        // Remove an accidental adjacent manual page break, otherwise Word skips page 2.
+        resultXml = resultXml.replace(
+            /<w:p(?:\s[^>]*)?>(?:(?!<w:p).)*?<w:br[^>]*w:type="page"[^>]*\/>[\s\S]*?<\/w:p>\s*(?=<w:p[^>]*replace-with-content="true")/,
+            ''
+        );
         resultXml = resultXml.replace(/<w:p[^>]*replace-with-content="true"[^>]*>[\s\S]*?<\/w:p>/, () => contentToInject);
     }
 
