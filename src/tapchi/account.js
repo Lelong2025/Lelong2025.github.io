@@ -43,6 +43,11 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     let currentAccount = null;
     let currentAuthMode = 'login';
     let accountRefreshPromise = null;
+    let adminDashboardPromise = null;
+    let adminPlanVisible = 8;
+    let adminPlanSearch = '';
+    let adminPlanProduct = 'all';
+    let adminPlanStatus = 'all';
     let accountRealtimeChannel = null;
     let accountRealtimeUserId = null;
     let accountRealtimeTimer = null;
@@ -53,7 +58,8 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     let activePaymentCode = null;
     let passwordRecoveryActive = false;
     let passwordRecoveryRequested = initialPasswordRecovery;
-    let configuredTrialDays = 30;
+    let configuredTrialDays = 14;
+    let configuredPlanPrice = 0;
     let publicConfigPromise = null;
 
     function loadPublicConfig() {
@@ -61,11 +67,23 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       publicConfigPromise = fetch(apiUrl('/api/public/config'))
         .then(response => response.ok ? response.json() : Promise.reject(new Error('Không tải được cấu hình')))
         .then(config => {
-          configuredTrialDays = Number(config.trial_days || 30);
+          configuredTrialDays = Number(config.trial_days || 14);
+          configuredPlanPrice = Number(config.price_vnd || 0);
+          updateConfiguredPlanPrice();
           return configuredTrialDays;
         })
         .catch(() => configuredTrialDays);
       return publicConfigPromise;
+    }
+
+    function updateConfiguredPlanPrice(account = currentAccount) {
+      const chatPlan = account?.services?.plans?.find(plan => plan.product_code === 'chatbox_ai');
+      const price = Number(chatPlan?.price_vnd || configuredPlanPrice || 0);
+      const buttonLabel = document.getElementById('vipPurchaseLabel');
+      if (buttonLabel) buttonLabel.textContent = price > 0
+        ? `Mua thêm lượt · ${formatVnd(price)}`
+        : 'Mua thêm lượt';
+      return price;
     }
 
     function setUserMessage(message = '', type = '') {
@@ -163,7 +181,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
 
     function closeUserModal() {
       document.getElementById('accountVipModal')?.classList.remove('open');
-      void cancelPendingPayment();
+      stopPaymentPolling();
     }
 
     async function submitAuth(event) {
@@ -312,12 +330,12 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     async function signOutUser() {
-      await cancelPendingPayment();
+      activePaymentCode = null;
+      stopPaymentPolling();
       resetRealtimeSubscriptions();
       await auth.signOut();
       currentAccount = null;
-      closeAccountPortal();
-      closeUserModal();
+      window.location.replace('/');
     }
 
     async function apiFetch(path, options = {}) {
@@ -326,30 +344,13 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       currentSession = session;
       return sharedApiFetch(path, options);
     }
-    async function cancelPendingPayment() {
-      const code = activePaymentCode;
-      if (!code) return;
-
-      activePaymentCode = null;
-      stopPaymentPolling();
-      document.getElementById('paymentBox').classList.remove('open');
-      document.getElementById('paymentQr').removeAttribute('src');
-      try {
-        await apiFetch(`/api/orders/${encodeURIComponent(code)}`, { method: 'DELETE' });
-        if (currentAccount?.payments) {
-          currentAccount.payments = currentAccount.payments.filter(payment => payment.payment_code !== code);
-          renderPortalTables();
-        }
-      } catch (error) {
-        console.warn('Không thể hủy đơn thanh toán đang chờ:', error.message);
-      }
-    }
-
     function renderAccount(account) {
       if (!account) return;
+      updateConfiguredPlanPrice(account);
       document.getElementById('accountEmail').textContent = account.user.email || '';
       const status = document.getElementById('vipStatus');
-      const trialDays = Number(account.subscription?.vip_plans?.trial_days || 30);
+      const chatProduct = account.services?.products?.find(product => product.code === 'chatbox_ai');
+      const trialDays = Number(chatProduct?.trial_days || 14);
       const isAdmin = account.role === 'admin' || isAdminAccount(account);
       status.textContent = isAdmin
         ? 'VIP Vĩnh viễn (Admin)'
@@ -361,7 +362,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const expiry = account.is_trial ? account.subscription?.trial_ends_at : null;
       expiryRow.style.display = expiry && !isAdmin ? 'flex' : 'none';
       if (expiry && !isAdmin) document.getElementById('vipExpiry').textContent = new Date(expiry).toLocaleDateString('vi-VN');
-      const limit = account.subscription?.vip_plans?.daily_ai_limit || 30;
+      const limit = chatProduct?.entitlement?.trial_daily_limit || chatProduct?.trial_daily_limit || 30;
       document.getElementById('vipUsage').textContent = isAdmin ? 'Vô hạn' : account.is_trial ? `${account.usage_today || 0}/${limit} hôm nay` : `${getRemainingCredits(account)} lượt`;
       document.getElementById('vipWalletBalance').textContent = isAdmin ? 'Vô hạn' : formatVnd(getWalletBalance(account));
       const chatAccessNote = document.getElementById('chat-access-note');
@@ -429,13 +430,15 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const start = account?.is_trial
         ? account?.subscription?.trial_started_at
         : paidPayments[paidPayments.length - 1]?.paid_at;
-      const limit = account?.subscription?.vip_plans?.daily_ai_limit || 30;
-      const trialDays = Number(account?.subscription?.vip_plans?.trial_days || 30);
+      const chatProduct = account?.services?.products?.find(product => product.code === 'chatbox_ai');
+      const limit = chatProduct?.entitlement?.trial_daily_limit || chatProduct?.trial_daily_limit || 30;
+      const trialDays = Number(chatProduct?.trial_days || 14);
       const used = Number(account?.usage_today || 0);
       const remainingCredits = getRemainingCredits(account);
-      const walletBalance = getWalletBalance(account);
+      const walletBalance = account?.services?.is_admin
+        ? 0 : Number(account?.services?.wallet_balance_vnd ?? getWalletBalance(account));
       const lastPaidCredits = Number(paidPayments.find(payment => Number(payment.credits_granted || 0) > 0)?.credits_granted
-        || account?.subscription?.vip_plans?.ai_credit_amount || remainingCredits || 0);
+        || remainingCredits || 0);
       const creditTotal = Math.max(1, remainingCredits + Math.max(0, lastPaidCredits - remainingCredits));
       const percent = admin ? 0 : account?.is_trial
         ? Math.min(100, Math.round((used / Math.max(1, limit)) * 100))
@@ -471,7 +474,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         ? 'VIP VĨNH VIỄN (ADMIN)'
         : account?.is_trial
           ? `DÙNG THỬ ${trialDays} NGÀY`
-          : account?.is_vip ? String(account.subscription?.vip_plans?.name || 'PREMIUM VIP').toUpperCase()
+          : account?.is_vip ? 'DỊCH VỤ ĐANG HOẠT ĐỘNG'
             : 'TÀI KHOẢN STANDARD';
       document.getElementById('portalVipBadge').innerHTML = admin
         ? '<i class="fas fa-crown"></i>&nbsp; ADMIN VIP'
@@ -490,6 +493,56 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         : walletBalance > 0
           ? 'Số dư sẽ được dùng để tự gia hạn khi đủ giá gói.'
           : 'Nạp số dư để tự gia hạn gói VIP khi hết lượt.';
+      renderPortalServices(account?.services);
+    }
+
+    const serviceIcons = {
+      chatbox_ai: 'fa-comments',
+      magazine_export: 'fa-file-export',
+      magazine_ai_review: 'fa-wand-magic-sparkles'
+    };
+
+    function renderPortalServices(services) {
+      const container = document.getElementById('portalServiceCards');
+      if (!container) return;
+      if (!services?.products?.length) {
+        container.innerHTML = '<p style="color:#94a3b8;">Chưa tải được thông tin dịch vụ.</p>';
+        return;
+      }
+      container.innerHTML = services.products.map(product => {
+        const entitlement = product.entitlement || {};
+        const trialActive = entitlement.trial_ends_at && new Date(entitlement.trial_ends_at) > new Date();
+        const monthlyActive = entitlement.monthly_ends_at && new Date(entitlement.monthly_ends_at) > new Date();
+        const plans = (services.plans || []).filter(plan => plan.product_code === product.code);
+        const renewal = product.auto_renew || {};
+        const status = product.unlimited ? 'Vô hạn'
+          : trialActive ? `Trial đến ${formatPortalDate(entitlement.trial_ends_at)}`
+            : `${Number(entitlement.daily_remaining ?? entitlement.monthly_balance ?? 0)}/${Number(entitlement.daily_limit ?? entitlement.monthly_balance ?? 0)} lượt còn lại hôm nay · ${Number(entitlement.credit_balance || 0)} lượt lẻ`;
+        return `<article class="portal-panel" style="padding:18px;">
+          <h3 style="margin:0 0 6px;"><i class="fas ${serviceIcons[product.code] || 'fa-circle'}" style="color:#2f6df6;"></i> ${escapeHTML(product.name)}</h3>
+          <p style="margin:0 0 14px;color:#64748b;">${escapeHTML(status)}${monthlyActive ? ` · hết hạn ${escapeHTML(formatPortalDate(entitlement.monthly_ends_at))}` : ''}</p>
+          ${product.unlimited ? '<span class="portal-pill green">Admin vô hạn</span>' : `
+            <select class="publishing-select" data-service-plan-select="${product.code}" style="width:100%;margin-bottom:10px;">
+              ${plans.map(plan => `<option value="${escapeHTML(plan.id)}" ${renewal.plan_id === plan.id ? 'selected' : ''}>${escapeHTML(plan.name)} · ${plan.credits} ${plan.billing_type === 'monthly' ? 'lượt/ngày' : 'lượt'} · ${formatVnd(plan.price_vnd)}</option>`).join('') || '<option value="">Chưa có gói đang bán</option>'}
+            </select>
+            <button class="portal-btn primary" type="button" data-open-shared-purchase ${plans.length ? '' : 'disabled'}>Mua gói</button>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;">
+              <input type="checkbox" data-auto-renew="${product.code}" ${renewal.enabled ? 'checked' : ''} ${plans.length ? '' : 'disabled'}>
+              Tự gia hạn gói đã chọn
+            </label>`}
+        </article>`;
+      }).join('');
+    }
+
+    function maybeShowTrialWelcome(services) {
+      const userId = currentSession?.user?.id;
+      if (!userId || !services?.products?.length) return;
+      const key = `mixing-trial-welcome:${userId}`;
+      if (localStorage.getItem(key)) return;
+      const trialProducts = services.products.filter(product => product.entitlement?.trial_started_at);
+      if (trialProducts.length < 3) return;
+      document.getElementById('trialWelcomeModal')?.classList.add('open');
+      localStorage.setItem(key, '1');
     }
 
     function isPortalRoute() {
@@ -644,8 +697,9 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         const credits = Number(row.credits_granted || 0);
         const walletAmount = Number(row.wallet_amount_vnd || 0);
         const isWallet = row.order_type === 'wallet_topup';
-        const detail = isWallet ? `Nạp số dư ${formatVnd(walletAmount || row.amount_vnd)}` : credits ? `${credits.toLocaleString('vi-VN')} lượt` : row.payment_code || row.plan_id || '';
-        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Nội dung"><strong>${isWallet ? 'Nạp số dư' : 'Thanh toán VIP'}</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(detail)}</small></td><td data-label="Số tiền">${formatVnd(row.amount_vnd)}</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
+        const productLabels = { chatbox_ai: 'Chatbox AI', magazine_export: 'Xuất Word/PDF', magazine_ai_review: 'AI Review' };
+        const detail = isWallet ? `Nạp số dư ${formatVnd(walletAmount || row.amount_vnd)}` : `${productLabels[row.product_code] || row.plan_id || 'Gói dịch vụ'}${credits ? ` · ${credits.toLocaleString('vi-VN')} lượt` : ''}`;
+        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Nội dung"><strong>${isWallet ? 'Nạp số dư' : 'Mua gói dịch vụ'}</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(detail)}</small></td><td data-label="Số tiền">${formatVnd(row.amount_vnd)}</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
       }).join('') : '<tr><td colspan="4" style="text-align:center;color:#64748b;">Chưa có giao dịch.</td></tr>';
       return `<thead><tr><th>Ngày</th><th>Nội dung</th><th>Số tiền</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
     }
@@ -654,13 +708,14 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const body = rows.length ? rows.map(row => {
         const initials = String(row.name || 'U').split(' ').slice(-2).map(part => part[0]).join('').toUpperCase();
         const isAdmin = row.role === 'admin';
-        const plan = isAdmin ? 'Admin' : row.is_trial ? 'Free Trial' : row.subscription?.vip_plans?.name || row.subscription?.plan_id || 'Standard';
-        const active = row.is_vip || row.is_trial;
-        const status = isAdmin ? 'Admin' : row.is_trial ? 'Dùng thử' : row.is_vip ? 'VIP' : 'Không hoạt động';
-        const remaining = isAdmin ? 'Vô hạn' : row.is_trial ? formatPortalDate(row.subscription?.trial_ends_at, '-') : `${Number(row.subscription?.ai_credits_remaining || 0).toLocaleString('vi-VN')} lượt · ${formatVnd(row.subscription?.wallet_balance_vnd || 0)}`;
-        return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td><span class="portal-pill">${escapeHTML(plan)}</span></td><td>${escapeHTML(remaining)}</td><td><span class="portal-pill ${active ? 'green' : 'orange'}">${status}</span></td></tr>`;
-      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#64748b;">Chưa có người dùng.</td></tr>';
-      return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Gói dịch vụ</th><th>Lượt / Trial</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
+        const entitlementMap = new Map((row.entitlements || []).map(item => [item.product_code, item]));
+          const serviceValue = code => isAdmin ? '∞' : Number(entitlementMap.get(code)?.daily_remaining || 0) + Number(entitlementMap.get(code)?.credit_balance || 0);
+        const paid = (adminDashboardData?.payments || []).some(payment => payment.user_id === row.id && payment.status === 'paid' && payment.order_type !== 'wallet_topup');
+        const services = `<span class="portal-pill">Chat ${serviceValue('chatbox_ai')}</span> <span class="portal-pill">Xuất ${serviceValue('magazine_export')}</span> <span class="portal-pill">Review ${serviceValue('magazine_ai_review')}</span>`;
+        const status = isAdmin ? 'Admin' : paid ? 'Trả phí' : 'Miễn phí/Trial';
+        return `<tr><td><div class="portal-user-cell"><span class="portal-mini-avatar">${escapeHTML(initials)}</span><strong>${escapeHTML(row.name || 'Người dùng')}</strong></div></td><td>${escapeHTML(row.email || '')}</td><td>${services}</td><td><span class="portal-pill ${isAdmin || paid ? 'green' : 'orange'}">${status}</span></td></tr>`;
+      }).join('') : '<tr><td colspan="4" style="text-align:center;color:#64748b;">Chưa có người dùng.</td></tr>';
+      return `<thead><tr><th>Khách hàng</th><th>Email liên hệ</th><th>Hạn mức dịch vụ</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
     }
 
     function invoiceTableMarkup(rows) {
@@ -671,7 +726,9 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         const credits = Number(row.credits_granted || 0);
         const walletAmount = Number(row.wallet_amount_vnd || 0);
         const isWallet = row.order_type === 'wallet_topup';
-        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Mã hóa đơn"><strong>${escapeHTML(row.payment_code || row.id || '')}</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(isWallet ? 'Nạp số dư' : row.plan_id || '')}</small></td><td data-label="Khách hàng">${escapeHTML(row.name || 'Người dùng')}<small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.email || '')}</small></td><td data-label="Số tiền">${formatVnd(row.amount_vnd)}</td><td data-label="Lượt / Số dư">${isWallet ? formatVnd(walletAmount || row.amount_vnd) : credits ? `${credits.toLocaleString('vi-VN')} lượt` : '-'}</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
+        const productLabels = { chatbox_ai: 'Chatbox AI', magazine_export: 'Xuất Word/PDF', magazine_ai_review: 'AI Review' };
+        const invoiceType = isWallet ? 'Nạp số dư' : productLabels[row.product_code] || row.service_plan_id || row.plan_id || 'Gói dịch vụ';
+        return `<tr><td data-label="Ngày">${escapeHTML(formatPortalDate(date, '-'))}</td><td data-label="Mã hóa đơn"><strong>${escapeHTML(row.payment_code || row.id || '')}</strong><small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(invoiceType)}</small></td><td data-label="Khách hàng">${escapeHTML(row.name || 'Người dùng')}<small style="display:block;color:#64748b;margin-top:3px;">${escapeHTML(row.email || '')}</small></td><td data-label="Số tiền">${formatVnd(row.amount_vnd)}</td><td data-label="Lượt / Số dư">${isWallet ? formatVnd(walletAmount || row.amount_vnd) : credits ? `${credits.toLocaleString('vi-VN')} lượt` : '-'}</td><td data-label="Trạng thái"><span class="portal-pill ${success ? 'green' : 'orange'}">${escapeHTML(labels[row.status] || row.status || '-')}</span></td></tr>`;
       }).join('') : '<tr><td colspan="6" data-label="" style="text-align:center;color:#64748b;">Chưa có hóa đơn.</td></tr>';
       return `<thead><tr><th>Ngày</th><th>Mã hóa đơn</th><th>Khách hàng</th><th>Số tiền</th><th>Lượt / Số dư</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody>`;
     }
@@ -801,11 +858,21 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       document.getElementById('adminRevenueMetric').textContent = `${Number(metrics.revenue_vnd || 0).toLocaleString('vi-VN')} đ`;
       document.getElementById('adminVipMetric').textContent = Number(metrics.vip_users || 0).toLocaleString('vi-VN');
       document.getElementById('adminUsageMetric').textContent = Number(metrics.ai_uses || 0).toLocaleString('vi-VN');
+      document.getElementById('adminReviewUsageMetric').textContent = Number(metrics.ai_review_uses || 0).toLocaleString('vi-VN');
+      document.getElementById('adminExportUsageMetric').textContent = Number(metrics.export_uses || 0).toLocaleString('vi-VN');
       document.getElementById('adminUsersMetric').textContent = Number(metrics.total_users || 0).toLocaleString('vi-VN');
       const vipPercent = metrics.total_users ? Math.round((metrics.vip_users / metrics.total_users) * 100) : 0;
       document.getElementById('adminVipPercent').textContent = `${vipPercent}%`;
       document.getElementById('adminStandardPercent').textContent = `${100 - vipPercent}%`;
       document.getElementById('adminUserDonut').style.background = `conic-gradient(#10b981 0 ${vipPercent}%, #94a3b8 ${vipPercent}% 100%)`;
+      const revenue = metrics.revenue_by_product || {};
+      const revenueBreakdown = document.getElementById('adminRevenueBreakdown');
+      if (revenueBreakdown) revenueBreakdown.innerHTML = [
+        ['Chatbox AI', revenue.chatbox_ai],
+        ['AI Review', revenue.magazine_ai_review],
+        ['Xuất Word/PDF', revenue.magazine_export],
+        ['Nạp ví', revenue.wallet_topup]
+      ].map(([label, value]) => `<div class="portal-card"><small>${label}</small><strong>${formatVnd(value || 0)}</strong></div>`).join('');
 
       const plan = (data.plans || []).find(item => item.id === 'chatbox_ai') || data.plans?.[0];
       if (plan) {
@@ -817,18 +884,150 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         document.getElementById('adminPlanName').textContent = `${plan.name} (${plan.active ? 'đang hoạt động' : 'đã tắt'})`;
         document.getElementById('adminLimitSummary').textContent = `${plan.ai_credit_amount || plan.daily_ai_limit || 30} lượt/gói · Số dư tự gia hạn khi đủ ${formatVnd(plan.price_vnd || 0)} · Trial ${plan.daily_ai_limit} lượt/ngày trong ${plan.trial_days || 30} ngày`;
       }
+      renderAdminServicePlans();
       renderPortalTables();
       renderPortalCharts();
     }
 
+    const adminPlanLabels = { chatbox_ai: 'Chatbox AI', magazine_export: 'Xuất Word/PDF', magazine_ai_review: 'AI Review' };
+
+    function ensureAdminPlanManager() {
+      const container = document.getElementById('adminServicePlans');
+      if (!container) return null;
+      if (!document.getElementById('adminPlanToolbar')) {
+        container.insertAdjacentHTML('beforebegin', `<div id="adminPlanToolbar" class="admin-plan-toolbar">
+          <input id="adminPlanSearch" type="search" placeholder="Tìm theo tên hoặc mã gói">
+          <select id="adminPlanProductFilter"><option value="all">Tất cả dịch vụ</option><option value="chatbox_ai">Chatbox AI</option><option value="magazine_export">Xuất Word/PDF</option><option value="magazine_ai_review">AI Review</option></select>
+          <select id="adminPlanStatusFilter"><option value="all">Tất cả trạng thái</option><option value="active">Đang bán</option><option value="inactive">Đã tắt</option></select>
+        </div>`);
+      }
+      if (!document.getElementById('adminPlanEditModal')) {
+        document.body.insertAdjacentHTML('beforeend', `<div id="adminPlanEditModal" class="admin-plan-edit-modal" aria-hidden="true">
+          <section class="admin-plan-edit-card" role="dialog" aria-modal="true" aria-labelledby="adminPlanEditTitle">
+            <div class="portal-panel-head"><div><h3 id="adminPlanEditTitle">Chỉnh sửa gói</h3><p id="adminPlanEditImmutable"></p></div><button type="button" class="portal-btn" data-close-admin-plan-edit><i class="fas fa-xmark"></i></button></div>
+            <form id="adminPlanEditForm" class="portal-form">
+              <input id="adminPlanEditId" type="hidden">
+              <div class="portal-field"><label>Tên gói</label><input id="adminPlanEditName" maxlength="120" required></div>
+              <div class="portal-field"><label>Giá (VND)</label><input id="adminPlanEditPrice" type="number" min="0" required></div>
+              <div class="portal-field"><label id="adminPlanEditCreditsLabel">Số lượt</label><input id="adminPlanEditCredits" type="number" min="1" required></div>
+              <div id="adminPlanEditDurationField" class="portal-field"><label>Thời hạn (ngày)</label><input id="adminPlanEditDuration" type="number" min="1"></div>
+              <p id="adminPlanEditMessage" class="vip-message"></p>
+              <button class="portal-btn primary" type="submit"><i class="fas fa-floppy-disk"></i> Lưu thay đổi</button>
+            </form>
+          </section>
+        </div>`);
+      }
+      if (!container.dataset.lazyBound) {
+        container.dataset.lazyBound = 'true';
+        container.addEventListener('scroll', () => {
+          if (container.scrollTop + container.clientHeight < container.scrollHeight - 100) return;
+          adminPlanVisible += 8;
+          renderAdminServicePlans();
+        });
+      }
+      return container;
+    }
+
+    function renderAdminServicePlans() {
+      const container = ensureAdminPlanManager();
+      if (!container) return;
+      const normalized = adminPlanSearch.trim().toLowerCase();
+      const plans = (adminDashboardData?.service_plans || []).filter(item => {
+        const matchesText = !normalized || `${item.id} ${item.name}`.toLowerCase().includes(normalized);
+        const matchesProduct = adminPlanProduct === 'all' || item.product_code === adminPlanProduct;
+        const matchesStatus = adminPlanStatus === 'all' || (adminPlanStatus === 'active' ? item.active : !item.active);
+        return matchesText && matchesProduct && matchesStatus;
+      });
+      container.innerHTML = plans.slice(0, adminPlanVisible).map(item => `<article class="admin-plan-card">
+        <div class="admin-plan-card-head"><span class="admin-plan-service">${escapeHTML(adminPlanLabels[item.product_code] || item.product_code)}</span><span class="portal-pill ${item.active ? 'green' : ''}">${item.active ? 'Đang bán' : 'Đã tắt'}</span></div>
+        <div class="admin-plan-title"><strong>${escapeHTML(item.name)}</strong><small>${escapeHTML(item.id)}</small></div>
+        <div class="admin-plan-facts"><span><i class="fas fa-bolt"></i> ${item.credits} ${item.billing_type === 'monthly' ? 'lượt/ngày' : 'lượt'}</span><span><i class="fas fa-clock"></i> ${item.billing_type === 'monthly' ? `${item.duration_days} ngày` : 'Không hết hạn'}</span></div>
+        <div class="admin-plan-card-footer"><strong>${formatVnd(item.price_vnd)}</strong><div class="admin-plan-actions"><button class="portal-btn" type="button" data-edit-service-plan="${escapeHTML(item.id)}"><i class="fas fa-pen"></i> Sửa</button><button class="portal-btn" type="button" data-toggle-service-plan="${escapeHTML(item.id)}">${item.active ? 'Ngừng bán' : 'Bật bán'}</button></div></div>
+      </article>`).join('') || '<p class="portal-panel-note">Không có gói phù hợp.</p>';
+    }
+
+    function openAdminPlanEditor(planId) {
+      const plan = (adminDashboardData?.service_plans || []).find(item => item.id === planId);
+      if (!plan) return;
+      document.getElementById('adminPlanEditId').value = plan.id;
+      document.getElementById('adminPlanEditName').value = plan.name;
+      document.getElementById('adminPlanEditPrice').value = plan.price_vnd;
+      document.getElementById('adminPlanEditCredits').value = plan.credits;
+      document.getElementById('adminPlanEditDuration').value = plan.duration_days || 30;
+      document.getElementById('adminPlanEditDurationField').hidden = plan.billing_type !== 'monthly';
+      document.getElementById('adminPlanEditCreditsLabel').textContent = plan.billing_type === 'monthly' ? 'Số lượt mỗi ngày' : 'Tổng số lượt';
+      document.getElementById('adminPlanEditImmutable').textContent = `${adminPlanLabels[plan.product_code]} · ${plan.billing_type === 'monthly' ? 'Gói tháng' : 'Gói lượt'} · Mã ${plan.id}`;
+      document.getElementById('adminPlanEditMessage').textContent = '';
+      const modal = document.getElementById('adminPlanEditModal');
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeAdminPlanEditor() {
+      const modal = document.getElementById('adminPlanEditModal');
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
+    }
+
+    async function saveAdminPlanEdit(event) {
+      event.preventDefault();
+      const id = document.getElementById('adminPlanEditId').value;
+      const original = (adminDashboardData?.service_plans || []).find(item => item.id === id);
+      if (!original) return;
+      const message = document.getElementById('adminPlanEditMessage');
+      try {
+        const result = await apiFetch('/api/admin/service-plans', { method: 'PATCH', body: JSON.stringify({
+          ...original,
+          name: document.getElementById('adminPlanEditName').value,
+          price_vnd: Number(document.getElementById('adminPlanEditPrice').value),
+          credits: Number(document.getElementById('adminPlanEditCredits').value),
+          duration_days: original.billing_type === 'monthly' ? Number(document.getElementById('adminPlanEditDuration').value) : null
+        }) });
+        const index = adminDashboardData.service_plans.findIndex(item => item.id === id);
+        if (index >= 0) adminDashboardData.service_plans[index] = result.plan;
+        closeAdminPlanEditor();
+        renderAdminServicePlans();
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = 'vip-message error';
+      }
+    }
+
     async function loadAdminDashboard() {
       if (!isAdminAccount()) return;
-      try {
-        adminDashboardData = await apiFetch('/api/admin/dashboard');
-        renderAdminDashboard(adminDashboardData);
-      } catch (error) {
-        console.error('Không thể tải dashboard admin:', error.message);
+      if (adminDashboardPromise) return adminDashboardPromise;
+      const status = document.getElementById('adminServicePlansStatus');
+      if (status) {
+        status.textContent = 'Đang tải dữ liệu...';
+        status.className = 'vip-message';
       }
+      adminDashboardPromise = (async () => {
+        let lastError;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            adminDashboardData = await apiFetch('/api/admin/dashboard');
+            renderAdminDashboard(adminDashboardData);
+            if (status) status.textContent = '';
+            return adminDashboardData;
+          } catch (error) {
+            lastError = error;
+            if (attempt === 0 && (!error.status || error.status >= 500)) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              continue;
+            }
+            break;
+          }
+        }
+        console.error('Không thể tải dashboard admin:', lastError?.message);
+        if (status) {
+          status.textContent = `Không thể tải dữ liệu: ${lastError?.message || 'Lỗi không xác định'}.`;
+          status.className = 'vip-message error';
+        }
+        return null;
+      })().finally(() => {
+        adminDashboardPromise = null;
+      });
+      return adminDashboardPromise;
     }
 
     function scheduleAccountRealtimeRefresh(delay = 300) {
@@ -896,18 +1095,9 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             }
             scheduleAccountRealtimeRefresh();
           })
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'subscriptions',
-            filter: `user_id=eq.${userId}`
-          }, () => scheduleAccountRealtimeRefresh())
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'ai_usage',
-            filter: `user_id=eq.${userId}`
-          }, () => scheduleAccountRealtimeRefresh(700))
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'user_entitlements', filter: `user_id=eq.${userId}` }, () => scheduleAccountRealtimeRefresh())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${userId}` }, () => scheduleAccountRealtimeRefresh())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'auto_renew_preferences', filter: `user_id=eq.${userId}` }, () => scheduleAccountRealtimeRefresh())
           .subscribe(status => {
             if (status === 'CHANNEL_ERROR') scheduleAccountRealtimeRefresh(1500);
           });
@@ -917,8 +1107,9 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         if (!adminRealtimeChannel) {
           adminRealtimeChannel = db.channel('admin-live-dashboard')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => scheduleAdminRealtimeRefresh())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => scheduleAdminRealtimeRefresh())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleAdminRealtimeRefresh())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'service_usage' }, () => scheduleAdminRealtimeRefresh())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'service_plans' }, () => scheduleAdminRealtimeRefresh())
             .subscribe(status => {
               if (status === 'CHANNEL_ERROR') scheduleAdminRealtimeRefresh(1500);
             });
@@ -1240,8 +1431,26 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
 
       accountRefreshPromise = (async () => {
         try {
-          currentAccount = await apiFetch('/api/account');
+          const [account, services] = await Promise.all([
+            apiFetch('/api/account'),
+            apiFetch('/api/services')
+          ]);
+          const chatService = services.products?.find(product => product.code === 'chatbox_ai');
+          const chatEntitlement = chatService?.entitlement || {};
+          const chatTrialActive = chatEntitlement.trial_ends_at && new Date(chatEntitlement.trial_ends_at) > new Date();
+          const chatMonthlyActive = chatEntitlement.monthly_ends_at && new Date(chatEntitlement.monthly_ends_at) > new Date()
+            && Number(chatEntitlement.daily_limit ?? chatEntitlement.monthly_balance ?? 0) > 0;
+          const chatHasCredits = Number(chatEntitlement.credit_balance || 0) > 0;
+          currentAccount = {
+            ...account,
+            services,
+            is_trial: Boolean(!services.is_admin && chatTrialActive),
+            is_vip: Boolean(services.is_admin || chatTrialActive || chatMonthlyActive || chatHasCredits),
+            remaining_credits: Number(chatEntitlement.daily_remaining || 0) + Number(chatEntitlement.credit_balance || 0),
+            wallet_balance_vnd: services.wallet_balance_vnd
+          };
           renderAccount(currentAccount);
+          maybeShowTrialWelcome(services);
           syncRealtimeSubscriptions(currentAccount);
           const portal = document.getElementById('accountPortal');
           if (portal?.classList.contains('open')) {
@@ -1282,6 +1491,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     async function initAuth() {
+      void loadPublicConfig();
       currentSession = await auth.getSession();
       updateAuthUi();
       passwordRecoveryRequested = passwordRecoveryRequested
@@ -1370,13 +1580,14 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       tick();
     }
 
-    async function createPaymentOrder(orderType = 'vip_credits', amountVnd = 0) {
+    async function createPaymentOrder(orderType = 'plan_purchase', amountVnd = 0, planId = '') {
       setUserMessage(orderType === 'wallet_topup' ? 'Đang tạo mã nạp số dư...' : 'Đang tạo mã thanh toán...');
       try {
         const order = await apiFetch('/api/orders', {
           method: 'POST',
           body: JSON.stringify({
             order_type: orderType,
+            ...(orderType === 'plan_purchase' ? { plan_id: planId } : {}),
             ...(orderType === 'wallet_topup' ? { amount_vnd: amountVnd } : {})
           })
         });
@@ -1390,6 +1601,9 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             amount_vnd: order.amount,
             status: order.status || 'pending',
             order_type: order.order_type || orderType,
+            product_code: order.product_code || null,
+            service_plan_id: order.plan_id || null,
+            plan_id: order.plan_id || null,
             created_at: new Date().toISOString(),
             expires_at: order.expires_at
           });
@@ -1409,7 +1623,70 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     async function createVipOrder() {
-      await createPaymentOrder('vip_credits');
+      const plan = currentAccount?.services?.plans?.find(item => item.product_code === 'chatbox_ai' && item.active !== false);
+      if (!plan) {
+        setUserMessage('Hiện chưa có gói Chatbox AI đang bán.', 'error');
+        return;
+      }
+      await createPaymentOrder('plan_purchase', 0, plan.id);
+    }
+
+    function syncServicePlanDurationField() {
+      const billingType = document.getElementById('servicePlanBilling')?.value;
+      const field = document.getElementById('servicePlanDurationField');
+      const input = document.getElementById('servicePlanDuration');
+      const creditsLabel = document.getElementById('servicePlanCreditsLabel');
+      const monthly = billingType === 'monthly';
+      if (field) field.hidden = !monthly;
+      if (input) input.required = monthly;
+      if (creditsLabel) creditsLabel.textContent = monthly ? 'Số lượt mỗi ngày' : 'Tổng số lượt';
+    }
+
+    async function createAdminServicePlan(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const message = document.getElementById('servicePlanMessage');
+      try {
+        const billingType = document.getElementById('servicePlanBilling').value;
+        const result = await apiFetch('/api/admin/service-plans', {
+          method: 'POST',
+          body: JSON.stringify({
+            id: document.getElementById('servicePlanId').value,
+            name: document.getElementById('servicePlanName').value,
+            product_code: document.getElementById('servicePlanProduct').value,
+            billing_type: billingType,
+            price_vnd: Number(document.getElementById('servicePlanPrice').value),
+            credits: Number(document.getElementById('servicePlanCredits').value),
+            duration_days: billingType === 'monthly' ? Number(document.getElementById('servicePlanDuration').value || 30) : null,
+            active: true
+          })
+        });
+        message.textContent = `Đã tạo gói ${result.plan.name}.`;
+        message.className = 'vip-message success';
+        form.reset();
+        document.getElementById('servicePlanDuration').value = 30;
+        syncServicePlanDurationField();
+        await loadAdminDashboard();
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = 'vip-message error';
+      }
+    }
+
+    async function toggleAdminServicePlan(button) {
+      const plan = (adminDashboardData?.service_plans || []).find(item => item.id === button.dataset.toggleServicePlan);
+      if (!plan) return;
+      await apiFetch('/api/admin/service-plans', {
+        method: 'PATCH',
+        body: JSON.stringify({ ...plan, active: !plan.active })
+      });
+      await loadAdminDashboard();
+    }
+
+    async function createServicePlanOrder(planId) {
+      if (!planId) return;
+      await createPaymentOrder('plan_purchase', 0, planId);
+      openUserModal(true);
     }
 
     function createWalletTopupOrder() {
@@ -1528,6 +1805,35 @@ export function initAccountEvents() {
   document.querySelectorAll('[data-action="create-wallet-topup-order"]').forEach(button => button.addEventListener('click', createWalletTopupOrder))
   document.querySelectorAll('[data-action="create-wallet-topup-order-and-open"]').forEach(button => button.addEventListener('click', () => { createWalletTopupOrder(); openUserModal(true) }))
   document.querySelectorAll('[data-action="sign-out"]').forEach(button => button.addEventListener('click', signOutUser))
+  document.addEventListener('click', event => {
+    const buyButton = event.target.closest('[data-buy-service]')
+    if (buyButton) {
+      const productCode = buyButton.dataset.buyService
+      const planId = document.querySelector(`[data-service-plan-select="${productCode}"]`)?.value
+      void createServicePlanOrder(planId)
+      return
+    }
+    if (event.target.closest('[data-action="close-trial-welcome"]')) {
+      document.getElementById('trialWelcomeModal')?.classList.remove('open')
+    }
+  })
+  document.addEventListener('change', event => {
+    const toggle = event.target.closest('[data-auto-renew]')
+    if (!toggle) return
+    const productCode = toggle.dataset.autoRenew
+    const planId = document.querySelector(`[data-service-plan-select="${productCode}"]`)?.value
+    if (!planId) {
+      toggle.checked = false
+      return
+    }
+    void apiFetch('/api/renewals', {
+      method: 'PATCH',
+      body: JSON.stringify({ product_code: productCode, plan_id: planId, enabled: toggle.checked })
+    }).then(refreshAccount).catch(error => {
+      toggle.checked = !toggle.checked
+      setUserMessage(error.message, 'error')
+    })
+  })
 
   on('#walletTopupModal', 'click', event => { if (event.target === event.currentTarget) closeWalletTopupModal() })
   document.querySelectorAll('[data-action="close-wallet-topup-modal"]').forEach(button => button.addEventListener('click', closeWalletTopupModal))
@@ -1553,4 +1859,36 @@ export function initAccountEvents() {
   on('[data-action="export-admin-invoices"]', 'click', exportAdminInvoices)
   on('[data-action="export-admin-invoices-pdf"]', 'click', exportAdminInvoicesPDF)
   on('[data-action="save-admin-settings"]', 'click', saveAdminSettings)
+  on('#adminServicePlanForm', 'submit', createAdminServicePlan)
+  on('#servicePlanBilling', 'change', syncServicePlanDurationField)
+  syncServicePlanDurationField()
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-toggle-service-plan]')
+    if (button) {
+      void toggleAdminServicePlan(button)
+      return
+    }
+    const editButton = event.target.closest('[data-edit-service-plan]')
+    if (editButton) {
+      openAdminPlanEditor(editButton.dataset.editServicePlan)
+      return
+    }
+    if (event.target.closest('[data-close-admin-plan-edit]') || event.target.id === 'adminPlanEditModal') closeAdminPlanEditor()
+  })
+  document.addEventListener('input', event => {
+    if (event.target.id !== 'adminPlanSearch') return
+    adminPlanSearch = event.target.value
+    adminPlanVisible = 8
+    renderAdminServicePlans()
+  })
+  document.addEventListener('change', event => {
+    if (event.target.id === 'adminPlanProductFilter') adminPlanProduct = event.target.value
+    else if (event.target.id === 'adminPlanStatusFilter') adminPlanStatus = event.target.value
+    else return
+    adminPlanVisible = 8
+    renderAdminServicePlans()
+  })
+  document.addEventListener('submit', event => {
+    if (event.target.id === 'adminPlanEditForm') void saveAdminPlanEdit(event)
+  })
 }

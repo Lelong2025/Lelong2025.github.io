@@ -3,12 +3,15 @@ import { auth } from './utils/auth.js'
 import { supabase } from './utils/supabase.js'
 import { apiFetch } from './utils/api.js'
 import { hideSharedPageLoader, showSharedPageLoader } from './loader.js'
+import { FEATURES } from './features.js'
 
 const ADMIN_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', href: '/portal/?page=dashboard' },
   { id: 'tapchi', label: 'Tra cứu tạp chí', href: '/tapchi/' },
   { id: 'editor', label: 'Hệ thống soạn báo', href: '/magazine/editor.html' },
-  { id: 'publishing', label: 'Quản lý xuất bản', href: '/magazine/publishing.html' },
+  ...(FEATURES.EDITORIAL_PUBLISHING
+    ? [{ id: 'publishing', label: 'Quản lý xuất bản', href: '/magazine/publishing.html' }]
+    : []),
   { id: 'invoices', label: 'Quản lý hóa đơn', href: '/portal/?page=invoices' },
   { id: 'users', label: 'Người dùng', href: '/portal/?page=users' },
   { id: 'settings', label: 'Cài đặt', href: '/portal/?page=settings' },
@@ -25,6 +28,8 @@ const GUEST_NAV_ITEMS = [
   { id: 'tapchi', label: 'Tra cứu', href: '/tapchi/' },
   { id: 'editor', label: 'Soạn báo', href: '/magazine/editor.html' },
 ]
+
+let sharedPurchasePollTimer = null
 
 const INITIAL_NAV_ITEMS = CLIENT_NAV_ITEMS.filter(item => ['dashboard', 'tapchi', 'editor'].includes(item.id))
 
@@ -56,11 +61,11 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
         aria-label="Mở menu" title="Mở menu">
         <i class="fa-solid fa-bars"></i>
       </button>
-      <a class="mixing-shell__brand" href="/" aria-label="Editorial Portal">
-        <span class="mixing-shell__logo"><i class="fa-solid fa-flask"></i></span>
+      <a class="mixing-shell__brand" href="/" aria-label="LHU Journal Hub">
+        <span class="mixing-shell__logo"><img src="/LogoLHU_Eng.png" alt="Lac Hong University"></span>
         <span class="mixing-shell__brand-copy">
-          <strong>Editorial Portal</strong>
-          <small>Journal of Science LHU</small>
+          <strong>LHU Journal Hub</strong>
+          <small>Tra cứu &amp; Soạn thảo khoa học</small>
         </span>
       </a>
 
@@ -100,6 +105,7 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
   document.body.prepend(header)
   document.body.prepend(sidebar)
   document.body.prepend(backdrop)
+  ensureSharedPurchaseModal()
   syncThemeIcon()
   renderShellNav(document.getElementById('mixing-shell-nav'), INITIAL_NAV_ITEMS, { active, showEditor })
   showInitialLoaderIfNeeded({ deferHide: deferInitialLoaderHide })
@@ -110,6 +116,10 @@ export async function initMixingShell({ active = inferActiveRoute(), showEditor 
   backdrop.addEventListener('click', handleShellClick)
   document.addEventListener('click', event => {
     if (!header.contains(event.target)) closeAccountMenu(header)
+    if (event.target.closest('[data-open-shared-purchase], [data-action="open-shared-purchase"]')) {
+      event.preventDefault()
+      void openCreditsPurchase()
+    }
   })
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeSidebarDrawer()
@@ -238,19 +248,199 @@ async function handleShellClick(event) {
   if (action === 'logout') {
     await auth.signOut()
     closeAccountMenu(header)
-    await updateShellUser(header)
+    window.location.replace('/')
   }
 }
 
 async function openCreditsPurchase() {
-  if (typeof window.__MIXING_BUY_CREDITS__ === 'function') {
-    await window.__MIXING_BUY_CREDITS__()
-    return
+  const modal = ensureSharedPurchaseModal()
+  modal.classList.add('open')
+  modal.setAttribute('aria-hidden', 'false')
+  document.body.classList.add('mixing-purchase-open')
+  await renderSharedPurchasePlans(modal)
+}
+
+function ensureSharedPurchaseModal() {
+  let modal = document.getElementById('mixing-shared-purchase')
+  if (modal) return modal
+  modal = document.createElement('div')
+  modal.id = 'mixing-shared-purchase'
+  modal.className = 'mixing-purchase-modal'
+  modal.setAttribute('aria-hidden', 'true')
+  modal.innerHTML = `
+    <section class="mixing-purchase-dialog" role="dialog" aria-modal="true" aria-labelledby="mixing-purchase-title">
+      <div class="mixing-purchase-head">
+        <div><strong id="mixing-purchase-title">Mua gói dịch vụ</strong><span>Chọn gói phù hợp cho từng tính năng.</span></div>
+        <button type="button" data-purchase-close aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="mixing-purchase-message" class="mixing-purchase-message">Đang tải các gói...</div>
+      <div class="mixing-purchase-filters">
+        <button type="button" class="active" data-purchase-filter="all">Tất cả</button>
+        <button type="button" data-purchase-filter="chatbox_ai">Chatbox AI</button>
+        <button type="button" data-purchase-filter="magazine_export">Xuất báo</button>
+        <button type="button" data-purchase-filter="magazine_ai_review">AI Review</button>
+      </div>
+      <div id="mixing-purchase-plans" class="mixing-purchase-plans"></div>
+    </section>
+    <section id="mixing-purchase-payment-dialog" class="mixing-purchase-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="mixing-payment-title" hidden>
+      <div class="mixing-purchase-head">
+        <div><strong id="mixing-payment-title">Quét QR để thanh toán</strong><span>Giữ nguyên số tiền và nội dung chuyển khoản.</span></div>
+        <button type="button" data-payment-back aria-label="Đóng mã QR"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="mixing-purchase-payment" class="mixing-purchase-payment">
+        <img id="mixing-purchase-qr" alt="Mã QR thanh toán">
+        <small>Số tiền</small><strong id="mixing-purchase-amount"></strong>
+        <small>Nội dung chuyển khoản</small><strong id="mixing-purchase-code"></strong>
+        <p id="mixing-purchase-countdown"></p>
+        <p id="mixing-payment-message" class="mixing-purchase-message"></p>
+      </div>
+    </section>`
+  modal.addEventListener('click', event => {
+    if (event.target.closest('[data-payment-back]')) {
+      showSharedPurchaseChooser(modal)
+      return
+    }
+    if (event.target === modal) {
+      const paymentDialog = modal.querySelector('#mixing-purchase-payment-dialog')
+      if (paymentDialog && !paymentDialog.hidden) showSharedPurchaseChooser(modal)
+      else closeSharedPurchaseModal()
+      return
+    }
+    if (event.target.closest('[data-purchase-close]')) {
+      closeSharedPurchaseModal()
+      return
+    }
+    const filter = event.target.closest('[data-purchase-filter]')
+    if (filter) {
+      modal._purchaseFilter = filter.dataset.purchaseFilter
+      modal._purchaseVisible = 6
+      modal.querySelectorAll('[data-purchase-filter]').forEach(button => button.classList.toggle('active', button === filter))
+      renderSharedPurchasePlanBatch(modal)
+      return
+    }
+    const button = event.target.closest('[data-shared-buy-plan]')
+    if (button) void createSharedPurchaseOrder(button.dataset.sharedBuyPlan, modal)
+  })
+  modal.querySelector('.mixing-purchase-dialog').addEventListener('scroll', event => {
+    const dialog = event.currentTarget
+    if (dialog.scrollTop + dialog.clientHeight < dialog.scrollHeight - 120) return
+    const previous = modal._purchaseVisible || 6
+    modal._purchaseVisible = previous + 6
+    renderSharedPurchasePlanBatch(modal)
+  })
+  document.body.append(modal)
+  return modal
+}
+
+function closeSharedPurchaseModal() {
+  const modal = document.getElementById('mixing-shared-purchase')
+  modal?.classList.remove('open')
+  modal?.setAttribute('aria-hidden', 'true')
+  document.body.classList.remove('mixing-purchase-open')
+  const chooser = modal?.querySelector('.mixing-purchase-dialog')
+  const paymentDialog = modal?.querySelector('#mixing-purchase-payment-dialog')
+  if (chooser) chooser.hidden = false
+  if (paymentDialog) paymentDialog.hidden = true
+  if (sharedPurchasePollTimer) window.clearTimeout(sharedPurchasePollTimer)
+  sharedPurchasePollTimer = null
+}
+
+function showSharedPurchaseChooser(modal) {
+  if (sharedPurchasePollTimer) window.clearTimeout(sharedPurchasePollTimer)
+  sharedPurchasePollTimer = null
+  const chooser = modal.querySelector('.mixing-purchase-dialog')
+  const paymentDialog = modal.querySelector('#mixing-purchase-payment-dialog')
+  if (chooser) chooser.hidden = false
+  if (paymentDialog) paymentDialog.hidden = true
+}
+
+async function renderSharedPurchasePlans(modal) {
+  const message = modal.querySelector('#mixing-purchase-message')
+  const container = modal.querySelector('#mixing-purchase-plans')
+  const chooser = modal.querySelector('.mixing-purchase-dialog')
+  const paymentDialog = modal.querySelector('#mixing-purchase-payment-dialog')
+  chooser.hidden = false
+  paymentDialog.hidden = true
+  message.textContent = 'Đang tải các gói...'
+  container.innerHTML = ''
+  try {
+    const services = await apiFetch('/api/services')
+    if (services.is_admin) {
+      message.textContent = 'Tài khoản admin được sử dụng không giới hạn.'
+      return
+    }
+    const plans = services.plans || []
+    message.textContent = plans.length ? '' : 'Hiện chưa có gói dịch vụ đang bán.'
+    modal._purchasePlans = plans
+    modal._purchaseFilter = 'all'
+    modal._purchaseVisible = 6
+    modal.querySelectorAll('[data-purchase-filter]').forEach(button => button.classList.toggle('active', button.dataset.purchaseFilter === 'all'))
+    renderSharedPurchasePlanBatch(modal)
+  } catch (error) {
+    message.textContent = error.status === 401 ? 'Vui lòng đăng nhập để mua gói.' : `Không thể tải gói: ${error.message}`
   }
-  window.dispatchEvent(new CustomEvent('mixing:buy-credits'))
-  if (typeof window.__MIXING_BUY_CREDITS__ !== 'function') {
-    window.location.href = '/portal/?page=dashboard'
+}
+
+function renderSharedPurchasePlanBatch(modal) {
+  const labels = { chatbox_ai: 'Chatbox AI', magazine_export: 'Xuất Word/PDF', magazine_ai_review: 'AI Review' }
+  const filter = modal._purchaseFilter || 'all'
+  const plans = (modal._purchasePlans || []).filter(plan => filter === 'all' || plan.product_code === filter)
+  const visible = plans.slice(0, modal._purchaseVisible || 6)
+  const container = modal.querySelector('#mixing-purchase-plans')
+  container.innerHTML = visible.map(plan => `
+      <article class="mixing-purchase-plan">
+        <span>${escapeHTML(labels[plan.product_code] || plan.product_code)}</span>
+        <strong>${escapeHTML(plan.name)}</strong>
+        <p>${Number(plan.credits).toLocaleString('vi-VN')} ${plan.billing_type === 'monthly' ? `lượt/ngày trong ${Number(plan.duration_days)} ngày` : 'lượt, không hết hạn'}</p>
+        <b>${Number(plan.price_vnd).toLocaleString('vi-VN')} đ</b>
+        <button type="button" data-shared-buy-plan="${escapeHTML(plan.id)}">Chọn gói</button>
+      </article>`).join('')
+  if (!visible.length && plans.length === 0) container.innerHTML = '<p class="mixing-purchase-empty">Không có gói phù hợp.</p>'
+}
+
+async function createSharedPurchaseOrder(planId, modal) {
+  const message = modal.querySelector('#mixing-purchase-message')
+  message.textContent = 'Đang tạo mã thanh toán...'
+  try {
+    const order = await apiFetch('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify({ order_type: 'plan_purchase', plan_id: planId })
+    })
+    modal.querySelector('#mixing-purchase-qr').src = order.qr_url
+    modal.querySelector('#mixing-purchase-code').textContent = order.code
+    modal.querySelector('#mixing-purchase-amount').textContent = `${Number(order.amount).toLocaleString('vi-VN')} đ`
+    modal.querySelector('.mixing-purchase-dialog').hidden = true
+    modal.querySelector('#mixing-purchase-payment-dialog').hidden = false
+    modal.querySelector('#mixing-payment-message').textContent = 'Mở ứng dụng ngân hàng và quét mã phía trên.'
+    pollSharedPurchase(order.code, order.expires_at, modal)
+  } catch (error) {
+    message.textContent = `Không thể tạo đơn: ${error.message}`
   }
+}
+
+function pollSharedPurchase(code, expiresAt, modal) {
+  if (sharedPurchasePollTimer) window.clearTimeout(sharedPurchasePollTimer)
+  const tick = async () => {
+    if (!modal.classList.contains('open')) return
+    const remaining = new Date(expiresAt).getTime() - Date.now()
+    const countdown = modal.querySelector('#mixing-purchase-countdown')
+    if (remaining <= 0) {
+      countdown.textContent = 'Đơn thanh toán đã hết hạn.'
+      return
+    }
+    const minutes = String(Math.floor(remaining / 60000)).padStart(2, '0')
+    const seconds = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
+    countdown.textContent = `Đang chờ thanh toán · ${minutes}:${seconds}`
+    try {
+      const order = await apiFetch(`/api/orders/${encodeURIComponent(code)}/status`)
+      if (order.status === 'paid') {
+        closeSharedPurchaseModal()
+        return
+      }
+    } catch (_) { }
+    sharedPurchasePollTimer = window.setTimeout(tick, 4000)
+  }
+  void tick()
 }
 
 function showInitialLoaderIfNeeded({ deferHide = false } = {}) {

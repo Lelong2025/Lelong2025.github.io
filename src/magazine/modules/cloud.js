@@ -1,5 +1,6 @@
 import { state, saveToLocalStorage } from './state.js';
 import { showToast } from './utils.js';
+import { FEATURES } from '../../shared/features.js';
 
 export const ROLE_ADMIN = 'admin';
 export const ROLE_CLIENT = 'client';
@@ -88,6 +89,10 @@ export function applyRoleUi() {
     document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !admin));
     document.querySelectorAll('[data-client-hidden]').forEach(el => el.classList.toggle('hidden', !admin));
     document.querySelectorAll('[data-client-only]').forEach(el => el.classList.toggle('hidden', admin));
+    if (!FEATURES.EDITORIAL_PUBLISHING) {
+        document.getElementById('client-submission-card')?.classList.add('hidden');
+        document.getElementById('client-submissions-section')?.classList.add('hidden');
+    }
 
     const workspaceHeading = document.getElementById('sidebar-workspace-heading');
     if (workspaceHeading) workspaceHeading.textContent = admin ? 'Số báo hiện hành' : 'Bài báo của tôi';
@@ -149,6 +154,7 @@ export function snapshotArticle(art) {
 }
 
 export async function uploadExportBlob(blob, extension, submissionId) {
+    if (!FEATURES.EDITORIAL_PUBLISHING) return null;
     if (!blob || !state.cloudUser || !window.lhuSupabase) return null;
     const safeExt = extension === 'pdf' ? 'pdf' : 'docx';
     const path = `${state.cloudUser.id}/${submissionId}.${safeExt}`;
@@ -184,6 +190,11 @@ export function renderSubmissionCard(art = activeArticleForSubmission()) {
     const status = document.getElementById('client-submission-status');
     const button = document.getElementById('client-submit-editorial-btn');
     if (!card || !status || !button) return;
+    if (!FEATURES.EDITORIAL_PUBLISHING) {
+        card.classList.add('hidden');
+        button.disabled = true;
+        return;
+    }
     card.classList.toggle('hidden', !isClient());
     if (!isClient()) return;
 
@@ -209,6 +220,7 @@ export function renderSubmissionCard(art = activeArticleForSubmission()) {
 }
 
 export async function submitCurrentArticle() {
+    if (!FEATURES.EDITORIAL_PUBLISHING) return;
     const art = activeArticleForSubmission();
     if (!isClient() || !art || !state.cloudUser || !window.lhuSupabase) return;
     const updating = Boolean(art.lastSubmittedAt);
@@ -244,6 +256,11 @@ export async function submitCurrentArticle() {
 }
 
 export async function loadSubmissions() {
+    if (!FEATURES.EDITORIAL_PUBLISHING) {
+        state.clientSubmissions = [];
+        renderSubmissionsList();
+        return [];
+    }
     if (!window.lhuSupabase || !state.cloudUser) return [];
     let query = window.lhuSupabase
         .from('article_submissions')
@@ -277,6 +294,11 @@ export function renderSubmissionsList() {
     const container = document.getElementById('client-submissions-list');
     const section = document.getElementById('client-submissions-section');
     if (!container || !section) return;
+    if (!FEATURES.EDITORIAL_PUBLISHING) {
+        section.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
     section.classList.toggle('hidden', !isAdmin());
     container.innerHTML = '';
     const rows = state.clientSubmissions || [];

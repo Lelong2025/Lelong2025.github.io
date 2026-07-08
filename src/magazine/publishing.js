@@ -2,14 +2,21 @@ import './publishing.css'
 import { initMixingShell } from '../shared/shell.js'
 import { auth } from '../shared/utils/auth.js'
 import { supabase } from '../shared/utils/supabase.js'
+import { FEATURES } from '../shared/features.js'
+
+if (!FEATURES.EDITORIAL_PUBLISHING) {
+  window.location.replace('/magazine/editor.html')
+}
 
 const WORKSPACE_ID = 'default'
 const LOCAL_STATE_KEY = 'lhu_journal_manager_state_v4'
 const UNASSIGNED_ID = '__editorial_unassigned__'
 const state = { user: null, profile: null, workspace: null, submissions: [], activeTab: 'issues', filter: 'all' }
 
-initMixingShell({ active: 'publishing' })
-boot()
+if (FEATURES.EDITORIAL_PUBLISHING) {
+  initMixingShell({ active: 'publishing' })
+  boot()
+}
 
 async function boot() {
   state.user = await auth.getUser()

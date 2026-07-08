@@ -2537,6 +2537,10 @@ body.portal-open .lightbulb-container {
     grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr);
 }
 
+.portal-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .portal-grid.cards {
     grid-template-columns: repeat(4, minmax(190px, 1fr));
 }
@@ -2931,13 +2935,18 @@ body.portal-open .lightbulb-container {
     gap: 8px;
 }
 
+.portal-field[hidden] {
+    display: none !important;
+}
+
 .portal-field label {
     color: #64748b;
     font-size: 13px;
     font-weight: 850;
 }
 
-.portal-field input {
+.portal-field input,
+.portal-field select {
     width: 100%;
     min-height: 50px;
     border: 1px solid rgba(59, 130, 246, 0.15);
@@ -2949,16 +2958,37 @@ body.portal-open .lightbulb-container {
     outline: none;
 }
 
-[data-theme="dark"] .portal-field input {
+[data-theme="dark"] .portal-field input,
+[data-theme="dark"] .portal-field select {
     background: #111827;
     border-color: rgba(59, 130, 246, 0.2);
     color: #e2e8f0;
 }
 
+.portal-field select {
+    cursor: pointer;
+}
+
+.portal-field select:focus,
+.portal-field input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+[data-theme="dark"] .portal-field select option {
+    background: #0e1726;
+    color: #e2e8f0;
+}
+
 .portal-settings {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(310px, .5fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(410px, .85fr);
+    align-items: start;
     gap: 24px;
+}
+
+.portal-settings > .portal-grid {
+    align-content: start;
 }
 
 .portal-settings-row {
@@ -2966,6 +2996,189 @@ body.portal-open .lightbulb-container {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
     padding: 8px 24px 24px;
+}
+
+.portal-panel-note {
+    margin: 0;
+    padding: 8px 24px 24px;
+    color: #64748b;
+    line-height: 1.55;
+}
+
+.portal-panel-note:empty {
+    display: none;
+}
+
+[data-theme="dark"] .portal-panel-note {
+    color: #94a3b8;
+}
+
+#adminServicePlans {
+    padding: 0 24px 24px;
+    max-height: 560px;
+    overflow-y: auto;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, .5) transparent;
+}
+
+.admin-plan-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 6px 24px 16px;
+}
+
+#adminPlanSearch {
+    grid-column: 1 / -1;
+}
+
+.admin-plan-toolbar input,
+.admin-plan-toolbar select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid rgba(59, 130, 246, .16);
+    border-radius: 10px;
+    padding: 0 12px;
+    background: #fafbfc;
+    color: #172033;
+    font: inherit;
+}
+
+[data-theme="dark"] .admin-plan-toolbar input,
+[data-theme="dark"] .admin-plan-toolbar select {
+    background: #0e1726;
+    border-color: rgba(59, 130, 246, .22);
+    color: #e2e8f0;
+}
+
+.admin-plan-card {
+    display: grid;
+    align-content: start;
+    gap: 11px;
+    padding: 15px 16px;
+    border: 1px solid rgba(59, 130, 246, .14);
+    border-radius: 13px;
+    background: #f8fafc;
+}
+
+[data-theme="dark"] .admin-plan-card {
+    background: #111a29;
+}
+
+.admin-plan-card-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.admin-plan-service {
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-plan-title strong,
+.admin-plan-title small {
+    display: block;
+}
+
+.admin-plan-title strong {
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-plan-title small {
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 11px;
+}
+
+.admin-plan-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.admin-plan-facts span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, .08);
+    color: #52627a;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .admin-plan-facts span {
+    color: #aebbd0;
+}
+
+.admin-plan-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(59, 130, 246, .1);
+}
+
+.admin-plan-card-footer > strong {
+    flex: 0 0 auto;
+    color: #1d4ed8;
+    font-size: 17px;
+}
+
+.admin-plan-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.admin-plan-actions .portal-btn {
+    min-height: 36px;
+    padding: 0 11px;
+    white-space: nowrap;
+}
+
+.admin-plan-edit-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483500;
+    display: none;
+    place-items: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, .7);
+    backdrop-filter: blur(7px);
+}
+
+.admin-plan-edit-modal.open {
+    display: grid;
+}
+
+.admin-plan-edit-card {
+    width: min(520px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    border: 1px solid rgba(59, 130, 246, .2);
+    border-radius: 18px;
+    background: #fff;
+    color: #172033;
+    box-shadow: 0 24px 70px rgba(2, 6, 23, .38);
+}
+
+[data-theme="dark"] .admin-plan-edit-card {
+    background: #151f31;
+    color: #e7ebf2;
 }
 
 .portal-limit-box {
@@ -3135,13 +3348,15 @@ body.portal-open .lightbulb-container {
     border-top-color: rgba(59, 130, 246, 0.12);
 }
 
-.portal-field input {
+.portal-field input,
+.portal-field select {
     border-radius: 10px;
     background: #fafbfc;
     border-color: rgba(59, 130, 246, 0.15);
 }
 
-[data-theme="dark"] .portal-field input {
+[data-theme="dark"] .portal-field input,
+[data-theme="dark"] .portal-field select {
     background: #0e1726;
     border-color: rgba(59, 130, 246, 0.2);
 }
@@ -3416,6 +3631,7 @@ body.portal-open .lightbulb-container {
     }
 
     .portal-grid.two,
+    .portal-grid.three,
     .portal-settings {
         grid-template-columns: 1fr;
     }
@@ -3586,6 +3802,7 @@ body.portal-open .lightbulb-container {
     }
 
     .portal-grid.cards,
+    .portal-grid.three,
     .portal-settings-row {
         grid-template-columns: 1fr;
     }
@@ -3836,6 +4053,11 @@ body.portal-open .lightbulb-container {
 .iframe-btn.wos-btn { background: linear-gradient(135deg, #0891b2, #0369a1); }
 
 @media (max-width: 768px) {
+    .admin-plan-toolbar,
+    #adminServicePlans {
+        grid-template-columns: 1fr;
+    }
+
     .iframe-modal-content {
         width: 95%;
         height: 90%;

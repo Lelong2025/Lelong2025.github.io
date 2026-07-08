@@ -50,7 +50,9 @@ export async function toggleChat() {
       const account = accountState.currentAccount || await refreshAccount();
       if (!account?.is_vip) {
         openUserModal(true);
-        setUserMessage('Tài khoản chưa có VIP hoặc đã hết lượt. Bạn có thể thanh toán 25.000đ để mua thêm lượt AI.');
+        const price = Number(account.services?.plans?.find(plan => plan.product_code === 'chatbox_ai')?.price_vnd || 0);
+        const priceText = price > 0 ? ` với giá ${new Intl.NumberFormat('vi-VN').format(price)}đ` : '';
+        setUserMessage(`Tài khoản chưa có VIP hoặc đã hết lượt. Bạn có thể mua thêm lượt AI${priceText}.`);
         return;
       }
       isChatOpen = true;
@@ -236,7 +238,8 @@ export async function sendChatMessage() {
             accountState.currentAccount.subscription.wallet_balance_vnd = data.usage.wallet_balance_vnd;
           }
           if (typeof data.usage.remaining_credits !== 'undefined' || typeof data.usage.wallet_balance_vnd !== 'undefined') {
-            const renewPrice = Number(data.usage.wallet_renew_price_vnd || accountState.currentAccount.subscription?.vip_plans?.price_vnd || 0);
+            const renewPrice = Number(data.usage.wallet_renew_price_vnd
+              || accountState.currentAccount.services?.plans?.find(plan => plan.product_code === 'chatbox_ai')?.price_vnd || 0);
             accountState.currentAccount.is_vip = isAdminAccount() || accountState.currentAccount.is_trial
               || Number(accountState.currentAccount.remaining_credits || 0) > 0
               || Number(accountState.currentAccount.wallet_balance_vnd || 0) >= renewPrice;

@@ -23,10 +23,13 @@ import {
     updateCurrentArticlePages
 } from './modules/editor.js';
 import {
-    exportCurrentArticleWord, exportIssueWord, exportVectorPdf, exportIssue,
+    exportCurrentArticleWord as exportCurrentArticleWordRaw,
+    exportIssueWord as exportIssueWordRaw,
+    exportVectorPdf as exportVectorPdfRaw, exportIssue,
     closeExportModal, exportJSON
 } from './modules/export.js';
-import { runAiReview, applySelectedSuggestions } from './modules/ai.js';
+import { runAiReview as runAiReviewRaw, applySelectedSuggestions } from './modules/ai.js';
+import { SERVICE_CODES, withServiceUsage } from '../shared/service-access.js';
 import {
     loadProfile, ensureClientWorkspace, applyRoleUi, loadSubmissions, renderSubmissionsList,
     openLhjLogin, openMediaLibrary, closeMediaLibrary, handleMediaUpload,
@@ -39,6 +42,41 @@ Object.defineProperty(window, 'appState', {
     get() { return state.appState; },
     set(val) { state.appState = val; }
 });
+
+const denyService = message => {
+    showToast(message);
+    if (window.confirm(`${message}\n\nMở trang tài khoản để xem và mua gói?`)) {
+        window.location.href = '/portal/?page=dashboard';
+    }
+};
+
+const exportCurrentArticleWord = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'article_word',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, exportCurrentArticleWordRaw);
+
+const exportVectorPdf = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'article_pdf',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, exportVectorPdfRaw);
+
+const exportIssueWord = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'issue_word',
+    metadata: { issue_id: state.appState.currentIssueId },
+    onDenied: denyService
+}, exportIssueWordRaw);
+
+const runAiReview = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_AI_REVIEW,
+    action: 'full_review',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, runAiReviewRaw);
 
 // Expose functions to global window scope for inline HTML event handlers
 Object.assign(window, {

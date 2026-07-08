@@ -126,7 +126,7 @@
           <div class="vip-detail-row"><span>Số dư</span><strong id="vipWalletBalance">0 đ</strong></div>
         </div>
         <div class="vip-actions">
-          <button class="vip-primary" type="button" data-action="create-vip-order"><i class="fas fa-crown"></i>&nbsp;
+          <button class="vip-primary" type="button" data-action="open-shared-purchase"><i class="fas fa-crown"></i>&nbsp;
             Mua thêm lượt · 25.000đ</button>
           <button class="vip-secondary" type="button" data-action="create-wallet-topup-order"><i
               class="fas fa-wallet"></i>&nbsp; Nạp số dư</button>
@@ -241,7 +241,7 @@
             <div class="portal-vip-meta">
               <div><small>Ngày kích hoạt</small><strong id="portalVipStart">Chưa kích hoạt</strong></div>
               <div><small>Lượt còn lại</small><strong id="portalVipEnd">0 lượt</strong></div>
-              <button type="button" class="portal-btn" data-action="create-vip-order-and-open">Mua thêm
+              <button type="button" class="portal-btn" data-action="open-shared-purchase">Mua thêm
                 ngay</button>
             </div>
           </div>
@@ -251,7 +251,7 @@
               <p id="portalWalletNote">Dùng để tự gia hạn gói VIP khi hết lượt.</p>
             </div>
             <button type="button" class="portal-btn" style="width:100%;"
-              data-action="create-vip-order-and-open">Xem gói VIP</button>
+              data-action="open-shared-purchase">Xem các gói</button>
             <button type="button" class="portal-btn" style="width:100%;margin-top:10px;"
               data-action="create-wallet-topup-order-and-open"><i class="fas fa-wallet"></i> Nạp số dư</button>
           </div>
@@ -312,6 +312,7 @@
               <h3>Lịch sử giao dịch</h3>
               <p>Nạp tiền, mua VIP theo lượt và tài nguyên lẻ</p>
             </div>
+            <button type="button" class="portal-btn primary" data-action="open-shared-purchase"><i class="fas fa-bolt"></i> Mua thêm lượt</button>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="portalTransactionFullTable"></table>
@@ -329,6 +330,10 @@
               sử dụng</span><i class="fas fa-crown"></i></div>
           <div class="portal-card"><small>Lượt dùng AI</small><strong id="adminUsageMetric">0</strong><span>Tổng lượt đã
               ghi nhận</span><i class="fas fa-users-viewfinder"></i></div>
+          <div class="portal-card"><small>Lượt AI Review</small><strong id="adminReviewUsageMetric">0</strong><span>Lượt đánh giá
+              bài báo</span><i class="fas fa-wand-magic-sparkles"></i></div>
+          <div class="portal-card"><small>Lượt xuất báo</small><strong id="adminExportUsageMetric">0</strong><span>Word và
+              PDF</span><i class="fas fa-file-export"></i></div>
           <div class="portal-card"><small>Tổng tài khoản</small><strong id="adminUsersMetric">0</strong><span>Supabase
               Auth</span><i class="fas fa-user-plus"></i></div>
         </div>
@@ -419,51 +424,44 @@
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
-                  <h3><i class="fas fa-tags" style="color:#2f6df6;"></i> Cấu hình thanh toán gói VIP</h3>
-                  <p>Thiết lập giá trị cho các gói đăng ký hội viên</p>
+                  <h3><i class="fas fa-tags" style="color:#2f6df6;"></i> Tạo gói dịch vụ</h3>
+                  <p>Tạo gói mua lượt hoặc gói theo tháng cho từng dịch vụ.</p>
                 </div>
               </div>
-              <div class="portal-settings-row">
-                <div class="portal-field"><label>Giá gói VIP (VND)</label><input id="adminPlanPrice" type="number"
-                    min="0"></div>
-                <div class="portal-field"><label>Lượt AI mỗi gói</label><input id="adminPlanCredits" type="number"
-                    min="1"></div>
-                <div class="portal-field"><label>Tự gia hạn theo giá gói</label><input id="adminWalletUnitPrice"
-                    type="number" min="1" disabled></div>
-                <div class="portal-field"><label>Thời gian dùng thử (ngày)</label><input id="adminTrialDays"
-                    type="number" min="1" max="365"></div>
-                <div class="portal-field"><label>Lượt AI trial mỗi ngày</label><input id="adminPlanLimit" type="number"
-                    min="1"></div>
-              </div>
+              <form id="adminServicePlanForm" class="portal-form">
+                <div class="portal-settings-row">
+                  <div class="portal-field"><label>Mã gói</label><input id="servicePlanId" required maxlength="50" placeholder="chatbox-100"></div>
+                  <div class="portal-field"><label>Tên gói</label><input id="servicePlanName" required maxlength="100" placeholder="100 lượt Chatbox AI"></div>
+                  <div class="portal-field"><label>Dịch vụ</label><select id="servicePlanProduct" required><option value="chatbox_ai">Chatbox AI</option><option value="magazine_export">Xuất Word/PDF</option><option value="magazine_ai_review">AI Review</option></select></div>
+                  <div class="portal-field"><label>Loại gói</label><select id="servicePlanBilling" required><option value="credit_pack">Gói lượt</option><option value="monthly">Gói tháng</option></select></div>
+                  <div class="portal-field"><label>Giá (VND)</label><input id="servicePlanPrice" type="number" min="0" required></div>
+                  <div class="portal-field"><label id="servicePlanCreditsLabel" for="servicePlanCredits">Tổng số lượt</label><input id="servicePlanCredits" type="number" min="1" required></div>
+                  <div id="servicePlanDurationField" class="portal-field" hidden><label>Thời hạn gói tháng (ngày)</label><input id="servicePlanDuration" type="number" min="1" value="30"></div>
+                </div>
+                <button class="portal-btn primary" type="submit"><i class="fas fa-plus"></i> Tạo gói</button>
+                <p id="servicePlanMessage" class="vip-message" style="margin:0;"></p>
+              </form>
             </section>
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
-                  <h3>Thông tin cấu hình</h3>
-                  <p id="adminPlanName">Đang tải gói VIP...</p>
+                  <h3>Trial mặc định</h3>
+                  <p>Ba dịch vụ được khởi tạo 14 ngày, 30 lượt/ngày cho tài khoản mới.</p>
                 </div>
               </div>
-              <div class="portal-form"><button class="portal-btn primary" type="button" data-action="save-admin-settings"><i
-                    class="fas fa-floppy-disk"></i> Lưu thay đổi</button>
-                <p id="adminSettingsMessage" class="vip-message" style="margin:0;"></p>
-              </div>
+              <p class="portal-panel-note">Admin có quyền sử dụng không giới hạn và không trừ lượt.</p>
             </section>
           </div>
           <div class="portal-grid">
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
-                  <h3><i class="fas fa-sliders" style="color:#f59e0b;"></i> Giới hạn lượt dùng</h3>
-                  <p>Hạn mức trial và lượt mua thêm</p>
+                  <h3><i class="fas fa-layer-group" style="color:#f59e0b;"></i> Các gói hiện có</h3>
+                  <p>Bật hoặc ngừng bán từng gói dịch vụ.</p>
                 </div>
               </div>
-              <div class="portal-limit-box"><strong>Tài khoản thường</strong>
-                <p>Phải có VIP mới được sử dụng trợ lý AI.</p>
-              </div>
-              <div class="portal-limit-box" style="border-color:#2f6df6;"><strong style="color:#2f6df6;">Tài khoản
-                  VIP</strong>
-                <p id="adminLimitSummary">Đang tải giới hạn...</p>
-              </div>
+              <p id="adminServicePlansStatus" class="vip-message portal-panel-note">Đang tải dữ liệu...</p>
+              <div id="adminServicePlans" class="portal-grid"></div>
             </section>
             <section class="portal-panel">
               <div class="portal-panel-head">

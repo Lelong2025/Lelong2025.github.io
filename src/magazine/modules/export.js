@@ -219,10 +219,13 @@ export async function buildDefaultDocx(data) {
 export async function exportCurrentArticleWordManual() {
     if (typeof window.PizZip === 'undefined' || typeof window.saveAs === 'undefined') {
         showToast('Chưa tải được thư viện xuất Word.');
-        return;
+        return false;
     }
     const art = activeArticle();
-    if (!art) return showToast('Vui lòng chọn bài báo trước khi xuất.');
+    if (!art) {
+        showToast('Vui lòng chọn bài báo trước khi xuất.');
+        return false;
+    }
     const button = document.getElementById('export-word-btn');
     const originalLabel = button ? button.innerHTML : 'Word';
     if (button) {
@@ -248,10 +251,13 @@ export async function exportCurrentArticleWordManual() {
 export async function exportCurrentArticleWordFromTemplate() {
     if (typeof window.PizZip === 'undefined' || typeof window.saveAs === 'undefined') {
         showToast('Chưa tải được thư viện xuất Word.');
-        return;
+        return false;
     }
     const art = activeArticle();
-    if (!art) return showToast('Vui lòng chọn bài báo trước khi xuất.');
+    if (!art) {
+        showToast('Vui lòng chọn bài báo trước khi xuất.');
+        return false;
+    }
     const button = document.getElementById('export-word-btn');
     const originalLabel = button.innerHTML;
     button.disabled = true;
@@ -313,9 +319,11 @@ export async function exportCurrentArticleWordFromTemplate() {
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
         showToast("Đã tải tệp Word từ template thành công!");
+        return true;
     } catch (error) {
         console.error(error);
         showToast('Lỗi xuất Word từ template: ' + (error.message || 'Không xác định'));
+        return false;
     } finally {
         button.disabled = false;
         button.innerHTML = originalLabel;
@@ -324,10 +332,11 @@ export async function exportCurrentArticleWordFromTemplate() {
 
 export async function exportCurrentArticleWord() {
     try {
-        await exportCurrentArticleWordFromTemplate();
+        return await exportCurrentArticleWordFromTemplate();
     } catch (err) {
         console.warn('Template export failed, falling back to manual OOXML generation:', err);
         await exportCurrentArticleWordManual();
+        return true;
     }
 }
 
@@ -419,7 +428,7 @@ export function normalizeAndReplaceDocxXml(xml, data) {
 
 export async function exportVectorPdf() {
     const button = document.getElementById('export-pdf-btn');
-    if (!button) return;
+    if (!button) return false;
     const original = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> PDF';
@@ -427,9 +436,11 @@ export async function exportVectorPdf() {
         await preparePreviewForOutput();
         document.body.classList.add('pdf-output-mode');
         window.print();
+        return true;
     } catch (error) {
         console.error(error);
         showToast('Lỗi chuẩn bị PDF: ' + (error.message || 'Không xác định'));
+        return false;
     } finally {
         document.body.classList.remove('pdf-output-mode');
         button.disabled = false;
@@ -570,12 +581,12 @@ export async function prepareAllContentImages(zip, articles) {
 export async function exportIssueWord() {
     if (typeof window.PizZip === 'undefined' || typeof window.saveAs === 'undefined') {
         showToast('Chưa tải được thư viện xuất Word.');
-        return;
+        return false;
     }
     const currentIssue = state.appState.issues[state.appState.currentIssueId];
     if (!currentIssue || currentIssue.articles.length === 0) {
         showToast('Không có bài báo nào để xuất.');
-        return;
+        return false;
     }
     const button = document.getElementById('btn-export-issue-word');
     const originalLabel = button ? button.innerHTML : '';
@@ -789,9 +800,11 @@ export async function exportIssueWord() {
         window.saveAs(blob, `${baseName}_Full_Issue.docx`);
         showToast('Đã tải tệp Word toàn bộ số báo thành công!');
         closeExportModal();
+        return true;
     } catch (error) {
         console.error(error);
         showToast('Lỗi xuất Word toàn bộ số báo: ' + (error.message || 'Không xác định'));
+        return false;
     } finally {
         if (button) {
             button.disabled = false;

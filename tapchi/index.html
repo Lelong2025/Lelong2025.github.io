@@ -203,8 +203,8 @@
           <div class="vip-detail-row"><span>Số dư</span><strong id="vipWalletBalance">0 đ</strong></div>
         </div>
         <div class="vip-actions">
-          <button class="vip-primary" type="button" data-action="create-vip-order"><i class="fas fa-crown"></i>&nbsp;
-            Mua thêm lượt · 25.000đ</button>
+          <button class="vip-primary" type="button" data-action="open-shared-purchase"><i class="fas fa-crown"></i>&nbsp;
+            <span id="vipPurchaseLabel">Mua thêm lượt</span></button>
           <button class="vip-secondary" type="button" data-action="create-wallet-topup-order"><i
               class="fas fa-wallet"></i>&nbsp; Nạp số dư</button>
           <button class="vip-secondary" type="button" data-action="sign-out"><i class="fas fa-sign-out-alt"></i>&nbsp;
@@ -214,7 +214,7 @@
           <h3>Quét QR để thanh toán</h3>
           <p class="payment-subtitle">Mở ứng dụng ngân hàng và quét mã bên dưới</p>
           <div class="payment-qr-wrap"><img id="paymentQr" alt="Mã QR thanh toán Chatbox AI"></div>
-          <p class="payment-amount"><strong id="paymentAmount">25.000đ</strong></p>
+          <p class="payment-amount"><strong id="paymentAmount">--</strong></p>
           <p class="payment-label">Nội dung chuyển khoản</p>
           <p id="paymentCode" class="payment-code"></p>
           <p id="paymentCountdown" class="vip-message"></p>
@@ -318,7 +318,7 @@
             <div class="portal-vip-meta">
               <div><small>Ngày kích hoạt</small><strong id="portalVipStart">Chưa kích hoạt</strong></div>
               <div><small>Lượt còn lại</small><strong id="portalVipEnd">0 lượt</strong></div>
-              <button type="button" class="portal-btn" data-action="create-vip-order-and-open">Mua thêm
+              <button type="button" class="portal-btn" data-action="open-shared-purchase">Mua thêm
                 ngay</button>
             </div>
           </div>
@@ -328,11 +328,21 @@
               <p id="portalWalletNote">Dùng để tự gia hạn gói VIP khi hết lượt.</p>
             </div>
             <button type="button" class="portal-btn" style="width:100%;"
-              data-action="create-vip-order-and-open">Xem gói VIP</button>
+              data-action="open-shared-purchase">Xem các gói</button>
             <button type="button" class="portal-btn" style="width:100%;margin-top:10px;"
               data-action="create-wallet-topup-order-and-open"><i class="fas fa-wallet"></i> Nạp số dư</button>
           </div>
         </div>
+
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head">
+            <div>
+              <h3><i class="fas fa-box-open" style="color:#2f6df6;"></i> Dịch vụ & hạn mức</h3>
+              <p>Quản lý lượt sử dụng, mua gói và tự gia hạn riêng cho từng dịch vụ.</p>
+            </div>
+          </div>
+          <div id="portalServiceCards" class="portal-grid three"></div>
+        </section>
 
         <div class="portal-grid two" style="margin-top:24px;">
           <section class="portal-panel">
@@ -389,6 +399,7 @@
               <h3>Lịch sử giao dịch</h3>
               <p>Nạp tiền, mua VIP theo lượt và tài nguyên lẻ</p>
             </div>
+            <button type="button" class="portal-btn primary" data-action="open-shared-purchase"><i class="fas fa-bolt"></i> Mua thêm lượt</button>
           </div>
           <div class="portal-table-wrap">
             <table class="portal-table" id="portalTransactionFullTable"></table>
@@ -402,13 +413,17 @@
         <div class="portal-grid cards">
           <div class="portal-card"><small>Tổng doanh thu</small><strong id="adminRevenueMetric">0 đ</strong><span>Giao
               dịch đã thanh toán</span><i class="fas fa-sack-dollar"></i></div>
-          <div class="portal-card"><small>Người dùng VIP</small><strong id="adminVipMetric">0</strong><span>Còn lượt
-              sử dụng</span><i class="fas fa-crown"></i></div>
-          <div class="portal-card"><small>Lượt dùng AI</small><strong id="adminUsageMetric">0</strong><span>Tổng lượt đã
-              ghi nhận</span><i class="fas fa-users-viewfinder"></i></div>
+          <div class="portal-card"><small>Khách hàng trả phí</small><strong id="adminVipMetric">0</strong><span>Đã mua ít nhất một gói</span><i class="fas fa-crown"></i></div>
+          <div class="portal-card"><small>Chatbox AI</small><strong id="adminUsageMetric">0</strong><span>Lượt đã dùng</span><i class="fas fa-comments"></i></div>
+          <div class="portal-card"><small>AI Review</small><strong id="adminReviewUsageMetric">0</strong><span>Lượt đã dùng</span><i class="fas fa-wand-magic-sparkles"></i></div>
+          <div class="portal-card"><small>Xuất báo</small><strong id="adminExportUsageMetric">0</strong><span>Lượt Word/PDF</span><i class="fas fa-file-export"></i></div>
           <div class="portal-card"><small>Tổng tài khoản</small><strong id="adminUsersMetric">0</strong><span>Supabase
               Auth</span><i class="fas fa-user-plus"></i></div>
         </div>
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head"><div><h3>Doanh thu theo dịch vụ</h3><p>Phân biệt gói Chatbox, AI Review, xuất báo và tiền nạp ví.</p></div></div>
+          <div id="adminRevenueBreakdown" class="portal-grid cards"></div>
+        </section>
         <div class="portal-grid two" style="margin-top:24px;">
           <section class="portal-panel">
             <div class="portal-panel-head">
@@ -492,7 +507,24 @@
 
       <section id="adminSettings" class="portal-page">
         <div class="portal-settings">
-          <div class="portal-grid">
+          <section class="portal-panel" style="margin-bottom:24px;">
+            <div class="portal-panel-head">
+              <div><h3><i class="fas fa-boxes-stacked" style="color:#2f6df6;"></i> Gói dịch vụ</h3><p>Tạo nhiều gói lượt hoặc gói tháng cho từng dịch vụ.</p></div>
+            </div>
+            <form id="adminServicePlanForm" class="portal-settings-row">
+              <div class="portal-field"><label>Mã gói</label><input id="servicePlanId" required placeholder="magazine-export-30"></div>
+              <div class="portal-field"><label>Tên gói</label><input id="servicePlanName" required placeholder="Xuất báo 30 lượt"></div>
+              <div class="portal-field"><label>Dịch vụ</label><select id="servicePlanProduct"><option value="chatbox_ai">Chatbox AI</option><option value="magazine_export">Xuất Word/PDF</option><option value="magazine_ai_review">AI Review</option></select></div>
+              <div class="portal-field"><label>Loại gói</label><select id="servicePlanBilling"><option value="credit_pack">Gói lượt</option><option value="monthly">Gói tháng</option></select></div>
+              <div class="portal-field"><label>Giá (VND)</label><input id="servicePlanPrice" type="number" min="0" required></div>
+              <div class="portal-field"><label>Số lượt</label><input id="servicePlanCredits" type="number" min="1" required></div>
+              <div class="portal-field"><label>Số ngày chu kỳ</label><input id="servicePlanDuration" type="number" min="1" value="30"></div>
+              <button class="portal-btn primary" type="submit">Tạo gói</button>
+            </form>
+            <p id="servicePlanMessage" class="vip-message"></p>
+            <div id="adminServicePlans" class="portal-grid three" style="margin-top:18px;"></div>
+          </section>
+          <div class="portal-grid" style="display:none" aria-hidden="true">
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
@@ -650,6 +682,22 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div id="trialWelcomeModal" class="wallet-modal">
+    <section class="wallet-card" role="dialog" aria-modal="true" aria-labelledby="trialWelcomeTitle">
+      <div class="wallet-card-head">
+        <h2 id="trialWelcomeTitle"><i class="fas fa-gift"></i> Chào mừng bạn!</h2>
+        <button class="vip-close" type="button" data-action="close-trial-welcome" aria-label="Đóng">&times;</button>
+      </div>
+      <div style="padding:8px 0 18px;line-height:1.7;">
+        <p>Bạn đã nhận <strong>14 ngày dùng thử miễn phí</strong>, tối đa <strong>30 lượt/ngày</strong> cho từng dịch vụ:</p>
+        <ul style="margin:12px 0 0 20px;">
+          <li>Chatbox AI</li><li>Xuất báo Word/PDF</li><li>AI Review</li>
+        </ul>
+      </div>
+      <button class="vip-primary" type="button" data-action="close-trial-welcome">Bắt đầu sử dụng</button>
+    </section>
   </div>
 
   <!-- ===== AI CHATBOX ===== -->

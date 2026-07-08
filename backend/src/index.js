@@ -23,16 +23,34 @@ export default {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleChat(req, env, ctx));
     }
     if (path === "/api/account" && request.method === "GET") {
-      return withUserAuth(request, env, apiCors, (req, ctx) => handleAccount(req, env, ctx, apiCors));
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleCleanAccount(req, env, ctx, apiCors));
     }
     if (path === "/api/public/config" && request.method === "GET") {
       return handlePublicConfig(env, apiCors);
     }
+    if (path === "/api/services" && request.method === "GET") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleServices(req, env, ctx, apiCors));
+    }
+    if (path === "/api/usage/reserve" && request.method === "POST") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleReserveUsage(req, env, ctx, apiCors));
+    }
+    if (path === "/api/usage/finalize" && request.method === "POST") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleFinalizeUsage(req, env, ctx, apiCors));
+    }
+    if (path === "/api/renewals" && request.method === "PATCH") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleRenewalPreference(req, env, ctx, apiCors));
+    }
     if (path === "/api/admin/dashboard" && request.method === "GET") {
-      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminDashboard(req, env, ctx, apiCors));
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleCleanAdminDashboard(req, env, ctx, apiCors));
     }
     if (path === "/api/admin/settings" && request.method === "PATCH") {
-      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminSettings(req, env, ctx, apiCors));
+      return jsonResponse({ error: "Legacy VIP settings endpoint was removed" }, 410, apiCors.headers);
+    }
+    if (path === "/api/admin/service-plans" && request.method === "POST") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminCreateServicePlan(req, env, ctx, apiCors));
+    }
+    if (path === "/api/admin/service-plans" && request.method === "PATCH") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminUpdateServicePlan(req, env, ctx, apiCors));
     }
     if (path === "/api/orders" && request.method === "POST") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleCreateOrder(req, env, ctx, apiCors));
@@ -199,12 +217,26 @@ async function handleChat(request, env, ctx) {
       return jsonResponse({ error: "Authentication required" }, 401, corsHeaders);
     }
 
-    let usage = { allowed: true, limit: 99999, usage_today: 0 };
-    if (ctx.userClaims?.role !== "admin") {
-      // Kiểm tra và trừ lượt sử dụng bằng admin client (vượt qua RLS)
-      const { data: dbUsage, error: rpcError } = await ctx.supabaseAdmin.rpc("consume_ai_message", { p_user_id: userId });
+    let usage = { allowed: true, unlimited: ctx.userClaims?.role === "admin" };
+    let usageReservationId = null;
+    if (ctx.userClaims?.role === "admin") {
+      const { data: adminUsage, error: adminUsageError } = await ctx.supabaseAdmin.from("service_usage").insert({
+        user_id: userId, product_code: "chatbox_ai", action: "chat_message", units: 1,
+        source: "admin", status: "reserved", idempotency_key: `chat-${crypto.randomUUID()}`
+      }).select("id").single();
+      if (adminUsageError) throw adminUsageError;
+      usageReservationId = adminUsage.id;
+    } else {
+      const { data: dbUsage, error: rpcError } = await ctx.supabaseAdmin.rpc("reserve_service_usage", {
+        p_user_id: userId,
+        p_product_code: "chatbox_ai",
+        p_action: "chat_message",
+        p_idempotency_key: `chat-${crypto.randomUUID()}`,
+        p_metadata: {}
+      });
       if (rpcError) throw rpcError;
       usage = dbUsage;
+      usageReservationId = dbUsage?.reservation_id || null;
     }
 
     if (!usage?.allowed) {
@@ -294,6 +326,11 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
     if (!openAiResponse.ok) {
       const errText = await openAiResponse.text();
       console.error("OpenAI API Error:", errText);
+      if (usageReservationId) {
+        await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+          p_user_id: userId, p_reservation_id: usageReservationId, p_success: false
+        });
+      }
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), {
         status: openAiResponse.status,
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -302,6 +339,12 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
 
     const openAiData = await openAiResponse.json();
     const reply = openAiData.choices[0].message.content;
+    if (usageReservationId) {
+      const { error: finalizeError } = await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+        p_user_id: userId, p_reservation_id: usageReservationId, p_success: true
+      });
+      if (finalizeError) console.error("Finalize Chatbox usage failed", finalizeError.message);
+    }
 
     return new Response(JSON.stringify({ result: reply, usage }), {
       headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -378,26 +421,9 @@ function databaseMigrationResponse(cors) {
   }, 503, cors.headers);
 }
 
-function usageSince(usageRows, startDate) {
-  if (!startDate) return 0;
-  const start = String(startDate).slice(0, 10);
-  return (usageRows || [])
-    .filter(row => String(row.usage_date || "").slice(0, 10) >= start)
-    .reduce((sum, row) => sum + Number(row.message_count || 0), 0);
-}
-
-function paidAccessFromDatabase({ payments = [], usageRows = [], subscription = null }) {
+function paidAccessFromDatabase({ payments = [], subscription = null }) {
   const paidPayments = payments.filter(payment => payment.status === "paid");
-  const paidCreditOrders = paidPayments.filter(payment => (payment.order_type || "vip_credits") === "vip_credits");
-  const firstPaidDate = paidCreditOrders
-    .map(payment => payment.paid_at || payment.created_at)
-    .filter(Boolean)
-    .sort()[0] || null;
-  const totalCredits = paidCreditOrders.reduce((sum, payment) => sum + Number(payment.credits_granted || 0), 0);
-  const usedAfterPaid = usageSince(usageRows, firstPaidDate);
-  const computedCredits = Math.max(totalCredits - usedAfterPaid, 0);
-  const storedCredits = Number(subscription?.ai_credits_remaining || 0);
-  const remainingCredits = paidCreditOrders.length ? computedCredits : storedCredits;
+  const remainingCredits = Math.max(Number(subscription?.ai_credits_remaining || 0), 0);
   const walletBalance = Number(subscription?.wallet_balance_vnd || 0);
   const walletRenewPrice = Math.max(Number(subscription?.vip_plans?.price_vnd || 0), 1);
   const hasPaid = paidPayments.length > 0;
@@ -408,9 +434,7 @@ function paidAccessFromDatabase({ payments = [], usageRows = [], subscription = 
     remainingCredits,
     walletBalance,
     walletRenewPrice,
-    totalCredits,
-    usedAfterPaid,
-    firstPaidDate
+    totalCredits: remainingCredits
   };
 }
 
@@ -421,17 +445,10 @@ async function handleAccount(request, env, ctx, cors) {
     const userEmail = ctx.userClaims?.email;
     if (!userId) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
 
-    const { error: trialError } = await ctx.supabaseAdmin.rpc("activate_free_trial", { p_user_id: userId });
-    if (trialError) {
-      console.error("Free trial activation failed", trialError.message);
-      if (isDatabaseMigrationError(trialError)) return databaseMigrationResponse(cors);
-      return jsonResponse({ error: "Account subscription is unavailable" }, 503, cors.headers);
-    }
-
     const today = new Date().toISOString().slice(0, 10);
     const weekStart = new Date();
     weekStart.setUTCDate(weekStart.getUTCDate() - 29);
-    const [subRes, usageRes, paymentsRes, usageHistoryRes, usageAllRes] = await Promise.all([
+    const [subRes, usageRes, paymentsRes, usageHistoryRes] = await Promise.all([
       ctx.supabase.from("subscriptions")
         .select("status, expires_at, ai_credits_remaining, wallet_balance_vnd, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd)")
         .eq("user_id", userId)
@@ -449,10 +466,6 @@ async function handleAccount(request, env, ctx, cors) {
         .select("usage_date, message_count")
         .eq("user_id", userId)
         .gte("usage_date", weekStart.toISOString().slice(0, 10))
-        .order("usage_date", { ascending: true }),
-      ctx.supabase.from("ai_usage")
-        .select("usage_date, message_count")
-        .eq("user_id", userId)
         .order("usage_date", { ascending: true })
     ]);
 
@@ -460,12 +473,10 @@ async function handleAccount(request, env, ctx, cors) {
     if (usageRes.error) throw usageRes.error;
     if (paymentsRes.error) throw paymentsRes.error;
     if (usageHistoryRes.error) throw usageHistoryRes.error;
-    if (usageAllRes.error) throw usageAllRes.error;
 
     let subscription = subRes.data || null;
     const paidAccess = paidAccessFromDatabase({
       payments: paymentsRes.data || [],
-      usageRows: usageAllRes.data || [],
       subscription
     });
     if (subscription && paidAccess.hasPaid) {
@@ -537,6 +548,256 @@ async function handleAccount(request, env, ctx, cors) {
   }
 }
 
+async function handleCleanAccount(request, env, ctx, cors) {
+  try {
+    const [services, paymentsRes, usageRes] = await Promise.all([
+      loadServiceAccount(ctx),
+      ctx.supabaseAdmin.from("payments")
+        .select("id, product_code, service_plan_id, amount_vnd, payment_code, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at, expires_at")
+        .eq("user_id", ctx.userClaims.id).order("created_at", { ascending: false }),
+      ctx.supabaseAdmin.from("service_usage")
+        .select("product_code, created_at").eq("user_id", ctx.userClaims.id).eq("status", "consumed")
+        .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()).order("created_at")
+    ]);
+    if (paymentsRes.error) throw paymentsRes.error;
+    if (usageRes.error) throw usageRes.error;
+    const chat = services.products.find(product => product.code === 'chatbox_ai');
+    const entitlement = chat?.entitlement || {};
+    const trialActive = entitlement.trial_ends_at && new Date(entitlement.trial_ends_at) > new Date();
+    const remaining = Number(entitlement.credit_balance || 0) + Number(entitlement.monthly_balance || 0);
+    return jsonResponse({
+      user: { id: ctx.userClaims.id, email: ctx.userClaims.email },
+      role: ctx.userClaims.role,
+      is_vip: services.is_admin || trialActive || remaining > 0,
+      is_trial: Boolean(!services.is_admin && trialActive),
+      remaining_credits: services.is_admin ? null : remaining,
+      wallet_balance_vnd: services.wallet_balance_vnd,
+      usage_today: 0,
+      usage_history: Object.entries((usageRes.data || []).reduce((days, row) => {
+        const date = String(row.created_at).slice(0, 10);
+        days[date] = (days[date] || 0) + 1;
+        return days;
+      }, {})).map(([usage_date, message_count]) => ({ usage_date, message_count })),
+      payments: paymentsRes.data || [],
+      services
+    }, 200, cors.headers);
+  } catch (error) {
+    console.error("Clean account error", error.message);
+    if (isDatabaseMigrationError(error)) return databaseMigrationResponse(cors);
+    return jsonResponse({ error: "Unable to load account" }, 500, cors.headers);
+  }
+}
+
+async function loadServiceAccount(ctx) {
+  const userId = ctx.userClaims.id;
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const [productsRes, plansRes, entitlementsRes, walletRes, renewalsRes, dailyUsageRes] = await Promise.all([
+    ctx.supabaseAdmin.from("service_products")
+      .select("code, name, description, trial_days, trial_daily_limit, active")
+      .eq("active", true).order("created_at"),
+    ctx.supabaseAdmin.from("service_plans")
+      .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, active, sort_order")
+      .eq("active", true).order("product_code").order("sort_order"),
+    ctx.supabaseAdmin.from("user_entitlements")
+      .select("product_code, credit_balance, monthly_balance, monthly_plan_id, monthly_started_at, monthly_ends_at, trial_started_at, trial_ends_at, trial_daily_limit")
+      .eq("user_id", userId),
+    ctx.supabaseAdmin.from("user_wallets").select("balance_vnd").eq("user_id", userId).maybeSingle(),
+    ctx.supabaseAdmin.from("auto_renew_preferences")
+      .select("product_code, plan_id, enabled").eq("user_id", userId),
+    ctx.supabaseAdmin.from("service_daily_usage")
+      .select("product_code, usage_count").eq("user_id", userId).eq("usage_date", todayUtc)
+  ]);
+  for (const result of [productsRes, plansRes, entitlementsRes, walletRes, renewalsRes, dailyUsageRes]) {
+    if (result.error) throw result.error;
+  }
+  const dailyUsage = new Map((dailyUsageRes.data || []).map(row => [row.product_code, Number(row.usage_count || 0)]));
+  const now = Date.now();
+  const entitlements = new Map((entitlementsRes.data || []).map(row => {
+    const usedToday = dailyUsage.get(row.product_code) || 0;
+    const trialActive = row.trial_ends_at && new Date(row.trial_ends_at).getTime() > now;
+    const monthlyActive = row.monthly_ends_at && new Date(row.monthly_ends_at).getTime() > now;
+    const dailyLimit = trialActive
+      ? Number(row.trial_daily_limit || 0)
+      : monthlyActive ? Number(row.monthly_balance || 0) : 0;
+    return [row.product_code, {
+      ...row,
+      daily_usage: usedToday,
+      daily_limit: dailyLimit,
+      daily_remaining: Math.max(dailyLimit - usedToday, 0)
+    }];
+  }));
+  const renewals = new Map((renewalsRes.data || []).map(row => [row.product_code, row]));
+  return {
+    is_admin: ctx.userClaims.role === "admin",
+    wallet_balance_vnd: ctx.userClaims.role === "admin" ? null : Number(walletRes.data?.balance_vnd || 0),
+    products: (productsRes.data || []).map(product => ({
+      ...product,
+      entitlement: entitlements.get(product.code) || null,
+      auto_renew: renewals.get(product.code) || null,
+      unlimited: ctx.userClaims.role === "admin"
+    })),
+    plans: plansRes.data || []
+  };
+}
+
+async function handleServices(request, env, ctx, cors) {
+  try {
+    return jsonResponse(await loadServiceAccount(ctx), 200, cors.headers);
+  } catch (error) {
+    console.error("Services account error", error.message);
+    if (isDatabaseMigrationError(error)) return databaseMigrationResponse(cors);
+    return jsonResponse({ error: "Unable to load services" }, 500, cors.headers);
+  }
+}
+
+async function handleReserveUsage(request, env, ctx, cors) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const productCode = String(body.product_code || "");
+    const action = String(body.action || "use").slice(0, 80);
+    const idempotencyKey = String(body.idempotency_key || "").slice(0, 160);
+    if (!['chatbox_ai', 'magazine_export', 'magazine_ai_review'].includes(productCode) || !idempotencyKey) {
+      return jsonResponse({ error: "Invalid usage request" }, 400, cors.headers);
+    }
+    if (ctx.userClaims.role === "admin") {
+      const { data, error } = await ctx.supabaseAdmin.from("service_usage").insert({
+        user_id: ctx.userClaims.id,
+        product_code: productCode,
+        action,
+        units: 1,
+        source: "admin",
+        status: "reserved",
+        idempotency_key: idempotencyKey,
+        metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
+      }).select("id").single();
+      if (error) throw error;
+      return jsonResponse({ allowed: true, unlimited: true, reservation_id: data.id, source: "admin" }, 200, cors.headers);
+    }
+    const { data, error } = await ctx.supabaseAdmin.rpc("reserve_service_usage", {
+      p_user_id: ctx.userClaims.id,
+      p_product_code: productCode,
+      p_action: action,
+      p_idempotency_key: idempotencyKey,
+      p_metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
+    });
+    if (error) throw error;
+    return jsonResponse(data || { allowed: false, reason: "service_unavailable" }, data?.allowed ? 200 : 403, cors.headers);
+  } catch (error) {
+    console.error("Reserve service usage error", error.message);
+    if (isDatabaseMigrationError(error)) return databaseMigrationResponse(cors);
+    return jsonResponse({ error: "Unable to reserve service usage" }, 500, cors.headers);
+  }
+}
+
+async function handleFinalizeUsage(request, env, ctx, cors) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    if (!body.reservation_id) {
+      return jsonResponse({ ok: true, status: body.success === false ? "refunded" : "consumed" }, 200, cors.headers);
+    }
+    const { data, error } = await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+      p_user_id: ctx.userClaims.id,
+      p_reservation_id: body.reservation_id,
+      p_success: body.success !== false
+    });
+    if (error) throw error;
+    return jsonResponse(data || { ok: false }, data?.ok ? 200 : 404, cors.headers);
+  } catch (error) {
+    console.error("Finalize service usage error", error.message);
+    return jsonResponse({ error: "Unable to finalize service usage" }, 500, cors.headers);
+  }
+}
+
+async function handleRenewalPreference(request, env, ctx, cors) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const productCode = String(body.product_code || "");
+    const planId = String(body.plan_id || "");
+    const enabled = body.enabled === true;
+    const { data: plan, error: planError } = await ctx.supabaseAdmin.from("service_plans")
+      .select("id, product_code, active").eq("id", planId).eq("product_code", productCode).maybeSingle();
+    if (planError) throw planError;
+    if (!plan || !plan.active) return jsonResponse({ error: "Plan is unavailable" }, 400, cors.headers);
+    const { data, error } = await ctx.supabaseAdmin.from("auto_renew_preferences").upsert({
+      user_id: ctx.userClaims.id, product_code: productCode, plan_id: planId, enabled, updated_at: new Date().toISOString()
+    }, { onConflict: "user_id,product_code" }).select("product_code, plan_id, enabled").single();
+    if (error) throw error;
+    return jsonResponse({ preference: data }, 200, cors.headers);
+  } catch (error) {
+    console.error("Renewal preference error", error.message);
+    return jsonResponse({ error: "Unable to update auto renewal" }, 500, cors.headers);
+  }
+}
+
+function normalizeServicePlanInput(body) {
+  const billingType = String(body.billing_type || "");
+  const productCode = String(body.product_code || "");
+  const durationDays = billingType === "monthly" ? Number(body.duration_days || 30) : null;
+  const plan = {
+    id: String(body.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 80),
+    product_code: productCode,
+    name: String(body.name || "").trim().slice(0, 120),
+    billing_type: billingType,
+    price_vnd: Number(body.price_vnd),
+    credits: Number(body.credits),
+    duration_days: durationDays,
+    payment_prefix: String(body.payment_prefix || "CHAT").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "CHAT",
+    active: body.active !== false,
+    sort_order: Number(body.sort_order || 0),
+    updated_at: new Date().toISOString()
+  };
+  const valid = plan.id && plan.name
+    && ['chatbox_ai', 'magazine_export', 'magazine_ai_review'].includes(productCode)
+    && ['credit_pack', 'monthly'].includes(billingType)
+    && Number.isSafeInteger(plan.price_vnd) && plan.price_vnd >= 0
+    && Number.isSafeInteger(plan.credits) && plan.credits > 0
+    && (billingType !== 'monthly' || (Number.isSafeInteger(durationDays) && durationDays > 0));
+  return valid ? plan : null;
+}
+
+async function handleAdminCreateServicePlan(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const plan = normalizeServicePlanInput(await request.json().catch(() => ({})));
+    if (!plan) return jsonResponse({ error: "Invalid service plan" }, 400, cors.headers);
+    const { data, error } = await ctx.supabaseAdmin.from("service_plans").insert(plan).select().single();
+    if (error) throw error;
+    return jsonResponse({ plan: data }, 201, cors.headers);
+  } catch (error) {
+    console.error("Create service plan error", error.message);
+    return jsonResponse({ error: "Unable to create service plan" }, 500, cors.headers);
+  }
+}
+
+async function handleAdminUpdateServicePlan(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const planId = String(body.id || "");
+    const { data: existing, error: existingError } = await ctx.supabaseAdmin.from("service_plans")
+      .select("id, product_code, billing_type").eq("id", planId).maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) return jsonResponse({ error: "Service plan not found" }, 404, cors.headers);
+    const plan = normalizeServicePlanInput({
+      ...body,
+      id: existing.id,
+      product_code: existing.product_code,
+      billing_type: existing.billing_type
+    });
+    if (!plan) return jsonResponse({ error: "Invalid service plan" }, 400, cors.headers);
+    delete plan.id;
+    const { data, error } = await ctx.supabaseAdmin.from("service_plans")
+      .update(plan).eq("id", existing.id).select().single();
+    if (error) throw error;
+    return jsonResponse({ plan: data }, 200, cors.headers);
+  } catch (error) {
+    console.error("Update service plan error", error.message);
+    return jsonResponse({ error: "Unable to update service plan" }, 500, cors.headers);
+  }
+}
+
 function requireAdmin(ctx, cors) {
   if (ctx.userClaims?.role === "admin") return null;
   return jsonResponse({ error: "Admin access required" }, 403, cors.headers);
@@ -545,17 +806,20 @@ function requireAdmin(ctx, cors) {
 async function handlePublicConfig(env, cors) {
   if (!cors.originAllowed) return jsonResponse({ error: "Origin not allowed" }, 403, cors.headers);
   try {
-    const { data, error } = await getAdminClient(env).from("vip_plans")
-      .select("trial_days")
-      .eq("active", true)
-      .order("price_vnd", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    const admin = getAdminClient(env);
+    const [{ data: product, error }, { data: plans, error: planError }] = await Promise.all([
+      admin.from("service_products").select("trial_days").eq("code", "chatbox_ai").maybeSingle(),
+      admin.from("service_plans").select("price_vnd").eq("product_code", "chatbox_ai").eq("active", true).order("price_vnd").limit(1)
+    ]);
     if (error) throw error;
-    return jsonResponse({ trial_days: Number(data?.trial_days || 30) }, 200, cors.headers);
+    if (planError) throw planError;
+    return jsonResponse({
+      trial_days: Number(product?.trial_days || 14),
+      price_vnd: Number(plans?.[0]?.price_vnd || 0)
+    }, 200, cors.headers);
   } catch (error) {
     console.error("Public config error", error.message);
-    return jsonResponse({ trial_days: 30 }, 200, cors.headers);
+    return jsonResponse({ trial_days: 14, price_vnd: 0 }, 200, cors.headers);
   }
 }
 
@@ -570,14 +834,86 @@ async function listAllAuthUsers(admin) {
   return users;
 }
 
+async function handleCleanAdminDashboard(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const [users, paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes] = await Promise.all([
+      listAllAuthUsers(ctx.supabaseAdmin),
+      ctx.supabaseAdmin.from("payments")
+        .select("id, user_id, product_code, service_plan_id, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
+        .order("created_at", { ascending: false }),
+      ctx.supabaseAdmin.from("profiles").select("user_id, display_name, role"),
+      ctx.supabaseAdmin.from("user_entitlements")
+        .select("user_id, product_code, credit_balance, monthly_balance, monthly_ends_at, trial_ends_at"),
+      ctx.supabaseAdmin.from("service_usage")
+        .select("user_id, product_code, action, status, created_at").eq("status", "consumed").order("created_at"),
+      ctx.supabaseAdmin.from("service_plans")
+        .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, payment_prefix, active, sort_order")
+        .order("product_code").order("sort_order")
+    ]);
+    for (const result of [paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes]) {
+      if (result.error) throw result.error;
+    }
+    const profiles = new Map((profilesRes.data || []).map(row => [row.user_id, row]));
+    const entitlements = new Map();
+    for (const row of entitlementsRes.data || []) {
+      if (!entitlements.has(row.user_id)) entitlements.set(row.user_id, []);
+      entitlements.get(row.user_id).push(row);
+    }
+    const userMap = new Map(users.map(user => [user.id, user]));
+    const rows = users.map(user => ({
+      id: user.id,
+      email: user.email || '',
+      name: profiles.get(user.id)?.display_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Người dùng',
+      role: profiles.get(user.id)?.role || (user.app_metadata?.role === 'admin' ? 'admin' : 'client'),
+      created_at: user.created_at,
+      last_sign_in_at: user.last_sign_in_at,
+      entitlements: entitlements.get(user.id) || []
+    }));
+    const payments = (paymentsRes.data || []).map(payment => ({
+      ...payment,
+      email: userMap.get(payment.user_id)?.email || '',
+      name: profiles.get(payment.user_id)?.display_name || userMap.get(payment.user_id)?.email?.split('@')[0] || 'Người dùng'
+    }));
+    const paid = payments.filter(row => row.status === 'paid');
+    const paidPlans = paid.filter(row => row.order_type === 'plan_purchase');
+    const revenueByProduct = paid.reduce((totals, row) => {
+      const key = row.order_type === 'wallet_topup' ? 'wallet_topup' : row.product_code;
+      totals[key] = (totals[key] || 0) + Number(row.amount_vnd || 0);
+      return totals;
+    }, {});
+    return jsonResponse({
+      metrics: {
+        revenue_vnd: paid.reduce((sum, row) => sum + Number(row.amount_vnd || 0), 0),
+        vip_users: new Set(paidPlans.map(row => row.user_id)).size,
+        ai_uses: (usageRes.data || []).filter(row => row.product_code === 'chatbox_ai').length,
+        ai_review_uses: (usageRes.data || []).filter(row => row.product_code === 'magazine_ai_review').length,
+        export_uses: (usageRes.data || []).filter(row => row.product_code === 'magazine_export').length,
+        total_users: users.length,
+        revenue_by_product: revenueByProduct
+      },
+      users: rows,
+      payments,
+      service_usage: usageRes.data || [],
+      service_plans: plansRes.data || [],
+      plans: []
+    }, 200, cors.headers);
+  } catch (error) {
+    console.error("Clean admin dashboard error", error.message);
+    if (isDatabaseMigrationError(error)) return databaseMigrationResponse(cors);
+    return jsonResponse({ error: "Unable to load admin dashboard" }, 500, cors.headers);
+  }
+}
+
 async function handleAdminDashboard(request, env, ctx, cors) {
   const denied = requireAdmin(ctx, cors);
   if (denied) return denied;
   try {
-    const [users, paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes] = await Promise.all([
+    const [users, paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes, serviceUsageRes, servicePlansRes, entitlementsRes] = await Promise.all([
       listAllAuthUsers(ctx.supabaseAdmin),
       ctx.supabaseAdmin.from("payments")
-        .select("id, user_id, plan_id, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
+        .select("id, user_id, plan_id, service_plan_id, product_code, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
         .order("created_at", { ascending: false }),
       ctx.supabaseAdmin.from("subscriptions")
         .select("user_id, status, expires_at, ai_credits_remaining, wallet_balance_vnd, trial_started_at, trial_ends_at, plan_id, vip_plans(name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd)"),
@@ -589,9 +925,17 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         .order("price_vnd", { ascending: true }),
       ctx.supabaseAdmin.from("profiles")
         .select("user_id, display_name")
-        .order("display_name", { ascending: true })
+        .order("display_name", { ascending: true }),
+      ctx.supabaseAdmin.from("service_usage")
+        .select("user_id, product_code, action, status, created_at").eq("status", "consumed")
+        .order("created_at", { ascending: true }),
+      ctx.supabaseAdmin.from("service_plans")
+        .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, payment_prefix, active, sort_order")
+        .order("product_code").order("sort_order"),
+      ctx.supabaseAdmin.from("user_entitlements")
+        .select("user_id, product_code, credit_balance, monthly_balance, monthly_ends_at, trial_ends_at")
     ]);
-    for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes]) {
+    for (const result of [paymentsRes, subscriptionsRes, usageRes, plansRes, profilesRes, serviceUsageRes, servicePlansRes, entitlementsRes]) {
       if (result.error) throw result.error;
     }
     const { data: adminRows, error: adminUsersError } = await ctx.supabaseAdmin.from("admin_users")
@@ -601,6 +945,7 @@ async function handleAdminDashboard(request, env, ctx, cors) {
 
     const now = new Date();
     const paidPayments = (paymentsRes.data || []).filter(row => row.status === "paid");
+    const paidPlanPayments = paidPayments.filter(row => row.order_type !== 'wallet_topup');
     const paymentsByUser = new Map();
     for (const payment of paidPayments) {
       if (!paymentsByUser.has(payment.user_id)) paymentsByUser.set(payment.user_id, []);
@@ -614,13 +959,17 @@ async function handleAdminDashboard(request, env, ctx, cors) {
     const userById = new Map(users.map(user => [user.id, user]));
     const profileById = new Map((profilesRes.data || []).map(row => [row.user_id, row]));
     const subscriptionById = new Map((subscriptionsRes.data || []).map(row => [row.user_id, row]));
+    const entitlementsByUser = new Map();
+    for (const entitlement of entitlementsRes.data || []) {
+      if (!entitlementsByUser.has(entitlement.user_id)) entitlementsByUser.set(entitlement.user_id, []);
+      entitlementsByUser.get(entitlement.user_id).push(entitlement);
+    }
     const rows = users.map(user => {
       const subscription = subscriptionById.get(user.id) || null;
       const profile = profileById.get(user.id);
       const role = user.app_metadata?.role === "admin" || adminEmailSet.has(String(user.email || "").toLowerCase()) ? "admin" : "user";
       const paidAccess = paidAccessFromDatabase({
         payments: paymentsByUser.get(user.id) || [],
-        usageRows: usageByUser.get(user.id) || [],
         subscription
       });
       const displaySubscription = subscription ? {
@@ -641,7 +990,8 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         role,
         is_vip: isAdmin || paidAccess.paidActive,
         is_trial: isTrial,
-        subscription: displaySubscription
+        subscription: displaySubscription,
+        entitlements: entitlementsByUser.get(user.id) || []
       };
     });
     const payments = (paymentsRes.data || []).map(payment => ({
@@ -651,18 +1001,28 @@ async function handleAdminDashboard(request, env, ctx, cors) {
         || userById.get(payment.user_id)?.user_metadata?.display_name
         || userById.get(payment.user_id)?.email?.split("@")[0] || "Người dùng"
     }));
+    const revenueByProduct = paidPayments.reduce((totals, payment) => {
+      const key = payment.order_type === 'wallet_topup' ? 'wallet_topup' : (payment.product_code || 'chatbox_ai');
+      totals[key] = (totals[key] || 0) + Number(payment.amount_vnd || 0);
+      return totals;
+    }, {});
 
     return jsonResponse({
       metrics: {
         revenue_vnd: paidPayments.reduce((sum, row) => sum + Number(row.amount_vnd || 0), 0),
-        vip_users: rows.filter(row => row.is_vip).length,
-        ai_uses: (usageRes.data || []).reduce((sum, row) => sum + Number(row.message_count || 0), 0),
-        total_users: users.length
+        vip_users: new Set(paidPlanPayments.map(row => row.user_id)).size,
+        ai_uses: (serviceUsageRes.data || []).filter(row => row.product_code === 'chatbox_ai').length,
+        ai_review_uses: (serviceUsageRes.data || []).filter(row => row.product_code === 'magazine_ai_review').length,
+        export_uses: (serviceUsageRes.data || []).filter(row => row.product_code === 'magazine_export').length,
+        total_users: users.length,
+        revenue_by_product: revenueByProduct
       },
       users: rows,
       payments,
       usage: usageRes.data || [],
-      plans: plansRes.data || []
+      plans: plansRes.data || [],
+      service_usage: serviceUsageRes.data || [],
+      service_plans: servicePlansRes.data || []
     }, 200, cors.headers);
   } catch (error) {
     console.error("Admin dashboard error", error.message);
@@ -732,7 +1092,9 @@ function orderPayload(order, env) {
     code: order.payment_code,
     amount: order.amount_vnd,
     status: order.status,
-    order_type: order.order_type || "vip_credits",
+    order_type: order.order_type || "plan_purchase",
+    product_code: order.product_code || null,
+    plan_id: order.service_plan_id || order.plan_id || null,
     expires_at: order.expires_at,
     bank: env.SEPAY_BANK,
     account_number: env.SEPAY_ACCOUNT_NUMBER,
@@ -751,18 +1113,19 @@ async function handleCreateOrder(request, env, ctx, cors) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const orderType = String(body.order_type || "vip_credits");
+    const orderType = String(body.order_type || "plan_purchase");
     const topupAmount = Number(body.amount_vnd || 0);
-
-    const { data: plans, error: planError } = await ctx.supabase.from("vip_plans")
-      .select("id, name, price_vnd, ai_credit_amount, payment_prefix")
-      .eq("id", "chatbox_ai")
-      .eq("active", true);
-    if (planError) throw planError;
-
-    const plan = plans?.[0];
-    if (!plan) return jsonResponse({ error: "VIP plan is unavailable" }, 503, cors.headers);
-    if (!["vip_credits", "wallet_topup"].includes(orderType)) {
+    const requestedPlanId = String(body.plan_id || "");
+    let plan = null;
+    if (orderType === "plan_purchase") {
+      const { data, error } = await ctx.supabaseAdmin.from("service_plans")
+        .select("id, product_code, name, price_vnd, credits, billing_type, duration_days, payment_prefix, active")
+        .eq("id", requestedPlanId).eq("active", true).maybeSingle();
+      if (error) throw error;
+      plan = data;
+    }
+    if (orderType === "plan_purchase" && !plan) return jsonResponse({ error: "Service plan is unavailable" }, 503, cors.headers);
+    if (!["wallet_topup", "plan_purchase"].includes(orderType)) {
       return jsonResponse({ error: "Invalid order type" }, 400, cors.headers);
     }
     if (orderType === "wallet_topup"
@@ -778,31 +1141,34 @@ async function handleCreateOrder(request, env, ctx, cors) {
       .lte("expires_at", now);
     if (cleanupError) throw cleanupError;
 
-    const { data: pending, error: pendingError } = await ctx.supabase.from("payments")
-      .select("id, payment_code, amount_vnd, status, order_type, expires_at")
+    let pendingQuery = ctx.supabase.from("payments")
+      .select("id, payment_code, amount_vnd, status, order_type, expires_at, product_code, service_plan_id")
       .eq("user_id", userId)
       .eq("status", "pending")
       .eq("order_type", orderType)
       .gt("expires_at", now)
       .order("created_at", { ascending: false })
       .limit(1);
+    if (orderType === "plan_purchase") pendingQuery = pendingQuery.eq("service_plan_id", plan.id);
+    const { data: pending, error: pendingError } = await pendingQuery;
     if (pendingError) throw pendingError;
 
     if (pending?.[0]) return jsonResponse(orderPayload(pending[0], env), 200, cors.headers);
 
     const payment = {
       user_id: userId,
-      plan_id: plan.id,
       amount_vnd: orderType === "wallet_topup" ? topupAmount : plan.price_vnd,
-      payment_code: randomPaymentCode(plan.payment_prefix),
+      payment_code: randomPaymentCode(plan?.payment_prefix || 'WALLET'),
       status: "pending",
-      order_type: orderType
+      order_type: orderType,
+      product_code: orderType === "plan_purchase" ? plan.product_code : null,
+      service_plan_id: orderType === "plan_purchase" ? plan.id : null
     };
 
     // Tạo đơn thanh toán với admin client (vượt qua RLS của payments)
     const { data: inserted, error: insertError } = await ctx.supabaseAdmin.from("payments")
       .insert(payment)
-      .select("id, payment_code, amount_vnd, status, order_type, expires_at");
+      .select("id, payment_code, amount_vnd, status, order_type, expires_at, product_code, service_plan_id");
     if (insertError) throw insertError;
 
     return jsonResponse(orderPayload(inserted[0], env), 201, cors.headers);

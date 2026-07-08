@@ -26,8 +26,7 @@ export async function handleLogout() {
     state.cloudUser = null;
     state.cloudProfile = null;
     state.cloudSyncEnabled = false;
-    document.body.classList.add('magazine-auth-required');
-    window.openMixingAuth?.('login');
+    window.location.replace('/');
 }
 
 export function saveToLocalStorage() {

@@ -297,11 +297,11 @@ export async function runAiReview() {
     const currentIssue = state.appState.issues[state.appState.currentIssueId];
     if (!currentIssue || !state.appState.currentArticleId) {
         showToast("Vui lòng chọn bài viết trước khi phân tích!");
-        return;
+        return false;
     }
 
     const art = currentIssue.articles.find(a => a.id === state.appState.currentArticleId);
-    if (!art) return;
+    if (!art) return false;
 
     showToast("Đang kết nối OpenAI để đánh giá bài viết...");
     const statusBadge = document.getElementById('ai-status-badge');
@@ -316,6 +316,7 @@ export async function runAiReview() {
         saveToLocalStorage();
         renderAiReviewPanel(art);
         showToast("AI Review hoàn tất phân tích cấu trúc bài viết!");
+        return true;
     } catch (error) {
         console.error(error);
         if (statusBadge) {
@@ -323,6 +324,7 @@ export async function runAiReview() {
             statusBadge.className = "px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[9px] font-bold";
         }
         showToast(error.message || "Không thể hoàn tất AI Review.");
+        return false;
     }
 }
 
