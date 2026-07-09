@@ -136,17 +136,17 @@ export function wordTable(rows, widths, options = {}) {
         const rowProperties = rowHeight
             ? `<w:trPr><w:trHeight w:val="${rowHeight}" w:hRule="exact"/></w:trPr>` : '';
         return `<w:tr>${rowProperties}${row.map((cell, index) => {
-        const value = typeof cell === 'object' ? cell : { content: cell };
-        const shading = value.shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${value.shading}"/>` : '';
-        const cellBorder = options.headerBorder && rowIndex === 0
-            ? '<w:tcBorders><w:bottom w:val="single" w:sz="6" w:color="000000"/></w:tcBorders>' : '';
-        const span = value.gridSpan > 1 ? `<w:gridSpan w:val="${value.gridSpan}"/>` : '';
-        const verticalMerge = value.vMerge ? `<w:vMerge${value.vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : '';
-        const individualBorders = value.borders ? `<w:tcBorders>${['top', 'bottom', 'left', 'right'].map(side =>
-            `<w:${side} w:val="${value.borders[side] ? 'single' : 'nil'}" w:sz="6" w:color="000000"/>`).join('')}</w:tcBorders>` : '';
-        const width = value.width || widths[index] || widths[0];
-        return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${span}${verticalMerge}${shading}${cellBorder}${individualBorders}<w:vAlign w:val="${value.verticalAlign || verticalAlign}"/><w:tcMar><w:top w:w="${cellMargin}" w:type="dxa"/><w:left w:w="${cellMargin}" w:type="dxa"/><w:bottom w:w="${cellMargin}" w:type="dxa"/><w:right w:w="${cellMargin}" w:type="dxa"/></w:tcMar></w:tcPr>${value.content || wordParagraph('', {})}</w:tc>`;
-    }).join('')}</w:tr>`;
+            const value = typeof cell === 'object' ? cell : { content: cell };
+            const shading = value.shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${value.shading}"/>` : '';
+            const cellBorder = options.headerBorder && rowIndex === 0
+                ? '<w:tcBorders><w:bottom w:val="single" w:sz="6" w:color="000000"/></w:tcBorders>' : '';
+            const span = value.gridSpan > 1 ? `<w:gridSpan w:val="${value.gridSpan}"/>` : '';
+            const verticalMerge = value.vMerge ? `<w:vMerge${value.vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : '';
+            const individualBorders = value.borders ? `<w:tcBorders>${['top', 'bottom', 'left', 'right'].map(side =>
+                `<w:${side} w:val="${value.borders[side] ? 'single' : 'nil'}" w:sz="6" w:color="000000"/>`).join('')}</w:tcBorders>` : '';
+            const width = value.width || widths[index] || widths[0];
+            return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${span}${verticalMerge}${shading}${cellBorder}${individualBorders}<w:vAlign w:val="${value.verticalAlign || verticalAlign}"/><w:tcMar><w:top w:w="${cellMargin}" w:type="dxa"/><w:left w:w="${cellMargin}" w:type="dxa"/><w:bottom w:w="${cellMargin}" w:type="dxa"/><w:right w:w="${cellMargin}" w:type="dxa"/></w:tcMar></w:tcPr>${value.content || wordParagraph('', {})}</w:tc>`;
+        }).join('')}</w:tr>`;
     }).join('');
     const borderConfig = options.borderConfig;
     const customBorders = borderConfig
@@ -186,7 +186,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
         } else if (['OL', 'UL'].includes(node.tagName)) {
             Array.from(node.children).forEach((item, index) => {
                 const marker = node.tagName === 'OL' ? `${index + 1}. ` : '• ';
-                blocks.push(wordParagraph(wordRun(marker, { bold: node.tagName === 'OL' }) + inlineHtmlToWord(item), { align: 'both', after: 60 }));
+                blocks.push(wordParagraph(wordRun(marker, { bold: node.tagName === 'OL', size: 20 }) + inlineHtmlToWord(item, { size: 20 }), { align: 'both', after: 60 }));
             });
         } else if (node.classList.contains('scientific-table-embed') && node.querySelector('table')) {
             blocks.push(quillHtmlToWordXml(node.querySelector('table').outerHTML, imageMap));
@@ -225,7 +225,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                         borders[side] = parseFloat(widthValue) > 0;
                     });
                     matrix[rowIndex][columnIndex] = {
-                        content: wordParagraph(inlineHtmlToWord(cell, inherited), { align: cellAlign, after: 40 }),
+                        content: wordParagraph(inlineHtmlToWord(cell, { ...inherited, size: 20 }), { align: cellAlign, after: 40 }),
                         gridSpan: columnSpan,
                         vMerge: rowSpan > 1 ? 'restart' : '',
                         width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
@@ -270,7 +270,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 ? wordParagraph(imageDrawingRun(imageInfo.relationshipId, imageInfo.width, imageInfo.height, imageInfo.id), { align: 'center', after: 100 })
                 : wordParagraph(wordRun('[Hình ảnh trong nội dung]', { italic: true, color: '666666' }), { align: 'center' }));
         } else {
-            blocks.push(wordParagraph(inlineHtmlToWord(node), wordParagraphOptions(node, { align, after: 100, line: 260 })));
+            blocks.push(wordParagraph(inlineHtmlToWord(node, { size: 20 }), wordParagraphOptions(node, { align, after: 100, line: 260 })));
         }
     });
     return blocks.join('');
