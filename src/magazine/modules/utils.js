@@ -61,7 +61,8 @@ export function xmlEscape(value) {
 export function wordRun(text, options = {}) {
     if (!text) return '';
     const props = [
-        options.bold ? '<w:b/>' : '', options.italic ? '<w:i/>' : '',
+        options.bold ? '<w:b/>' : '',
+        options.italic === true ? '<w:i/><w:iCs/>' : (options.italic === false ? '<w:i w:val="0"/><w:iCs w:val="0"/>' : ''),
         options.underline ? '<w:u w:val="single"/>' : '',
         options.color ? `<w:color w:val="${options.color}"/>` : '',
         options.size ? `<w:sz w:val="${options.size}"/><w:szCs w:val="${options.size}"/>` : '',
@@ -169,15 +170,17 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             node.classList.contains('ql-align-right') ? 'right' :
                 node.classList.contains('ql-align-justify') ? 'both' : 'both';
         if (/^H[1-3]$/.test(node.tagName)) {
+            const headingLevel = Number(node.tagName.slice(1));
+            const headingSizes = { 1: 22, 2: 20, 3: 19 };
             const headingXml = inlineHtmlToWord(node, {
                 bold: true,
                 italic: false,
                 suppressItalic: true,
                 color: '2A4E8A',
-                size: 20
+                size: headingSizes[headingLevel] || 20
             });
             blocks.push(wordParagraph(headingXml, wordParagraphOptions(node, {
-                style: `Heading${node.tagName.slice(1)}`, align: 'left', before: 160, after: 80, keepNext: true
+                style: `Heading${headingLevel}`, align: 'left', before: 160, after: 80, keepNext: true
             })));
         } else if (['OL', 'UL'].includes(node.tagName)) {
             Array.from(node.children).forEach((item, index) => {
