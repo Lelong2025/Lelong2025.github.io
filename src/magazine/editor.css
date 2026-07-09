@@ -45,6 +45,11 @@
     width: 210mm;
 }
 
+#a4-container .a4-page,
+#a4-container .a4-page * {
+    font-family: "Times New Roman", Times, serif;
+}
+
 .cover-content,
 .article-page-content {
     flex: 1;
