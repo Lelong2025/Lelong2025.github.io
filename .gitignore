@@ -54,6 +54,7 @@ tmp/
 temp/
 *.tmp
 *.temp
+repomix-output.xml
 
 # Local database schema inspection exports
 supabase-schema-inventory.csv

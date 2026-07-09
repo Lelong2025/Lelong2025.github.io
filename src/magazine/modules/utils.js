@@ -173,13 +173,12 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 node.classList.contains('ql-align-justify') ? 'both' : 'both';
         if (/^H[1-3]$/.test(node.tagName)) {
             const headingLevel = Number(node.tagName.slice(1));
-            const headingSizes = { 1: 22, 2: 20, 3: 19 };
             const headingXml = inlineHtmlToWord(node, {
                 bold: true,
                 italic: false,
                 suppressItalic: true,
                 color: '2A4E8A',
-                size: headingSizes[headingLevel] || 20
+                size: 20
             });
             blocks.push(wordParagraph(headingXml, wordParagraphOptions(node, {
                 style: `Heading${headingLevel}`, align: 'left', before: 160, after: 80, keepNext: true
