@@ -26,6 +26,13 @@ export const tableBorderIds = ['top', 'bottom', 'left', 'right', 'inside-h', 'in
 // Register Quill Custom Table Blot
 let QuillBlockEmbed;
 if (window.Quill) {
+    const Parchment = window.Quill.import('parchment');
+    const TextIndentStyle = new Parchment.Attributor.Style('textIndent', 'text-indent', {
+        scope: Parchment.Scope.BLOCK,
+        whitelist: ['0.5cm', '1cm', '1.27cm', '1.5cm', '2cm']
+    });
+    window.Quill.register(TextIndentStyle, true);
+
     QuillBlockEmbed = window.Quill.import('blots/block/embed');
     class ScientificTableBlot extends QuillBlockEmbed {
         static create(value) {
@@ -330,7 +337,6 @@ export function buildDraftTable() {
         for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
             const cell = createEmptyTableCell();
             cell.contentEditable = 'true';
-            cell.style.border = '1px solid #94a3b8';
             row.appendChild(cell);
         }
         body.appendChild(row);
@@ -652,9 +658,26 @@ export function finishTableCellEdit(message) {
     if (message) showToast(message);
 }
 
-export function createEmptyTableCell() {
+export function createEmptyTableCell(sourceCell = null) {
     const cell = document.createElement('td');
     cell.innerHTML = '<br>';
+    if (sourceCell) {
+        if (sourceCell.style.textAlign) cell.style.textAlign = sourceCell.style.textAlign;
+        if (sourceCell.style.fontWeight) cell.style.fontWeight = sourceCell.style.fontWeight;
+        if (sourceCell.style.fontStyle) cell.style.fontStyle = sourceCell.style.fontStyle;
+        const borderStyles = [
+            'border', 'borderWidth', 'borderStyle', 'borderColor',
+            'borderTop', 'borderTopWidth', 'borderTopStyle', 'borderTopColor',
+            'borderBottom', 'borderBottomWidth', 'borderBottomStyle', 'borderBottomColor',
+            'borderLeft', 'borderLeftWidth', 'borderLeftStyle', 'borderLeftColor',
+            'borderRight', 'borderRightWidth', 'borderRightStyle', 'borderRightColor'
+        ];
+        borderStyles.forEach(prop => {
+            if (sourceCell.style[prop]) {
+                cell.style[prop] = sourceCell.style[prop];
+            }
+        });
+    }
     return cell;
 }
 
@@ -708,15 +731,16 @@ export function splitActiveCell() {
     const columnSpan = activeEditorCell.colSpan;
     const rowSpan = activeEditorCell.rowSpan;
     const cellIndex = activeEditorCell.cellIndex;
+    const sourceCell = activeEditorCell;
     activeEditorCell.colSpan = 1;
     activeEditorCell.rowSpan = 1;
-    for (let index = 1; index < columnSpan; index += 1) activeEditorCell.after(createEmptyTableCell());
+    for (let index = 1; index < columnSpan; index += 1) activeEditorCell.after(createEmptyTableCell(sourceCell));
     let row = activeEditorCell.parentElement;
     for (let rowOffset = 1; rowOffset < rowSpan; rowOffset += 1) {
         row = row.nextElementSibling;
         if (!row) break;
         for (let columnOffset = 0; columnOffset < columnSpan; columnOffset += 1) {
-            row.insertBefore(createEmptyTableCell(), row.cells[Math.min(cellIndex + columnOffset, row.cells.length)] || null);
+            row.insertBefore(createEmptyTableCell(sourceCell), row.cells[Math.min(cellIndex + columnOffset, row.cells.length)] || null);
         }
     }
     finishTableCellEdit('Đã tách ô.');
@@ -782,6 +806,73 @@ export function handleTableClick(event) {
     ensureTableResizeHandles(table);
 }
 
+export function getCellVisualColumnIndex(table, cell) {
+    const numRows = table.rows.length;
+    const grid = [];
+    for (let r = 0; r < numRows; r++) grid[r] = [];
+
+    for (let r = 0; r < numRows; r++) {
+        const row = table.rows[r];
+        let cVisual = 0;
+        for (let c = 0; c < row.cells.length; c++) {
+            const curCell = row.cells[c];
+            while (grid[r][cVisual] !== undefined) {
+                cVisual++;
+            }
+            const colSpan = curCell.colSpan || 1;
+            const rowSpan = curCell.rowSpan || 1;
+            for (let rs = 0; rs < rowSpan; rs++) {
+                for (let cs = 0; cs < colSpan; cs++) {
+                    if (r + rs < numRows) {
+                        grid[r + rs][cVisual + cs] = curCell;
+                    }
+                }
+            }
+            if (curCell === cell) {
+                return cVisual + colSpan - 1;
+            }
+            cVisual += colSpan;
+        }
+    }
+    return -1;
+}
+
+export function getCellsInVisualColumn(table, colIndex) {
+    const cells = [];
+    const grid = [];
+    const numRows = table.rows.length;
+    for (let r = 0; r < numRows; r++) grid[r] = [];
+
+    for (let r = 0; r < numRows; r++) {
+        const row = table.rows[r];
+        let cVisual = 0;
+        for (let c = 0; c < row.cells.length; c++) {
+            const cell = row.cells[c];
+            while (grid[r][cVisual] !== undefined) {
+                cVisual++;
+            }
+            const colSpan = cell.colSpan || 1;
+            const rowSpan = cell.rowSpan || 1;
+            for (let rs = 0; rs < rowSpan; rs++) {
+                for (let cs = 0; cs < colSpan; cs++) {
+                    if (r + rs < numRows) {
+                        grid[r + rs][cVisual + cs] = cell;
+                    }
+                }
+            }
+            cVisual += colSpan;
+        }
+    }
+
+    for (let r = 0; r < numRows; r++) {
+        const cell = grid[r][colIndex];
+        if (cell && !cells.includes(cell)) {
+            cells.push(cell);
+        }
+    }
+    return cells;
+}
+
 export function ensureTableResizeHandles(table) {
     if (!table) return;
     table.dataset.resizeReady = 'true';
@@ -794,6 +885,8 @@ export function ensureTableResizeHandles(table) {
                 const colHandle = document.createElement('span');
                 colHandle.className = 'table-col-resizer';
                 colHandle.contentEditable = 'false';
+                colHandle.setAttribute('draggable', 'false');
+                colHandle.addEventListener('dragstart', event => event.preventDefault());
                 colHandle.addEventListener('mousedown', event => startColumnResize(event, table, cell));
                 cell.appendChild(colHandle);
             }
@@ -801,6 +894,8 @@ export function ensureTableResizeHandles(table) {
                 const rowHandle = document.createElement('span');
                 rowHandle.className = 'table-row-resizer';
                 rowHandle.contentEditable = 'false';
+                rowHandle.setAttribute('draggable', 'false');
+                rowHandle.addEventListener('dragstart', event => event.preventDefault());
                 rowHandle.addEventListener('mousedown', event => startRowResize(event, table, cell.parentElement));
                 cell.appendChild(rowHandle);
             }
@@ -812,14 +907,22 @@ export function startColumnResize(event, table, cell) {
     event.preventDefault();
     event.stopPropagation();
     const startX = event.clientX;
-    const startWidth = cell.getBoundingClientRect().width;
-    const columnIndex = cell.cellIndex;
+    const vColIndex = getCellVisualColumnIndex(table, cell);
+    if (vColIndex === -1) return;
+
+    const colCells = getCellsInVisualColumn(table, vColIndex);
+    const colSpan1Cells = colCells.filter(c => (c.colSpan || 1) === 1);
+    const referenceCell = colSpan1Cells.includes(cell) ? cell : (colSpan1Cells[0] || cell);
+    const startWidth = referenceCell.getBoundingClientRect().width;
+
     const move = (moveEvent) => {
         const nextWidth = Math.max(32, startWidth + moveEvent.clientX - startX);
-        Array.from(table.rows).forEach(row => {
-            const target = row.cells[columnIndex];
-            if (target) target.style.width = `${nextWidth}px`;
+        colSpan1Cells.forEach(target => {
+            target.style.width = `${nextWidth}px`;
         });
+        if (colSpan1Cells.length === 0) {
+            cell.style.width = `${nextWidth}px`;
+        }
     };
     const up = () => {
         document.removeEventListener('mousemove', move);

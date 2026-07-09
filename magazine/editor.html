@@ -72,18 +72,32 @@
     <div id="shared-page-loader" class="shared-page-loader">
         <svg width="0" height="0" aria-hidden="true" style="position:absolute">
             <symbol id="magazine-loader-page" viewBox="0 0 90 120">
-                <path d="M90,0 L90,120 L11,120 C4.92486775,120 0,115.075132 0,109 L0,11 C0,4.92486775 4.92486775,0 11,0 L90,0 Z M71.5,81 L18.5,81 C17.1192881,81 16,82.1192881 16,83.5 C16,84.8254834 17.0315359,85.9100387 18.3356243,85.9946823 L18.5,86 L71.5,86 C72.8807119,86 74,84.8807119 74,83.5 C74,82.1745166 72.9684641,81.0899613 71.6643757,81.0053177 L71.5,86 Z M71.5,57 L18.5,57 C17.1192881,57 16,58.1192881 16,59.5 C16,60.8254834 17.0315359,60.9100387 18.3356243,61.9946823 L18.5,62 L71.5,62 C72.8807119,62 74,60.8807119 74,59.5 C74,58.1192881 72.8807119,57 71.5,57 Z M71.5,33 L18.5,33 C17.1192881,33 16,34.1192881 16,35.5 C16,36.8254834 17.0315359,37.9100387 18.3356243,37.9946823 L18.5,38 L71.5,38 C72.8807119,38 74,36.8807119 74,35.5 C74,34.1192881 72.8807119,33 71.5,33 Z"></path>
+                <path
+                    d="M90,0 L90,120 L11,120 C4.92486775,120 0,115.075132 0,109 L0,11 C0,4.92486775 4.92486775,0 11,0 L90,0 Z M71.5,81 L18.5,81 C17.1192881,81 16,82.1192881 16,83.5 C16,84.8254834 17.0315359,85.9100387 18.3356243,85.9946823 L18.5,86 L71.5,86 C72.8807119,86 74,84.8807119 74,83.5 C74,82.1745166 72.9684641,81.0899613 71.6643757,81.0053177 L71.5,86 Z M71.5,57 L18.5,57 C17.1192881,57 16,58.1192881 16,59.5 C16,60.8254834 17.0315359,60.9100387 18.3356243,61.9946823 L18.5,62 L71.5,62 C72.8807119,62 74,60.8807119 74,59.5 C74,58.1192881 72.8807119,57 71.5,57 Z M71.5,33 L18.5,33 C17.1192881,33 16,34.1192881 16,35.5 C16,36.8254834 17.0315359,37.9100387 18.3356243,37.9946823 L18.5,38 L71.5,38 C72.8807119,38 74,36.8807119 74,35.5 C74,34.1192881 72.8807119,33 71.5,33 Z">
+                </path>
             </symbol>
         </svg>
         <div class="shared-loader" role="status" aria-live="polite" aria-label="Đang tải...">
             <div class="shared-loader__book">
                 <ul class="shared-loader__pages">
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
-                    <li class="shared-loader__page"><svg fill="currentColor"><use href="#magazine-loader-page"></use></svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
+                    <li class="shared-loader__page"><svg fill="currentColor">
+                            <use href="#magazine-loader-page"></use>
+                        </svg></li>
                 </ul>
             </div>
             <span class="shared-loader__label">Đang tải...</span>
@@ -130,7 +144,8 @@
 
             <!-- Article Draggable List Section -->
             <div class="p-3 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-800/50">
-                <span id="article-list-heading" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Danh sách bài báo sắp
+                <span id="article-list-heading"
+                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Danh sách bài báo sắp
                     xếp</span>
                 <button onclick="createNewArticle()"
                     class="text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded flex items-center shadow-sm">
@@ -149,7 +164,8 @@
                 class="p-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-500 dark:text-slate-400">
                 <div class="flex items-start space-x-1.5">
                     <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
-                    <p id="article-list-note">Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi thứ tự. Số trang dồn sẽ
+                    <p id="article-list-note">Giữ <i class="fa-solid fa-grip-lines text-slate-400"></i> để kéo thả đổi
+                        thứ tự. Số trang dồn sẽ
                         được cập nhật tự động tức thời.</p>
                 </div>
             </div>
@@ -399,7 +415,8 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="space-y-0.5 border-b border-slate-300 pb-2 pl-1 text-left text-[10px] text-slate-800 font-sans">
+                                    <div
+                                        class="space-y-0.5 border-b border-slate-300 pb-2 pl-1 text-left text-[10px] text-slate-800 font-sans">
                                         <div><strong>Doi:</strong> <span id="pv-doi"></span></div>
                                         <div><strong>Available online at:</strong> <span id="pv-link-doi"></span></div>
                                     </div>
@@ -429,7 +446,8 @@
                                 class="font-bold text-xs text-rose-600 dark:text-rose-400 flex items-center">
                                 <i class="fa-solid fa-square-poll-vertical mr-1.5 text-rose-500"></i>AI Suggest
                             </h2>
-                            <p id="review-panel-subtitle" class="text-[10px] text-slate-400">Gợi ý bám sát chuẩn tạp chí khoa học</p>
+                            <p id="review-panel-subtitle" class="text-[10px] text-slate-400">Gợi ý bám sát chuẩn tạp chí
+                                khoa học</p>
                         </div>
                         <div class="flex shrink-0 items-center gap-1.5">
                             <button id="ai-status-badge"
@@ -443,14 +461,16 @@
                             </button>
                         </div>
                     </div>
-                    <div class="review-panel-tabs grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-[11px] font-bold dark:bg-slate-900/70">
+                    <div
+                        class="review-panel-tabs grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-[11px] font-bold dark:bg-slate-900/70">
                         <button id="review-tab-ai" type="button" onclick="switchReviewTab('ai')"
                             class="rounded-md px-2 py-1.5 text-rose-700 bg-white shadow-sm dark:bg-slate-800 dark:text-rose-300">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI Suggest
                         </button>
                         <button id="review-tab-issue" type="button" onclick="switchReviewTab('issue')"
                             class="rounded-md px-2 py-1.5 text-slate-500 hover:text-blue-700 dark:text-slate-400 dark:hover:text-blue-300">
-                            <i class="fa-solid fa-layer-group mr-1"></i><span id="review-tab-issue-label">Số báo & Bài báo</span>
+                            <i class="fa-solid fa-layer-group mr-1"></i><span id="review-tab-issue-label">Số báo & Bài
+                                báo</span>
                         </button>
                     </div>
                 </div>
@@ -509,10 +529,12 @@
                         class="hidden rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/25">
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
-                                <div class="text-[11px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                                <div
+                                    class="text-[11px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
                                     <i class="fa-solid fa-building-columns mr-1"></i>Ban biên tập
                                 </div>
-                                <p id="client-submission-status" class="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+                                <p id="client-submission-status"
+                                    class="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
                                     Bài này chưa được gửi cho Ban biên tập.
                                 </p>
                             </div>
@@ -690,7 +712,8 @@
                         </div>
                         <div class="space-y-1">
                             <label
-                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Link DOI:</label>
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Link
+                                DOI:</label>
                             <input type="text" id="input-link-doi"
                                 class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
                                 placeholder="https://doi.org/..." oninput="syncFormToPreview()">
@@ -777,6 +800,16 @@
                     <span class="ql-formats"><select class="ql-align"></select></span>
                     <span class="ql-formats"><button class="ql-indent" value="-1"></button><button class="ql-indent"
                             value="+1"></button></span>
+                    <span class="ql-formats">
+                        <select class="ql-textIndent" title="Thụt đầu dòng">
+                            <option value="" selected>Thụt đầu dòng</option>
+                            <option value="0.5cm">Thụt 0.5 cm</option>
+                            <option value="1cm">Thụt 1.0 cm</option>
+                            <option value="1.27cm">Thụt 1.27 cm (APA)</option>
+                            <option value="1.5cm">Thụt 1.5 cm</option>
+                            <option value="2cm">Thụt 2.0 cm</option>
+                        </select>
+                    </span>
                     <span class="ql-formats"><button class="ql-list" value="ordered"></button><button class="ql-list"
                             value="bullet"></button></span>
                     <span class="ql-formats"><button class="ql-link"></button><button class="ql-image"></button><button
@@ -1013,7 +1046,8 @@
             </div>
 
             <div class="vip-tabs" role="tablist">
-                <button id="auth-login-tab" class="active" type="button"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
+                <button id="auth-login-tab" class="active" type="button"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng
+                    nhập</button>
                 <button id="auth-register-tab" type="button"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
             </div>
 
@@ -1082,4 +1116,3 @@
 </body>
 
 </html>
-
