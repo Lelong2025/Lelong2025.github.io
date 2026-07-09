@@ -446,6 +446,10 @@ export function loadArticleIntoEditor(id) {
     document.getElementById('input-abstract-en').value = art.abstractEn || '';
     document.getElementById('input-keywords-vn').value = art.keywordsVn || '';
     document.getElementById('input-keywords-en').value = art.keywordsEn || '';
+    const doiInput = document.getElementById('input-doi');
+    const linkDoiInput = document.getElementById('input-link-doi');
+    if (doiInput) doiInput.value = art.doi || '';
+    if (linkDoiInput) linkDoiInput.value = art.linkDoi || '';
 
     updateIssueStatusText(currentIssue);
 
@@ -471,6 +475,10 @@ export function clearEditorForm() {
     document.getElementById('input-abstract-en').value = '';
     document.getElementById('input-keywords-vn').value = '';
     document.getElementById('input-keywords-en').value = '';
+    const doiInput = document.getElementById('input-doi');
+    const linkDoiInput = document.getElementById('input-link-doi');
+    if (doiInput) doiInput.value = '';
+    if (linkDoiInput) linkDoiInput.value = '';
     updateIssueStatusText(null);
     window.renderSubmissionCard?.(null);
 
@@ -503,6 +511,10 @@ export function syncFormToPreview() {
     art.abstractEn = document.getElementById('input-abstract-en').value;
     art.keywordsVn = document.getElementById('input-keywords-vn').value;
     art.keywordsEn = document.getElementById('input-keywords-en').value;
+    const doiInput = document.getElementById('input-doi');
+    const linkDoiInput = document.getElementById('input-link-doi');
+    art.doi = doiInput ? doiInput.value : (art.doi || '');
+    art.linkDoi = linkDoiInput ? linkDoiInput.value : (art.linkDoi || '');
 
     saveToLocalStorage();
     renderLivePreview(art);
@@ -715,6 +727,8 @@ export function renderSingleArticlePreview(art) {
     const pvDatePublishedEn = document.getElementById('pv-date-published-en');
     const pvKeywordsVn = document.getElementById('pv-keywords-vn');
     const pvKeywordsEn = document.getElementById('pv-keywords-en');
+    const pvDoi = document.getElementById('pv-doi');
+    const pvLinkDoi = document.getElementById('pv-link-doi');
     const pvAbstractVn = document.getElementById('pv-abstract-vn');
     const pvAbstractEn = document.getElementById('pv-abstract-en');
 
@@ -738,6 +752,8 @@ export function renderSingleArticlePreview(art) {
 
     if (pvKeywordsVn) pvKeywordsVn.textContent = formatKeywords(art.keywordsVn, 'Nhập từ khóa...');
     if (pvKeywordsEn) pvKeywordsEn.textContent = formatKeywords(art.keywordsEn, 'Keywords...');
+    if (pvDoi) pvDoi.textContent = art.doi || '';
+    if (pvLinkDoi) pvLinkDoi.textContent = art.linkDoi || '';
 
     if (pvAbstractVn) pvAbstractVn.textContent = art.abstractVn || 'Nhập tóm tắt tiếng Việt...';
     if (pvAbstractEn) pvAbstractEn.textContent = art.abstractEn || 'Enter English abstract...';
@@ -855,6 +871,8 @@ export function createNewArticle() {
         datePublished: "",
         keywordsVn: "",
         keywordsEn: "",
+        doi: "",
+        linkDoi: "",
         abstractVn: "",
         abstractEn: "",
         bodyContent: "",

@@ -118,7 +118,7 @@ export function inlineHtmlToWord(node, inherited = {}) {
     if (node.tagName === 'BR') return '<w:r><w:br/></w:r>';
     const next = { ...inherited };
     if (['STRONG', 'B'].includes(node.tagName)) next.bold = true;
-    if (['EM', 'I'].includes(node.tagName)) next.italic = true;
+    if (['EM', 'I'].includes(node.tagName) && !next.suppressItalic) next.italic = true;
     if (node.tagName === 'U') next.underline = true;
     return Array.from(node.childNodes).map(child => inlineHtmlToWord(child, next)).join('');
 }
@@ -169,8 +169,13 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             node.classList.contains('ql-align-right') ? 'right' :
                 node.classList.contains('ql-align-justify') ? 'both' : 'both';
         if (/^H[1-3]$/.test(node.tagName)) {
-            const headingXml = inlineHtmlToWord(node, { bold: true, italic: false, color: '2A4E8A', size: 20 })
-                .replace(/<w:i\/?\s*\/>/g, '<w:i w:val="0"/>');
+            const headingXml = inlineHtmlToWord(node, {
+                bold: true,
+                italic: false,
+                suppressItalic: true,
+                color: '2A4E8A',
+                size: 20
+            });
             blocks.push(wordParagraph(headingXml, wordParagraphOptions(node, {
                 style: `Heading${node.tagName.slice(1)}`, align: 'left', before: 160, after: 80, keepNext: true
             })));

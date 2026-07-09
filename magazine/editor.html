@@ -387,6 +387,11 @@
                                                     Enter English
                                                     keywords...</p>
                                             </div>
+                                            <div class="space-y-0.5 text-slate-800 text-[10px]">
+                                                <div><strong>Doi:</strong> <span id="pv-doi"></span></div>
+                                                <div><strong>Available online at:</strong> <span
+                                                        id="pv-link-doi"></span></div>
+                                            </div>
                                         </div>
 
                                         <div class="col-span-8 space-y-1 text-justify" id="target-abstractEn">
@@ -673,6 +678,23 @@
                             <input type="text" id="input-keywords-en"
                                 class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
                                 placeholder="AI, Lac Hong, ML" oninput="syncFormToPreview()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">DOI:</label>
+                            <input type="text" id="input-doi"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="10.xxxx/jslhu.xxxx" oninput="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Link DOI:</label>
+                            <input type="text" id="input-link-doi"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="https://doi.org/..." oninput="syncFormToPreview()">
                         </div>
                     </div>
 

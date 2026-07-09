@@ -32,6 +32,7 @@ export function currentExportData() {
         authors: art.authors || '', authors_en: removeVietnameseDiacritics(art.authors),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
+        doi: art.doi || '', link_doi: art.linkDoi || '',
         date: footerDateText(art), publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim()
@@ -137,7 +138,9 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
         wordParagraph(wordRun('ARTICLE INFORMATION', { bold: true, size: 18 }), { align: 'left', bottomBorder: true, after: 70 }) +
         wordParagraph(wordRun('Received:\nRevised:\nAccepted:\nPublished: ' + data.publishDate, { size: 20 }), { align: 'left', after: 90, line: 250 }) +
         wordParagraph(wordRun('KEYWORDS', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 60 }) +
-        wordParagraph(wordRun(formatKeywords(data.keywords_en, ''), { size: 20 }), { align: 'left', after: 0, line: 250 }),
+        wordParagraph(wordRun(formatKeywords(data.keywords_en, ''), { size: 20 }), { align: 'left', after: 0, line: 250 }) +
+        wordParagraph(wordRun('Doi: ' + (data.doi || ''), { size: 20 }), { align: 'left', after: 0, line: 220 }) +
+        wordParagraph(wordRun('Available online at: ' + (data.link_doi || ''), { size: 20 }), { align: 'left', after: 0, line: 220 }),
         wordParagraph(wordRun('ABSTRACT', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 70 }) +
         wordParagraph(wordRun(data.abstract_en, { size: 20 }), { align: 'both', after: 0, line: 245 })
     ]], [3100, 6538], { borders: false, topBorder: true, bottomBorder: true });
@@ -199,7 +202,7 @@ export async function buildDefaultDocx(data) {
     const relationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://relationships.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/><Relationship Id="rIdHeaderOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-odd.xml"/><Relationship Id="rIdHeaderEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-even.xml"/><Relationship Id="rIdHeaderFirst" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-first.xml"/><Relationship Id="rIdFooterOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-odd.xml"/><Relationship Id="rIdFooterEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-even.xml"/>${logoLoaded ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image.png"/>' : ''}${contentImages.relationships}</Relationships>`;
     const hasImages = logoLoaded || contentImages.map.size > 0;
     const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${hasImages ? '<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/>' : ''}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/header-odd.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/header-even.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/header-first.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer-odd.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/word/footer-even.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
-    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="260" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr></w:pPrDefault></w:docDefaults>${[1, 2, 3].map(level => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="160" w:after="80"/></w:pPr><w:rPr><w:b/><w:sz w:val="20"/><w:color w:val="2A4E8A"/></w:rPr></w:style>`).join('')}<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="260" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr></w:pPrDefault></w:docDefaults>${[1, 2, 3].map(level => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="160" w:after="80"/></w:pPr><w:rPr><w:b/><w:i w:val="0"/><w:iCs w:val="0"/><w:sz w:val="20"/><w:color w:val="2A4E8A"/></w:rPr></w:style>`).join('')}<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
     zip.file('[Content_Types].xml', contentTypes);
     zip.folder('_rels').file('.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
     const word = zip.folder('word');
@@ -343,10 +346,26 @@ export async function exportCurrentArticleWord() {
 export function normalizeAndReplaceDocxXml(xml, data) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'application/xml');
+    const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+    const setRunTextWithBreaks = (textNode, value) => {
+        const run = textNode?.parentNode;
+        if (!run) return;
+        Array.from(run.childNodes).forEach(child => {
+            if (child.nodeName !== 'w:rPr') child.remove();
+        });
+        String(value ?? '').split('\n').forEach((part, index) => {
+            if (index) run.appendChild(doc.createElementNS(WORD_NS, 'w:br'));
+            const text = doc.createElementNS(WORD_NS, 'w:t');
+            text.setAttribute('xml:space', 'preserve');
+            text.textContent = part;
+            run.appendChild(text);
+        });
+    };
 
     const placeholders = [
         'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
-        'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'content'
+        'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'doi', 'link_doi', 'content'
     ];
 
     const paragraphs = doc.getElementsByTagName('w:p');
@@ -385,14 +404,16 @@ export function normalizeAndReplaceDocxXml(xml, data) {
                 else if (ph === 'contact') val = data.contact;
                 else if (ph === 'abstract') val = data.abstract;
                 else if (ph === 'abstract_en') val = data.abstract_en;
-                else if (ph === 'keywords') val = data.keywords;
-                else if (ph === 'keywords_en') val = data.keywords_en;
+                else if (ph === 'keywords') val = formatKeywords(data.keywords, '');
+                else if (ph === 'keywords_en') val = formatKeywords(data.keywords_en, '');
+                else if (ph === 'doi') val = data.doi;
+                else if (ph === 'link_doi') val = data.link_doi;
 
                 fullText = fullText.replaceAll(key, val);
             }
         });
 
-        tNodes[0].textContent = fullText;
+        setRunTextWithBreaks(tNodes[0], fullText);
         for (let i = 1; i < tNodes.length; i++) {
             tNodes[i].textContent = '';
         }
@@ -528,6 +549,7 @@ export function getArticleExportData(art) {
         authors: art.authors || '', authors_en: removeVietnameseDiacritics(art.authors),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
+        doi: art.doi || '', link_doi: art.linkDoi || '',
         date: footerDateText(art), publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim()
