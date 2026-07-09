@@ -138,12 +138,12 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
         wordParagraph(wordRun('ARTICLE INFORMATION', { bold: true, size: 18 }), { align: 'left', bottomBorder: true, after: 70 }) +
         wordParagraph(wordRun('Received:\nRevised:\nAccepted:\nPublished: ' + data.publishDate, { size: 20 }), { align: 'left', after: 90, line: 250 }) +
         wordParagraph(wordRun('KEYWORDS', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 60 }) +
-        wordParagraph(wordRun(formatKeywords(data.keywords_en, ''), { size: 20 }), { align: 'left', after: 0, line: 250 }) +
-        wordParagraph(wordRun('Doi: ' + (data.doi || ''), { size: 20 }), { align: 'left', after: 0, line: 220 }) +
-        wordParagraph(wordRun('Available online at: ' + (data.link_doi || ''), { size: 20 }), { align: 'left', after: 0, line: 220 }),
+        wordParagraph(wordRun(formatKeywords(data.keywords_en, ''), { size: 20 }), { align: 'left', after: 0, line: 250 }),
         wordParagraph(wordRun('ABSTRACT', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 70 }) +
         wordParagraph(wordRun(data.abstract_en, { size: 20 }), { align: 'both', after: 0, line: 245 })
     ]], [3100, 6538], { borders: false, topBorder: true, bottomBorder: true });
+    const doiInfo = wordParagraph(wordRun('Doi: ' + (data.doi || ''), { size: 20 }), { align: 'left', after: 0, line: 220 }) +
+        wordParagraph(wordRun('Available online at: ' + (data.link_doi || ''), { size: 20 }), { align: 'left', after: 80, line: 220, bottomBorder: true });
     return '' +
         wordParagraph(wordRun(data.title || 'TIÊU ĐỀ BÀI BÁO', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 100 }) +
         wordParagraph(wordRun(data.authors || 'Tác giả', { size: 24 }), { align: 'right', after: 40 }) +
@@ -152,7 +152,7 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
         wordParagraph(wordRun(data.title_en || 'ARTICLE TITLE', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 80 }) +
         wordParagraph(wordRun(data.authors_en || 'Authors', { size: 24 }), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('Lac Hong University, Bien Hoa, Dong Nai Province, Vietnam', { italic: true, size: 20 }), { align: 'right', after: 30 }) +
-        wordParagraph(wordRun('*Corresponding Author: ' + data.contact, { size: 20 }), { align: 'right', after: 100 }) + enInfo;
+        wordParagraph(wordRun('*Corresponding Author: ' + data.contact, { size: 20 }), { align: 'right', after: 100 }) + enInfo + doiInfo;
 }
 
 export async function buildDefaultDocx(data) {
