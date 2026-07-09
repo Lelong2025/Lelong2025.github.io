@@ -60,7 +60,9 @@ export function xmlEscape(value) {
 
 export function wordRun(text, options = {}) {
     if (!text) return '';
+    const font = options.font || 'Times New Roman';
     const props = [
+        `<w:rFonts w:ascii="${xmlEscape(font)}" w:hAnsi="${xmlEscape(font)}" w:eastAsia="${xmlEscape(font)}" w:cs="${xmlEscape(font)}"/>`,
         options.bold ? '<w:b/>' : '',
         options.italic === true ? '<w:i/><w:iCs/>' : (options.italic === false ? '<w:i w:val="0"/><w:iCs w:val="0"/>' : ''),
         options.underline ? '<w:u w:val="single"/>' : '',

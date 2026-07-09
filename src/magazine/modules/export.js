@@ -217,6 +217,7 @@ export async function buildDefaultDocx(data) {
     if (logoLoaded) {
         word.folder('_rels').file('header-first.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image.png"/></Relationships>');
     }
+    enforceZipDocxFonts(zip);
     return zip;
 }
 
@@ -320,6 +321,7 @@ export async function exportCurrentArticleWordFromTemplate() {
             }
         });
 
+        enforceZipDocxFonts(zip);
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
         showToast("Đã tải tệp Word từ template thành công!");
@@ -342,6 +344,49 @@ export async function exportCurrentArticleWord() {
         await exportCurrentArticleWordManual();
         return true;
     }
+}
+
+export function enforceDocxRunFonts(xml) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'application/xml');
+    const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+    const setRunFont = (run, fontName) => {
+        let runProperties = Array.from(run.childNodes).find(node => node.nodeName === 'w:rPr');
+        if (!runProperties) {
+            runProperties = doc.createElementNS(WORD_NS, 'w:rPr');
+            run.insertBefore(runProperties, run.firstChild);
+        }
+        let fonts = Array.from(runProperties.childNodes).find(node => node.nodeName === 'w:rFonts');
+        if (!fonts) {
+            fonts = doc.createElementNS(WORD_NS, 'w:rFonts');
+            runProperties.insertBefore(fonts, runProperties.firstChild);
+        }
+        ['ascii', 'hAnsi', 'eastAsia', 'cs'].forEach(key => {
+            fonts.setAttribute(`w:${key}`, fontName);
+        });
+    };
+
+    Array.from(doc.getElementsByTagName('w:p')).forEach(paragraph => {
+        const paragraphText = Array.from(paragraph.getElementsByTagName('w:t'))
+            .map(node => node.textContent)
+            .join('');
+        const fontName = paragraphText.trim() === 'JOURNAL OF SCIENCE'
+            ? 'Cambria'
+            : 'Times New Roman';
+        Array.from(paragraph.getElementsByTagName('w:r')).forEach(run => setRunFont(run, fontName));
+    });
+
+    return new XMLSerializer().serializeToString(doc);
+}
+
+export function enforceZipDocxFonts(zip) {
+    Object.keys(zip.files || {}).forEach(path => {
+        if (!/^word\/(?:document|header[^/]*|footer[^/]*)\.xml$/i.test(path)) return;
+        const file = zip.file(path);
+        if (!file) return;
+        zip.file(path, enforceDocxRunFonts(file.asText()));
+    });
 }
 
 export function normalizeAndReplaceDocxXml(xml, data) {
@@ -456,7 +501,7 @@ export function normalizeAndReplaceDocxXml(xml, data) {
         resultXml = resultXml.replace(/<w:p[^>]*replace-with-content="true"[^>]*>[\s\S]*?<\/w:p>/, () => contentToInject);
     }
 
-    return resultXml;
+    return enforceDocxRunFonts(resultXml);
 }
 
 export async function exportVectorPdf() {
@@ -825,6 +870,7 @@ export async function exportIssueWord() {
             }
         });
 
+        enforceZipDocxFonts(baseZip);
         const blob = baseZip.generate({
             type: 'blob',
             mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
