@@ -176,7 +176,11 @@ function annotatePreviewSections(sections) {
     if (!sections?.length) return;
     const pages = document.getElementById('content-pages');
     if (!pages) return;
-    const candidates = Array.from(pages.querySelectorAll('.rich-rendered-text > *'));
+    pages.querySelectorAll('[id^="target-section-"]').forEach(node => {
+        node.removeAttribute('id');
+        node.classList.remove('ai-highlight-target', 'ai-highlight-active');
+    });
+    const candidates = Array.from(pages.querySelectorAll('.article-page-content > *'));
     sections.forEach(section => {
         const heading = String(section.heading || '').replace(/\s+/g, ' ').trim();
         const target = candidates.find(node => getHeadingText(node) === heading)
@@ -185,6 +189,23 @@ function annotatePreviewSections(sections) {
             target.id = `target-${section.sectionId || section.id}`;
             target.classList.add('ai-highlight-target');
         }
+    });
+}
+
+function resolveSectionReviewTargets(reviewSections, sourceSections) {
+    if (!Array.isArray(reviewSections)) return [];
+    return reviewSections.map((section, index) => {
+        const matched = sourceSections.find(item => item.id === section.sectionId)
+            || sourceSections.find(item => section.sectionHash && item.hash === section.sectionHash)
+            || sourceSections.find(item => item.heading === section.heading)
+            || sourceSections[index];
+        if (!matched) return section;
+        return {
+            ...section,
+            sectionId: matched.id,
+            sectionHash: matched.hash,
+            heading: section.heading || matched.heading
+        };
     });
 }
 
@@ -501,6 +522,7 @@ export async function runAiReview() {
             }
             const rawResult = await callLlamaAI(buildReviewPrompt(art, sectionBatches[batchIndex], currentSections));
             const batchReview = parseAiReviewResult(rawResult);
+            batchReview.sections = resolveSectionReviewTargets(batchReview.sections, sectionBatches[batchIndex]);
             if (!parsedReview) {
                 parsedReview = batchReview;
             } else {
