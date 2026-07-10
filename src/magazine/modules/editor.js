@@ -24,6 +24,7 @@ export let draftDragging = false;
 export let editorTableSelection = new Set();
 export let editorDragStart = null;
 export let editorDragging = false;
+let embeddedTableSyncTimer = null;
 export const tableBorderIds = ['top', 'bottom', 'left', 'right', 'inside-h', 'inside-v', 'header'];
 
 // Register Quill Custom Table Blot
@@ -77,6 +78,7 @@ export function initQuill() {
 
     quill.on('text-change', function (_delta, _oldDelta, source) {
         if (loadingQuillContent || source === 'silent') return;
+        if (isEventInsideEmbeddedTable()) return;
         syncRichEditorToState();
     });
     quill.on('selection-change', function (range) {
@@ -90,6 +92,8 @@ export function initQuill() {
     quill.root.addEventListener('paste', pasteClipboardTablesIntoQuill, true);
     quill.root.addEventListener('click', handleTableClick);
     quill.root.addEventListener('input', handleEmbeddedTableInput);
+    quill.root.addEventListener('keydown', handleEmbeddedTableKeyDown, true);
+    quill.root.addEventListener('beforeinput', handleEmbeddedTableBeforeInput, true);
     quill.root.addEventListener('contextmenu', handleEditorTableContextMenu);
     quill.root.addEventListener('mousedown', handleEditorTableMouseDown);
     quill.root.addEventListener('mouseover', handleEditorTableMouseOver);
@@ -348,6 +352,20 @@ export function closeTableDialog() {
     if (borderMenu) borderMenu.classList.add('hidden');
 }
 
+function placeTableBorderMenu(mode) {
+    const menu = document.getElementById('table-border-menu');
+    if (!menu) return null;
+    menu.dataset.mode = mode;
+    if (mode === 'editor') {
+        const workspace = document.getElementById('rich-text-workspace');
+        if (workspace && menu.parentElement !== workspace) workspace.appendChild(menu);
+    } else {
+        const dialog = document.getElementById('table-dialog');
+        if (dialog && menu.parentElement !== dialog) dialog.appendChild(menu);
+    }
+    return menu;
+}
+
 export function buildDraftTable() {
     const rowCount = Math.min(50, Math.max(1, parseInt(document.getElementById('table-row-count').value, 10) || 1));
     const columnCount = Math.min(20, Math.max(1, parseInt(document.getElementById('table-column-count').value, 10) || 1));
@@ -410,9 +428,8 @@ export function bindDraftTableEvents() {
         if (!cell) return;
         event.preventDefault();
         if (!draftSelection.has(cell)) selectDraftRectangle(cell, cell);
-        const menu = document.getElementById('table-border-menu');
+        const menu = placeTableBorderMenu('draft');
         if (menu) {
-            menu.dataset.mode = 'draft';
             menu.style.left = `${Math.min(event.clientX, window.innerWidth - 210)}px`;
             menu.style.top = `${Math.min(event.clientY, window.innerHeight - 230)}px`;
             menu.classList.remove('hidden');
@@ -868,10 +885,44 @@ export function selectedEditorBounds() {
 export function handleEmbeddedTableInput(event) {
     const table = event.target.closest?.('#rich-editor-field table');
     if (!table) return;
+    event.stopPropagation();
     activeEditorTable = table;
     activeEditorCell = event.target.closest('td, th') || activeEditorCell;
     ensureTableResizeHandles(table);
-    syncRichEditorToState();
+    scheduleEmbeddedTableSync();
+}
+
+export function isEventInsideEmbeddedTable() {
+    const selection = window.getSelection();
+    const node = selection?.anchorNode;
+    const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    return Boolean(element?.closest?.('#rich-editor-field .scientific-table-embed table'));
+}
+
+export function scheduleEmbeddedTableSync() {
+    window.clearTimeout(embeddedTableSyncTimer);
+    embeddedTableSyncTimer = window.setTimeout(() => {
+        if (activeEditorTable) {
+            ensureTableResizeHandles(activeEditorTable);
+            syncRichEditorToState();
+        }
+    }, 180);
+}
+
+export function handleEmbeddedTableKeyDown(event) {
+    const cell = event.target.closest?.('#rich-editor-field td, #rich-editor-field th');
+    if (!cell || event.target.closest('.table-col-resizer, .table-row-resizer')) return;
+    activeEditorTable = cell.closest('table');
+    activeEditorCell = cell;
+    event.stopPropagation();
+}
+
+export function handleEmbeddedTableBeforeInput(event) {
+    const cell = event.target.closest?.('#rich-editor-field td, #rich-editor-field th');
+    if (!cell) return;
+    activeEditorTable = cell.closest('table');
+    activeEditorCell = cell;
+    event.stopPropagation();
 }
 
 export function handleEditorTableMouseDown(event) {
@@ -904,9 +955,8 @@ export function handleEditorTableContextMenu(event) {
     activeEditorCell = cell;
     ensureTableResizeHandles(activeEditorTable);
     if (!editorTableSelection.has(cell)) selectEditorRectangle(cell, cell);
-    const menu = document.getElementById('table-border-menu');
+    const menu = placeTableBorderMenu('editor');
     if (menu) {
-        menu.dataset.mode = 'editor';
         menu.style.left = `${Math.min(event.clientX, window.innerWidth - 230)}px`;
         menu.style.top = `${Math.min(event.clientY, window.innerHeight - 280)}px`;
         menu.classList.remove('hidden');
@@ -1070,9 +1120,14 @@ export function ensureTableResizeHandles(table) {
 export function startColumnResize(event, table, cell) {
     event.preventDefault();
     event.stopPropagation();
+    table.classList.add('table-resizing');
+    table.style.tableLayout = 'fixed';
     const startX = event.clientX;
     const vColIndex = getCellVisualColumnIndex(table, cell);
-    if (vColIndex === -1) return;
+    if (vColIndex === -1) {
+        table.classList.remove('table-resizing');
+        return;
+    }
 
     const colCells = getCellsInVisualColumn(table, vColIndex);
     const colSpan1Cells = colCells.filter(c => (c.colSpan || 1) === 1);
@@ -1080,19 +1135,27 @@ export function startColumnResize(event, table, cell) {
     const startWidth = referenceCell.getBoundingClientRect().width;
 
     const move = (moveEvent) => {
+        moveEvent.preventDefault();
         const nextWidth = Math.max(32, startWidth + moveEvent.clientX - startX);
         colSpan1Cells.forEach(target => {
             target.style.width = `${nextWidth}px`;
+            target.style.minWidth = `${nextWidth}px`;
         });
         if (colSpan1Cells.length === 0) {
             cell.style.width = `${nextWidth}px`;
+            cell.style.minWidth = `${nextWidth}px`;
         }
     };
     const up = () => {
         document.removeEventListener('mousemove', move);
         document.removeEventListener('mouseup', up);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        table.classList.remove('table-resizing');
         syncRichEditorToState();
     };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
 }
@@ -1100,16 +1163,24 @@ export function startColumnResize(event, table, cell) {
 export function startRowResize(event, _table, row) {
     event.preventDefault();
     event.stopPropagation();
+    const table = row.closest('table');
+    table?.classList.add('table-resizing');
     const startY = event.clientY;
     const startHeight = row.getBoundingClientRect().height;
     const move = (moveEvent) => {
+        moveEvent.preventDefault();
         row.style.height = `${Math.max(24, startHeight + moveEvent.clientY - startY)}px`;
     };
     const up = () => {
         document.removeEventListener('mousemove', move);
         document.removeEventListener('mouseup', up);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        table?.classList.remove('table-resizing');
         syncRichEditorToState();
     };
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
 }

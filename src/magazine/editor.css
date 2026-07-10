@@ -357,24 +357,25 @@ body.magazine-auth-required #toast-box {
 .table-col-resizer,
 .table-row-resizer {
     position: absolute;
-    z-index: 4;
+    z-index: 12;
     display: block;
     background: transparent;
+    touch-action: none;
 }
 
 .table-col-resizer {
     top: 0;
-    right: -3px;
-    width: 6px;
+    right: -6px;
+    width: 12px;
     height: 100%;
     cursor: col-resize;
 }
 
 .table-row-resizer {
     left: 0;
-    bottom: -3px;
+    bottom: -6px;
     width: 100%;
-    height: 6px;
+    height: 12px;
     cursor: row-resize;
 }
 
@@ -383,6 +384,11 @@ body.magazine-auth-required #toast-box {
 #rich-editor-field th:hover>.table-col-resizer,
 #rich-editor-field th:hover>.table-row-resizer {
     background: rgba(59, 130, 246, 0.18);
+}
+
+#rich-editor-field table.table-resizing .table-col-resizer,
+#rich-editor-field table.table-resizing .table-row-resizer {
+    background: rgba(37, 99, 235, 0.24);
 }
 
 .table-tool-button {
