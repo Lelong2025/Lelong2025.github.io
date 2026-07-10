@@ -899,6 +899,8 @@
             class="fixed z-[70] hidden w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl">
             <p class="px-2 pb-1 text-[10px] font-bold uppercase text-slate-400">Viền vùng đã chọn</p>
             <div class="grid grid-cols-2 gap-1 text-[11px]">
+                <button onclick="mergeSelectedTableCells()" class="table-tool-button">Merge</button><button
+                    onclick="splitSelectedTableCell()" class="table-tool-button">Tách</button>
                 <button onclick="applyDraftBorder('top')" class="table-tool-button">Trên</button><button
                     onclick="applyDraftBorder('bottom')" class="table-tool-button">Dưới</button>
                 <button onclick="applyDraftBorder('left')" class="table-tool-button">Trái</button><button

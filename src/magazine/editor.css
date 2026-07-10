@@ -244,6 +244,18 @@ body.magazine-auth-required #toast-box {
     margin: 12px 0;
 }
 
+#rich-editor-field .scientific-table-embed,
+#rich-editor-field .scientific-table-embed td,
+#rich-editor-field .scientific-table-embed th {
+    user-select: text;
+}
+
+#rich-editor-field td.editor-cell-selected,
+#rich-editor-field th.editor-cell-selected {
+    background: #dbeafe !important;
+    box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
 .preview-toolbar select,
 #issue-header-language,
 #article-header-language {

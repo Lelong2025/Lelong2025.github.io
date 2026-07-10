@@ -20,7 +20,7 @@ import {
     insertCustomTable, setTableBorderPreset, formatSelectedTable, deleteSelectedTable,
     mergeCellRight, mergeCellDown, splitActiveCell, addTableRow, deleteTableRow,
     addTableColumn, deleteTableColumn, formatActiveCell, toggleActiveCellBorder,
-    updateCurrentArticlePages
+    mergeSelectedTableCells, splitSelectedTableCell, updateCurrentArticlePages
 } from './modules/editor.js';
 import {
     exportCurrentArticleWord as exportCurrentArticleWordRaw,
@@ -148,6 +148,8 @@ Object.assign(window, {
     deleteTableColumn,
     formatActiveCell,
     toggleActiveCellBorder,
+    mergeSelectedTableCells,
+    splitSelectedTableCell,
     updateCurrentArticlePages,
     exportCurrentArticleWord,
     exportIssueWord,

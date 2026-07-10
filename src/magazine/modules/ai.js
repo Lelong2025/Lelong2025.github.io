@@ -17,6 +17,112 @@ function setAiStatusBadge(statusBadge, text, className) {
     statusBadge.classList.toggle('hidden', state.appState.reviewPanelTab === 'issue');
 }
 
+function hashString(value) {
+    let hash = 0;
+    const text = String(value || '');
+    for (let index = 0; index < text.length; index += 1) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(index);
+        hash |= 0;
+    }
+    return String(hash >>> 0);
+}
+
+function textFromHtml(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html || '';
+    root.querySelectorAll('script,style').forEach(node => node.remove());
+    return root.textContent.replace(/\s+/g, ' ').trim();
+}
+
+function getHeadingText(node) {
+    return String(node?.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function looksLikeNumberedHeading(node) {
+    if (!/^(P|DIV|H1|H2|H3|H4|LI)$/i.test(node?.tagName || '')) return false;
+    const text = getHeadingText(node);
+    if (!text || text.length > 180) return false;
+    return /^\d+(?:\.\d+)*[\.\)]?\s+\S+/.test(text);
+}
+
+function makeSectionId(index, heading) {
+    return `section-${index + 1}-${hashString(heading).slice(0, 6)}`;
+}
+
+export function extractArticleSections(bodyContent) {
+    const root = document.createElement('div');
+    root.innerHTML = bodyContent || '';
+    const children = Array.from(root.children);
+    if (!children.length) return [];
+
+    const starts = children
+        .map((node, index) => ({ node, index }))
+        .filter(item => /^(H1|H2|H3|H4)$/i.test(item.node.tagName) || looksLikeNumberedHeading(item.node));
+
+    if (!starts.length) {
+        const html = root.innerHTML;
+        return [{
+            id: 'section-1-main',
+            heading: 'Noi dung chinh',
+            html,
+            text: textFromHtml(html),
+            hash: hashString(html),
+            startIndex: 0,
+            endIndex: children.length
+        }].filter(section => section.text);
+    }
+
+    return starts.map((start, idx) => {
+        const next = starts[idx + 1]?.index ?? children.length;
+        const nodes = children.slice(start.index, next);
+        const html = nodes.map(node => node.outerHTML).join('');
+        const heading = getHeadingText(start.node) || `Muc ${idx + 1}`;
+        return {
+            id: makeSectionId(idx, heading),
+            heading,
+            html,
+            text: textFromHtml(html),
+            hash: hashString(html),
+            startIndex: start.index,
+            endIndex: next
+        };
+    }).filter(section => section.text);
+}
+
+function buildDocumentContext(art, sections) {
+    return {
+        titleVn: art.titleVn || '',
+        titleEn: art.titleEn || '',
+        abstractVn: art.abstractVn || '',
+        abstractEn: art.abstractEn || '',
+        keywordsVn: art.keywordsVn || '',
+        keywordsEn: art.keywordsEn || '',
+        sectionOutline: sections.map((section, index) => ({
+            id: section.id,
+            order: index + 1,
+            heading: section.heading,
+            summaryText: section.text.slice(0, 900),
+            hash: section.hash
+        }))
+    };
+}
+
+function annotatePreviewSections(sections) {
+    if (!sections?.length) return;
+    const pages = document.getElementById('content-pages');
+    if (!pages) return;
+    const candidates = Array.from(pages.querySelectorAll('.rich-rendered-text > *'));
+    sections.forEach(section => {
+        const heading = String(section.heading || '').replace(/\s+/g, ' ').trim();
+        const target = candidates.find(node => getHeadingText(node) === heading)
+            || candidates.find(node => heading && getHeadingText(node).startsWith(heading.slice(0, 60)));
+        if (target) {
+            target.id = `target-${section.sectionId || section.id}`;
+            target.classList.add('ai-highlight-target');
+        }
+    });
+}
+
 export function renderAiReviewPanel(art) {
     const container = document.getElementById('ai-suggestions-container');
     const applyBtn = document.getElementById('apply-ai-btn');
@@ -62,14 +168,14 @@ export function renderAiReviewPanel(art) {
 
     if (suggestions.sections && suggestions.sections.length > 0) {
         suggestions.sections.forEach((sect, idx) => {
-            const cleanId = sect.heading.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 15);
-            const targetId = `target-section-${cleanId}`;
+            const targetId = `target-${sect.sectionId || `section-${idx}`}`;
             const label = `Đề mục: ${sect.heading}`;
             const rule = `Căn chỉnh nội dung & bố cục khoa học cho mục "${sect.heading}"`;
             container.appendChild(createSuggestionCard(`section-${idx}`, label, rule, sect, targetId));
         });
     }
 
+    annotatePreviewSections(suggestions.sections);
     highlightPreviewTargets();
 }
 
@@ -158,7 +264,11 @@ export function createSuggestionCard(fieldId, label, rule, data, targetDomId) {
 
             const labelSpan = document.createElement('span');
             labelSpan.className = "text-[10.5px] leading-relaxed text-slate-700 dark:text-slate-300";
-            labelSpan.innerHTML = `<strong class="text-blue-600 dark:text-blue-400">Phương án ${index + 1}:</strong> ${optText}`;
+            const strong = document.createElement('strong');
+            strong.className = "text-blue-600 dark:text-blue-400";
+            strong.textContent = `Phương án ${index + 1}: `;
+            labelSpan.appendChild(strong);
+            labelSpan.appendChild(document.createTextNode(optText));
 
             optWrapper.appendChild(radio);
             optWrapper.appendChild(labelSpan);
@@ -239,6 +349,8 @@ export async function callLlamaAI(userPrompt, timeoutMs = 75000) {
 }
 
 export function buildReviewPrompt(art) {
+    const reviewSections = extractArticleSections(art.bodyContent || '');
+    const documentContext = buildDocumentContext(art, reviewSections);
     return `${ARTICLE_REVIEW_CRITERIA}
 
 Hãy review toàn bộ dữ liệu bài báo dưới đây. Không bịa số liệu, kết quả, tác giả hoặc trích dẫn. Nếu một trường đang rỗng, vẫn phải nhận xét rõ là còn thiếu và đưa đúng 3 phương án phù hợp dựa trên ngữ cảnh hiện có. Ba phương án Việt/Anh cùng chỉ số phải tương ứng về nghĩa.
@@ -248,12 +360,24 @@ Chỉ trả về một JSON hợp lệ, không Markdown, đúng cấu trúc:
 
 Mỗi options phải có đúng 3 chuỗi hoàn chỉnh. Với sections, chỉ nhận xét các đề mục thực sự xuất hiện; nếu nội dung chưa có đề mục thì dùng heading "Nội dung chính".
 
+For sections, review only items listed in REVIEW_SECTIONS. Each section result must include the exact sectionId and sectionHash from REVIEW_SECTIONS. Each section option must be complete replacement HTML for only that section, keep the original heading, and must not be just commentary. Use DOCUMENT_CONTEXT to preserve whole-article logic, terminology, previous/next section context, and avoid context drift.
+
 <ARTICLE_DATA>${JSON.stringify({
         titleVn: art.titleVn || '', titleEn: art.titleEn || '',
         abstractVn: art.abstractVn || '', abstractEn: art.abstractEn || '',
         keywordsVn: art.keywordsVn || '', keywordsEn: art.keywordsEn || '',
         bodyContent: art.bodyContent || ''
-    })}</ARTICLE_DATA>`;
+    })}</ARTICLE_DATA>
+<DOCUMENT_CONTEXT>${JSON.stringify(documentContext)}</DOCUMENT_CONTEXT>
+<REVIEW_SECTIONS>${JSON.stringify(reviewSections.map((section, index) => ({
+        id: section.id,
+        heading: section.heading,
+        hash: section.hash,
+        html: section.html,
+        text: section.text,
+        previousHeading: reviewSections[index - 1]?.heading || '',
+        nextHeading: reviewSections[index + 1]?.heading || ''
+    })))}</REVIEW_SECTIONS>`;
 }
 
 export function parseAiReviewResult(raw) {
@@ -274,7 +398,9 @@ export function parseAiReviewResult(raw) {
         }
         item.selected = 'keep';
     });
-    parsed.sections = Array.isArray(parsed.sections) ? parsed.sections.map(section => ({
+    parsed.sections = Array.isArray(parsed.sections) ? parsed.sections.map((section, index) => ({
+        sectionId: String(section.sectionId || `section-${index}`).trim(),
+        sectionHash: String(section.sectionHash || '').trim(),
         heading: String(section.heading || 'Nội dung chính').trim(),
         feedback: String(section.feedback || '').trim(),
         options: Array.isArray(section.options) ? section.options.slice(0, 3).map(String) : [],
@@ -301,7 +427,13 @@ export async function runAiReview() {
 
     try {
         const rawResult = await callLlamaAI(buildReviewPrompt(art));
-        art.aiReviewSuggestions = parseAiReviewResult(rawResult);
+        const parsedReview = parseAiReviewResult(rawResult);
+        const currentSections = extractArticleSections(art.bodyContent || '');
+        parsedReview.sectionCache = Object.fromEntries(currentSections.map(section => [section.id, {
+            heading: section.heading,
+            hash: section.hash
+        }]));
+        art.aiReviewSuggestions = parsedReview;
         saveToLocalStorage();
         renderAiReviewPanel(art);
         showToast("AI Review hoàn tất phân tích cấu trúc bài viết!");
@@ -366,21 +498,40 @@ export function applySelectedSuggestions() {
     if (suggestions.sections && suggestions.sections.length > 0) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = art.bodyContent || '';
-        const hElements = tempDiv.querySelectorAll('h1, h2, h3, table');
+        const currentSections = extractArticleSections(tempDiv.innerHTML);
 
+        const sectionReplacements = [];
         suggestions.sections.forEach((sect, idx) => {
-            if (sect.selected && sect.selected !== "keep" && hElements[idx]) {
-                const pReplacement = document.createElement('p');
-                pReplacement.textContent = sect.selected;
-                hElements[idx].insertAdjacentElement('afterend', pReplacement);
-                changesMadeCount++;
+            if (sect.selected && sect.selected !== "keep") {
+                const matched = currentSections.find(section => section.id === sect.sectionId)
+                    || currentSections.find(section => section.heading === sect.heading)
+                    || currentSections[idx];
+                if (!matched) return;
+                sectionReplacements.push({ matched, selected: sect.selected });
             }
         });
+        sectionReplacements
+            .sort((left, right) => right.matched.startIndex - left.matched.startIndex)
+            .forEach(({ matched, selected }) => {
+                const replacementRoot = document.createElement('div');
+                replacementRoot.innerHTML = selected;
+                if (!replacementRoot.children.length) {
+                    const paragraph = document.createElement('p');
+                    paragraph.textContent = selected;
+                    replacementRoot.appendChild(paragraph);
+                }
+                const children = Array.from(tempDiv.children);
+                const oldNodes = children.slice(matched.startIndex, matched.endIndex);
+                if (!oldNodes.length) return;
+                oldNodes[0].before(...Array.from(replacementRoot.childNodes));
+                oldNodes.forEach(node => node.remove());
+                changesMadeCount++;
+            });
         art.bodyContent = tempDiv.innerHTML;
     }
 
     if (changesMadeCount > 0) {
-        clearSelectedRadioState(suggestions);
+        art.aiReviewSuggestions = null;
         saveToLocalStorage();
         
         renderLivePreview(art);
@@ -389,6 +540,11 @@ export function applySelectedSuggestions() {
 
         showToast(`Đã áp dụng thành công ${changesMadeCount} thay đổi học thuật!`);
     } else {
+        art.aiReviewSuggestions = null;
+        saveToLocalStorage();
+        renderLivePreview(art);
+        renderArticlesList();
+        renderAiReviewPanel(art);
         showToast("Không có thay đổi mới nào được chọn.");
     }
 }

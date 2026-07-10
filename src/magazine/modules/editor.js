@@ -21,6 +21,9 @@ export let draftTable = null;
 export let draftSelection = new Set();
 export let draftDragStart = null;
 export let draftDragging = false;
+export let editorTableSelection = new Set();
+export let editorDragStart = null;
+export let editorDragging = false;
 export const tableBorderIds = ['top', 'bottom', 'left', 'right', 'inside-h', 'inside-v', 'header'];
 
 // Register Quill Custom Table Blot
@@ -37,8 +40,9 @@ if (window.Quill) {
     class ScientificTableBlot extends QuillBlockEmbed {
         static create(value) {
             const node = super.create();
-            node.setAttribute('contenteditable', 'false');
+            node.setAttribute('contenteditable', 'true');
             node.innerHTML = String(value || '');
+            node.querySelectorAll('td,th').forEach(cell => cell.setAttribute('contenteditable', 'true'));
             return node;
         }
         static value(node) { return node.innerHTML; }
@@ -85,6 +89,10 @@ export function initQuill() {
     quill.root.addEventListener('paste', pasteGridIntoTable);
     quill.root.addEventListener('paste', pasteClipboardTablesIntoQuill, true);
     quill.root.addEventListener('click', handleTableClick);
+    quill.root.addEventListener('input', handleEmbeddedTableInput);
+    quill.root.addEventListener('contextmenu', handleEditorTableContextMenu);
+    quill.root.addEventListener('mousedown', handleEditorTableMouseDown);
+    quill.root.addEventListener('mouseover', handleEditorTableMouseOver);
 }
 
 export function normalizeClipboardTable(table, clipboardRoot) {
@@ -179,6 +187,8 @@ export function openRichTextWorkspace() {
     else quill.setText('', 'silent');
     quillArticleId = art.id;
     loadingQuillContent = false;
+    quill.root.querySelectorAll('.scientific-table-embed').forEach(embed => embed.setAttribute('contenteditable', 'true'));
+    quill.root.querySelectorAll('table').forEach(ensureTableResizeHandles);
 
     const workspace = document.getElementById('rich-text-workspace');
     if (workspace) {
@@ -243,13 +253,26 @@ export function formatDoc(cmd, value = null) {
     else if (commandMap[cmd]) quill.format(commandMap[cmd][0], commandMap[cmd][1], 'user');
 }
 
+export function getCleanRichEditorHtml() {
+    const clone = quill.root.cloneNode(true);
+    clone.querySelectorAll('.table-col-resizer, .table-row-resizer').forEach(node => node.remove());
+    clone.querySelectorAll('.editor-cell-selected, .draft-cell-selected').forEach(node => {
+        node.classList.remove('editor-cell-selected', 'draft-cell-selected');
+    });
+    clone.querySelectorAll('.scientific-table-embed, td, th').forEach(node => {
+        node.removeAttribute('contenteditable');
+        node.removeAttribute('data-resize-bound');
+    });
+    return clone.innerHTML;
+}
+
 export function syncRichEditorToState() {
     const currentIssue = state.appState.issues[state.appState.currentIssueId];
     if (!currentIssue || !state.appState.currentArticleId) return;
 
     const art = currentIssue.articles.find(a => a.id === state.appState.currentArticleId);
     if (art) {
-        art.bodyContent = quill.root.innerHTML;
+        art.bodyContent = getCleanRichEditorHtml();
         saveToLocalStorage();
         syncWorkspacePreview();
     }
@@ -389,6 +412,7 @@ export function bindDraftTableEvents() {
         if (!draftSelection.has(cell)) selectDraftRectangle(cell, cell);
         const menu = document.getElementById('table-border-menu');
         if (menu) {
+            menu.dataset.mode = 'draft';
             menu.style.left = `${Math.min(event.clientX, window.innerWidth - 210)}px`;
             menu.style.top = `${Math.min(event.clientY, window.innerHeight - 230)}px`;
             menu.classList.remove('hidden');
@@ -438,12 +462,14 @@ export function formatDraftSelection(type, value) {
 }
 
 export function applyDraftBorder(mode) {
-    const bounds = selectedDraftBounds();
+    const menu = document.getElementById('table-border-menu');
+    const useEditorSelection = menu?.dataset.mode === 'editor' && editorTableSelection.size > 0;
+    const bounds = useEditorSelection ? selectedEditorBounds() : selectedDraftBounds();
     if (!bounds) return;
-    const cells = [...draftSelection];
+    const cells = useEditorSelection ? [...editorTableSelection] : [...draftSelection];
     if (mode === 'none') cells.forEach(cell => cell.style.border = '0 solid #000');
     else cells.forEach(cell => {
-        const position = draftCellPosition(cell);
+        const position = useEditorSelection ? editorCellPosition(cell) : draftCellPosition(cell);
         const set = side => cell.style[`border${side}`] = '1px solid #000';
         if (mode === 'all') cell.style.border = '1px solid #000';
         if (mode === 'top' && position.row === bounds.minRow) set('Top');
@@ -453,8 +479,8 @@ export function applyDraftBorder(mode) {
         if (mode === 'insideH' && position.row < bounds.maxRow) set('Bottom');
         if (mode === 'insideV' && position.column < bounds.maxColumn) set('Right');
     });
-    const menu = document.getElementById('table-border-menu');
     if (menu) menu.classList.add('hidden');
+    if (useEditorSelection) finishTableCellEdit();
 }
 
 export function pasteGridIntoDraftTable(event) {
@@ -473,7 +499,7 @@ export function pasteGridIntoDraftTable(event) {
 export function insertDraftTableAtCursor() {
     if (!draftTable) return;
     const table = draftTable.cloneNode(true);
-    table.querySelectorAll('td,th').forEach(cell => { cell.contentEditable = 'false'; cell.classList.remove('draft-cell-selected'); });
+    table.querySelectorAll('td,th').forEach(cell => { cell.contentEditable = 'true'; cell.classList.remove('draft-cell-selected'); });
     ensureTableResizeHandles(table);
     const insertionIndex = Math.max(0, Math.min(savedQuillRange?.index ?? (quill.getLength() - 1), quill.getLength() - 1));
     closeTableDialog();
@@ -661,6 +687,9 @@ export function finishTableCellEdit(message) {
 export function createEmptyTableCell(sourceCell = null) {
     const cell = document.createElement('td');
     cell.innerHTML = '<br>';
+    if (!sourceCell || sourceCell.isContentEditable || sourceCell.getAttribute('contenteditable') === 'true') {
+        cell.contentEditable = 'true';
+    }
     if (sourceCell) {
         if (sourceCell.style.textAlign) cell.style.textAlign = sourceCell.style.textAlign;
         if (sourceCell.style.fontWeight) cell.style.fontWeight = sourceCell.style.fontWeight;
@@ -798,6 +827,130 @@ export function toggleActiveCellBorder(side) {
     finishTableCellEdit();
 }
 
+export function clearEditorTableSelection() {
+    editorTableSelection.forEach(cell => cell.classList.remove('editor-cell-selected'));
+    editorTableSelection.clear();
+}
+
+function editorCellPosition(cell) {
+    return { row: cell.parentElement.rowIndex, column: cell.cellIndex };
+}
+
+export function selectEditorRectangle(startCell, endCell) {
+    if (!startCell || !endCell || startCell.closest('table') !== endCell.closest('table')) return;
+    const table = startCell.closest('table');
+    const start = editorCellPosition(startCell);
+    const end = editorCellPosition(endCell);
+    const minRow = Math.min(start.row, end.row), maxRow = Math.max(start.row, end.row);
+    const minColumn = Math.min(start.column, end.column), maxColumn = Math.max(start.column, end.column);
+    clearEditorTableSelection();
+    Array.from(table.rows).forEach((row, rowIndex) => Array.from(row.cells).forEach((cell, columnIndex) => {
+        if (rowIndex >= minRow && rowIndex <= maxRow && columnIndex >= minColumn && columnIndex <= maxColumn) {
+            editorTableSelection.add(cell);
+        }
+    }));
+    editorTableSelection.forEach(cell => cell.classList.add('editor-cell-selected'));
+    activeEditorTable = table;
+    activeEditorCell = startCell;
+}
+
+export function selectedEditorBounds() {
+    if (!editorTableSelection.size) return null;
+    const positions = [...editorTableSelection].map(editorCellPosition);
+    return {
+        minRow: Math.min(...positions.map(item => item.row)),
+        maxRow: Math.max(...positions.map(item => item.row)),
+        minColumn: Math.min(...positions.map(item => item.column)),
+        maxColumn: Math.max(...positions.map(item => item.column))
+    };
+}
+
+export function handleEmbeddedTableInput(event) {
+    const table = event.target.closest?.('#rich-editor-field table');
+    if (!table) return;
+    activeEditorTable = table;
+    activeEditorCell = event.target.closest('td, th') || activeEditorCell;
+    ensureTableResizeHandles(table);
+    syncRichEditorToState();
+}
+
+export function handleEditorTableMouseDown(event) {
+    const cell = event.target.closest?.('#rich-editor-field td, #rich-editor-field th');
+    if (!cell || event.button !== 0 || event.target.closest('.table-col-resizer, .table-row-resizer')) return;
+    activeEditorTable = cell.closest('table');
+    activeEditorCell = cell;
+    ensureTableResizeHandles(activeEditorTable);
+    if (event.shiftKey || event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        editorDragStart = cell;
+        editorDragging = true;
+        selectEditorRectangle(cell, cell);
+        document.addEventListener('mouseup', () => { editorDragging = false; }, { once: true });
+    } else {
+        clearEditorTableSelection();
+    }
+}
+
+export function handleEditorTableMouseOver(event) {
+    const cell = event.target.closest?.('#rich-editor-field td, #rich-editor-field th');
+    if (editorDragging && editorDragStart && cell) selectEditorRectangle(editorDragStart, cell);
+}
+
+export function handleEditorTableContextMenu(event) {
+    const cell = event.target.closest?.('#rich-editor-field td, #rich-editor-field th');
+    if (!cell) return;
+    event.preventDefault();
+    activeEditorTable = cell.closest('table');
+    activeEditorCell = cell;
+    ensureTableResizeHandles(activeEditorTable);
+    if (!editorTableSelection.has(cell)) selectEditorRectangle(cell, cell);
+    const menu = document.getElementById('table-border-menu');
+    if (menu) {
+        menu.dataset.mode = 'editor';
+        menu.style.left = `${Math.min(event.clientX, window.innerWidth - 230)}px`;
+        menu.style.top = `${Math.min(event.clientY, window.innerHeight - 280)}px`;
+        menu.classList.remove('hidden');
+    }
+}
+
+export function mergeSelectedTableCells() {
+    const menu = document.getElementById('table-border-menu');
+    if (menu?.dataset.mode === 'draft') return mergeDraftSelection();
+    const bounds = selectedEditorBounds();
+    if (!activeEditorTable || !bounds || editorTableSelection.size < 2) return showToast('Hay chon it nhat hai o can merge.');
+    const expected = (bounds.maxRow - bounds.minRow + 1) * (bounds.maxColumn - bounds.minColumn + 1);
+    if (editorTableSelection.size !== expected || [...editorTableSelection].some(cell => cell.colSpan > 1 || cell.rowSpan > 1)) {
+        return showToast('Chi co the merge mot vung chu nhat chua gop.');
+    }
+    const anchor = activeEditorTable.rows[bounds.minRow]?.cells[bounds.minColumn];
+    if (!anchor || !editorTableSelection.has(anchor)) return;
+    const contents = [...editorTableSelection].filter(cell => cell !== anchor).map(cell => cell.textContent.trim()).filter(Boolean);
+    anchor.colSpan = bounds.maxColumn - bounds.minColumn + 1;
+    anchor.rowSpan = bounds.maxRow - bounds.minRow + 1;
+    if (contents.length) anchor.innerHTML = [anchor.textContent.trim(), ...contents].filter(Boolean).join('<br>');
+    [...editorTableSelection].forEach(cell => { if (cell !== anchor) cell.remove(); });
+    clearEditorTableSelection();
+    editorTableSelection.add(anchor);
+    anchor.classList.add('editor-cell-selected');
+    activeEditorCell = anchor;
+    if (menu) menu.classList.add('hidden');
+    finishTableCellEdit('Da merge o.');
+}
+
+export function splitSelectedTableCell() {
+    const menu = document.getElementById('table-border-menu');
+    if (menu?.dataset.mode === 'draft') return splitDraftCell();
+    const cell = editorTableSelection.size === 1 ? [...editorTableSelection][0] : activeEditorCell;
+    if (!cell) return showToast('Hay chon mot o da merge de tach.');
+    activeEditorCell = cell;
+    activeEditorTable = cell.closest('table');
+    splitActiveCell();
+    clearEditorTableSelection();
+    editorTableSelection.add(cell);
+    cell.classList.add('editor-cell-selected');
+    if (menu) menu.classList.add('hidden');
+}
+
 export function handleTableClick(event) {
     const table = event.target.closest?.('#rich-editor-field table');
     if (!table) return;
@@ -877,27 +1030,38 @@ export function ensureTableResizeHandles(table) {
     if (!table) return;
     table.dataset.resizeReady = 'true';
     table.style.position = table.style.position || 'relative';
+    table.closest('.scientific-table-embed')?.setAttribute('contenteditable', 'true');
     Array.from(table.rows).forEach(row => {
         if (!row.style.height) row.style.height = `${Math.max(34, row.getBoundingClientRect().height || 34)}px`;
         Array.from(row.cells).forEach(cell => {
             cell.style.position = 'relative';
-            if (!cell.querySelector(':scope > .table-col-resizer')) {
-                const colHandle = document.createElement('span');
+            cell.contentEditable = 'true';
+            let colHandle = cell.querySelector(':scope > .table-col-resizer');
+            if (!colHandle) {
+                colHandle = document.createElement('span');
                 colHandle.className = 'table-col-resizer';
-                colHandle.contentEditable = 'false';
-                colHandle.setAttribute('draggable', 'false');
-                colHandle.addEventListener('dragstart', event => event.preventDefault());
-                colHandle.addEventListener('mousedown', event => startColumnResize(event, table, cell));
                 cell.appendChild(colHandle);
             }
-            if (!cell.querySelector(':scope > .table-row-resizer')) {
-                const rowHandle = document.createElement('span');
+            colHandle.contentEditable = 'false';
+            colHandle.setAttribute('draggable', 'false');
+            if (colHandle.dataset.resizeBound !== 'true') {
+                colHandle.dataset.resizeBound = 'true';
+                colHandle.addEventListener('dragstart', event => event.preventDefault());
+                colHandle.addEventListener('mousedown', event => startColumnResize(event, table, cell));
+            }
+
+            let rowHandle = cell.querySelector(':scope > .table-row-resizer');
+            if (!rowHandle) {
+                rowHandle = document.createElement('span');
                 rowHandle.className = 'table-row-resizer';
-                rowHandle.contentEditable = 'false';
-                rowHandle.setAttribute('draggable', 'false');
+                cell.appendChild(rowHandle);
+            }
+            rowHandle.contentEditable = 'false';
+            rowHandle.setAttribute('draggable', 'false');
+            if (rowHandle.dataset.resizeBound !== 'true') {
+                rowHandle.dataset.resizeBound = 'true';
                 rowHandle.addEventListener('dragstart', event => event.preventDefault());
                 rowHandle.addEventListener('mousedown', event => startRowResize(event, table, cell.parentElement));
-                cell.appendChild(rowHandle);
             }
         });
     });
