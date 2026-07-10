@@ -49,6 +49,17 @@ function makeSectionId(index, heading) {
     return `section-${index + 1}-${hashString(heading).slice(0, 6)}`;
 }
 
+const SECTION_HTML_LIMIT = 8000;
+const SECTION_TEXT_LIMIT = 1600;
+const SECTION_BATCH_HTML_LIMIT = 14000;
+const SECTION_BATCH_COUNT_LIMIT = 3;
+
+function clipText(value, limit) {
+    const text = String(value || '');
+    if (text.length <= limit) return text;
+    return `${text.slice(0, limit)}\n...[truncated for AI speed]`;
+}
+
 export function extractArticleSections(bodyContent) {
     const root = document.createElement('div');
     root.innerHTML = bodyContent || '';
@@ -101,10 +112,45 @@ function buildDocumentContext(art, sections) {
             id: section.id,
             order: index + 1,
             heading: section.heading,
-            summaryText: section.text.slice(0, 900),
+            summaryText: section.text.slice(0, 500),
             hash: section.hash
         }))
     };
+}
+
+function compactReviewSection(section, index, allSections) {
+    const html = clipText(section.html, SECTION_HTML_LIMIT);
+    return {
+        id: section.id,
+        heading: section.heading,
+        hash: section.hash,
+        html,
+        text: clipText(section.text, SECTION_TEXT_LIMIT),
+        isTruncated: section.html.length > html.length,
+        previousHeading: allSections[index - 1]?.heading || '',
+        nextHeading: allSections[index + 1]?.heading || ''
+    };
+}
+
+function createReviewSectionBatches(sections) {
+    if (!sections.length) return [[]];
+    const batches = [];
+    let current = [];
+    let currentSize = 0;
+    sections.forEach(section => {
+        const size = Math.min(section.html.length, SECTION_HTML_LIMIT);
+        const shouldStartNewBatch = current.length
+            && (current.length >= SECTION_BATCH_COUNT_LIMIT || currentSize + size > SECTION_BATCH_HTML_LIMIT);
+        if (shouldStartNewBatch) {
+            batches.push(current);
+            current = [];
+            currentSize = 0;
+        }
+        current.push(section);
+        currentSize += size;
+    });
+    if (current.length) batches.push(current);
+    return batches;
 }
 
 function annotatePreviewSections(sections) {
@@ -348,9 +394,9 @@ export async function callLlamaAI(userPrompt, timeoutMs = 75000) {
     return data.content;
 }
 
-export function buildReviewPrompt(art) {
-    const reviewSections = extractArticleSections(art.bodyContent || '');
-    const documentContext = buildDocumentContext(art, reviewSections);
+export function buildReviewPrompt(art, reviewSections = extractArticleSections(art.bodyContent || ''), allSections = reviewSections) {
+    const documentContext = buildDocumentContext(art, allSections);
+    const bodyText = textFromHtml(art.bodyContent || '');
     return `${ARTICLE_REVIEW_CRITERIA}
 
 Hãy review toàn bộ dữ liệu bài báo dưới đây. Không bịa số liệu, kết quả, tác giả hoặc trích dẫn. Nếu một trường đang rỗng, vẫn phải nhận xét rõ là còn thiếu và đưa đúng 3 phương án phù hợp dựa trên ngữ cảnh hiện có. Ba phương án Việt/Anh cùng chỉ số phải tương ứng về nghĩa.
@@ -360,24 +406,19 @@ Chỉ trả về một JSON hợp lệ, không Markdown, đúng cấu trúc:
 
 Mỗi options phải có đúng 3 chuỗi hoàn chỉnh. Với sections, chỉ nhận xét các đề mục thực sự xuất hiện; nếu nội dung chưa có đề mục thì dùng heading "Nội dung chính".
 
-For sections, review only items listed in REVIEW_SECTIONS. Each section result must include the exact sectionId and sectionHash from REVIEW_SECTIONS. Each section option must be complete replacement HTML for only that section, keep the original heading, and must not be just commentary. Use DOCUMENT_CONTEXT to preserve whole-article logic, terminology, previous/next section context, and avoid context drift.
+For sections, review only items listed in REVIEW_SECTIONS for this request. Each section result must include the exact sectionId and sectionHash from REVIEW_SECTIONS. Each section option must be complete replacement HTML for only that section, keep the original heading, and must not be just commentary. Use DOCUMENT_CONTEXT to preserve whole-article logic, terminology, previous/next section context, and avoid context drift. Keep output concise.
 
 <ARTICLE_DATA>${JSON.stringify({
         titleVn: art.titleVn || '', titleEn: art.titleEn || '',
         abstractVn: art.abstractVn || '', abstractEn: art.abstractEn || '',
         keywordsVn: art.keywordsVn || '', keywordsEn: art.keywordsEn || '',
-        bodyContent: art.bodyContent || ''
+        bodyTextExcerpt: clipText(bodyText, 3500)
     })}</ARTICLE_DATA>
 <DOCUMENT_CONTEXT>${JSON.stringify(documentContext)}</DOCUMENT_CONTEXT>
-<REVIEW_SECTIONS>${JSON.stringify(reviewSections.map((section, index) => ({
-        id: section.id,
-        heading: section.heading,
-        hash: section.hash,
-        html: section.html,
-        text: section.text,
-        previousHeading: reviewSections[index - 1]?.heading || '',
-        nextHeading: reviewSections[index + 1]?.heading || ''
-    })))}</REVIEW_SECTIONS>`;
+<REVIEW_SECTIONS>${JSON.stringify(reviewSections.map(section => {
+        const index = allSections.findIndex(item => item.id === section.id);
+        return compactReviewSection(section, index, allSections);
+    }))}</REVIEW_SECTIONS>`;
 }
 
 export function parseAiReviewResult(raw) {
@@ -426,9 +467,22 @@ export async function runAiReview() {
     }
 
     try {
-        const rawResult = await callLlamaAI(buildReviewPrompt(art));
-        const parsedReview = parseAiReviewResult(rawResult);
         const currentSections = extractArticleSections(art.bodyContent || '');
+        const sectionBatches = createReviewSectionBatches(currentSections);
+        let parsedReview = null;
+        for (let batchIndex = 0; batchIndex < sectionBatches.length; batchIndex += 1) {
+            if (statusBadge && sectionBatches.length > 1) {
+                setAiStatusBadge(statusBadge, `AI ${batchIndex + 1}/${sectionBatches.length}`, "px-2 py-0.5 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 rounded-full text-[9px] font-bold animate-bounce");
+            }
+            const rawResult = await callLlamaAI(buildReviewPrompt(art, sectionBatches[batchIndex], currentSections));
+            const batchReview = parseAiReviewResult(rawResult);
+            if (!parsedReview) {
+                parsedReview = batchReview;
+            } else {
+                parsedReview.sections.push(...batchReview.sections);
+            }
+        }
+        if (!parsedReview) throw new Error('AI khĂ´ng tráº£ vá» dá»¯ liá»‡u review.');
         parsedReview.sectionCache = Object.fromEntries(currentSections.map(section => [section.id, {
             heading: section.heading,
             hash: section.hash
