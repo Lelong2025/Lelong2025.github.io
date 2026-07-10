@@ -736,7 +736,6 @@ export function renderSingleArticlePreview(art) {
     if (pvTitleEn) pvTitleEn.textContent = art.titleEn || 'ARTICLE TITLE IN ENGLISH';
     if (pvAuthorsVn) pvAuthorsVn.textContent = art.authors || 'Tên các tác giả';
     if (pvAuthorsEn) pvAuthorsEn.textContent = removeVietnameseDiacritics(art.authors) || 'Authors Name';
-    renderAuthorProfilesInPreview(art, pvAuthorsVn);
     if (pvContactEmail) pvContactEmail.textContent = art.email || 'email@domain.com';
     if (pvContactEmailEn) pvContactEmailEn.textContent = art.email || 'email@domain.com';
 
@@ -769,29 +768,37 @@ export function renderSingleArticlePreview(art) {
     const footerDate = document.querySelector('#a4-container > .a4-page .footer-date');
     if (footerDate) footerDate.textContent = footerDateText(art);
     paginateContent(art.bodyContent, art);
+    appendAuthorProfilesToPreview(art);
     syncCurrentArticlePageCountFromPreview(art);
 }
 
-export function renderAuthorProfilesInPreview(art, anchor) {
-    const old = document.getElementById('pv-author-profiles');
-    if (old) old.remove();
+export function appendAuthorProfilesToPreview(art) {
     const profiles = Array.isArray(art?.authorProfiles) ? art.authorProfiles : [];
-    if (!anchor || !profiles.length) return;
-    const block = document.createElement('div');
-    block.id = 'pv-author-profiles';
-    block.className = 'mt-2 grid grid-cols-2 gap-2 text-[8px] font-sans text-slate-700';
-    block.innerHTML = profiles.map(profile => `
-        <div class="flex items-start gap-1.5 rounded border border-slate-200 p-1">
-            ${profile.photoUrl ? `<img src="${profile.photoUrl}" alt="" style="width:28px;height:38px;object-fit:cover">` : ''}
-            <div>
-                <div style="font-weight:bold">${escapeHtml(profile.name)}</div>
-                <div>${escapeHtml(profile.info || '')}</div>
-                <div>${escapeHtml(profile.email || '')}</div>
-                <div>${escapeHtml(profile.orcid || '')}</div>
+    if (!profiles.length) return;
+    let content = document.querySelector('#content-pages .article-page:last-child .article-page-content');
+    if (!content) content = createArticlePage(2, art);
+    const wrapper = document.createElement('section');
+    wrapper.id = 'pv-author-profiles';
+    wrapper.className = 'preview-author-profiles';
+    wrapper.innerHTML = profiles.map(profile => `
+        <article class="preview-author-profile">
+            <div class="preview-author-photo">
+                ${profile.photoUrl ? `<img src="${profile.photoUrl}" alt="">` : ''}
             </div>
-        </div>
+            <div class="preview-author-bio">
+                <p><strong>${escapeHtml(profile.name)}</strong>${profile.info ? ` ${escapeHtml(profile.info)}` : ''}</p>
+                ${profile.email ? `<p>His/Her contact is via: <span class="preview-author-link">${escapeHtml(profile.email)}</span>.</p>` : ''}
+                ${profile.orcid ? `<p>ORCID: <span class="preview-author-link">${escapeHtml(profile.orcid)}</span></p>` : ''}
+            </div>
+        </article>
     `).join('');
-    anchor.after(block);
+    content.appendChild(wrapper);
+    if (pageHasOverflow(content)) {
+        wrapper.remove();
+        const pageCount = document.querySelectorAll('#content-pages .article-page').length;
+        content = createArticlePage(pageCount + 2, art);
+        content.appendChild(wrapper);
+    }
 }
 
 export function togglePreviewMode() {
@@ -1104,17 +1111,40 @@ export function applyAiPanelCollapsed() {
     }
 }
 
-export function openAuthorDialog() {
+function syncAuthorsFromProfiles(art) {
+    if (!art) return;
+    const profiles = Array.isArray(art.authorProfiles) ? art.authorProfiles : [];
+    art.authors = profiles.map(item => item.name).filter(Boolean).join(', ');
+    const input = document.getElementById('input-authors');
+    if (input) input.value = art.authors;
+}
+
+export function openAuthorDialog(id = '') {
     const modal = document.getElementById('author-dialog');
     if (!modal) return;
-    ['author-name-input', 'author-info-input', 'author-email-input', 'author-orcid-input', 'author-photo-url'].forEach(id => {
-        const el = document.getElementById(id);
+    ['author-name-input', 'author-info-input', 'author-email-input', 'author-orcid-input', 'author-photo-url', 'author-edit-id'].forEach(fieldId => {
+        const el = document.getElementById(fieldId);
         if (el) el.value = '';
     });
     const file = document.getElementById('author-photo-input');
     if (file) file.value = '';
     const preview = document.getElementById('author-photo-preview');
     if (preview) preview.removeAttribute('src');
+    const art = activeArticle();
+    const profile = Array.isArray(art?.authorProfiles) ? art.authorProfiles.find(item => item.id === id) : null;
+    if (profile) {
+        document.getElementById('author-edit-id').value = profile.id;
+        document.getElementById('author-name-input').value = profile.name || '';
+        document.getElementById('author-info-input').value = profile.info || '';
+        document.getElementById('author-email-input').value = profile.email || '';
+        document.getElementById('author-orcid-input').value = profile.orcid || '';
+        document.getElementById('author-photo-url').value = profile.photoUrl || '';
+        if (preview && profile.photoUrl) preview.src = profile.photoUrl;
+    }
+    const title = document.getElementById('author-dialog-title');
+    if (title) title.textContent = profile ? 'Cập nhật tác giả' : 'Thêm tác giả';
+    const submit = document.getElementById('author-submit-btn');
+    if (submit) submit.textContent = profile ? 'Cập nhật tác giả' : 'Thêm tác giả';
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
@@ -1130,8 +1160,9 @@ export function closeAuthorDialog() {
 export function addAuthorProfile() {
     const art = activeArticle();
     if (!art) return;
+    const editId = document.getElementById('author-edit-id')?.value.trim() || '';
     const profile = {
-        id: (crypto.randomUUID && crypto.randomUUID()) || `author-${Date.now()}`,
+        id: editId || (crypto.randomUUID && crypto.randomUUID()) || `author-${Date.now()}`,
         name: document.getElementById('author-name-input')?.value.trim() || '',
         info: document.getElementById('author-info-input')?.value.trim() || '',
         email: document.getElementById('author-email-input')?.value.trim() || '',
@@ -1143,10 +1174,10 @@ export function addAuthorProfile() {
         return;
     }
     art.authorProfiles = Array.isArray(art.authorProfiles) ? art.authorProfiles : [];
-    art.authorProfiles.push(profile);
-    art.authors = art.authorProfiles.map(item => item.name).join(', ');
-    const input = document.getElementById('input-authors');
-    if (input) input.value = art.authors;
+    const existingIndex = art.authorProfiles.findIndex(item => item.id === editId);
+    if (existingIndex >= 0) art.authorProfiles[existingIndex] = profile;
+    else art.authorProfiles.push(profile);
+    syncAuthorsFromProfiles(art);
     saveToLocalStorage();
     renderAuthorProfiles(art);
     renderLivePreview(art);
@@ -1162,29 +1193,61 @@ export function renderAuthorProfiles(art = activeArticle()) {
         list.innerHTML = '<div class="text-[10px] text-slate-400">Chưa có hồ sơ tác giả.</div>';
         return;
     }
-    profiles.forEach(profile => {
+    profiles.forEach((profile, index) => {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800';
+        row.draggable = true;
+        row.dataset.authorId = profile.id;
         row.innerHTML = `
+            <button type="button" class="cursor-grab text-slate-300 hover:text-slate-500" title="Kéo để sắp xếp"><i class="fa-solid fa-grip-vertical"></i></button>
             ${profile.photoUrl ? `<img src="${profile.photoUrl}" alt="" class="h-10 w-8 rounded object-cover">` : '<div class="h-10 w-8 rounded bg-slate-200 dark:bg-slate-700"></div>'}
             <div class="min-w-0 flex-1">
                 <div class="truncate text-[11px] font-bold text-slate-700 dark:text-slate-100">${escapeHtml(profile.name)}</div>
                 <div class="truncate text-[10px] text-slate-400">${escapeHtml(profile.email || profile.orcid || profile.info || '')}</div>
             </div>
-            <button type="button" class="text-rose-500 hover:text-rose-700" data-remove-author="${profile.id}"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="text-blue-500 hover:text-blue-700" title="Sửa" data-edit-author="${profile.id}"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="text-rose-500 hover:text-rose-700" title="Xóa" data-remove-author="${profile.id}"><i class="fa-solid fa-xmark"></i></button>
         `;
+        row.addEventListener('dragstart', event => {
+            event.dataTransfer.setData('text/plain', profile.id);
+            row.classList.add('opacity-50');
+        });
+        row.addEventListener('dragend', () => row.classList.remove('opacity-50'));
+        row.addEventListener('dragover', event => {
+            event.preventDefault();
+            row.classList.add('border-blue-400');
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('border-blue-400'));
+        row.addEventListener('drop', event => {
+            event.preventDefault();
+            row.classList.remove('border-blue-400');
+            reorderAuthorProfile(event.dataTransfer.getData('text/plain'), profile.id);
+        });
+        row.querySelector('[data-edit-author]').addEventListener('click', () => openAuthorDialog(profile.id));
         row.querySelector('[data-remove-author]').addEventListener('click', () => removeAuthorProfile(profile.id));
         list.appendChild(row);
     });
+}
+
+export function reorderAuthorProfile(sourceId, targetId) {
+    const art = activeArticle();
+    if (!art || !Array.isArray(art.authorProfiles) || !sourceId || !targetId || sourceId === targetId) return;
+    const sourceIndex = art.authorProfiles.findIndex(profile => profile.id === sourceId);
+    const targetIndex = art.authorProfiles.findIndex(profile => profile.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const [moved] = art.authorProfiles.splice(sourceIndex, 1);
+    art.authorProfiles.splice(targetIndex, 0, moved);
+    syncAuthorsFromProfiles(art);
+    saveToLocalStorage();
+    renderAuthorProfiles(art);
+    renderLivePreview(art);
 }
 
 export function removeAuthorProfile(id) {
     const art = activeArticle();
     if (!art || !Array.isArray(art.authorProfiles)) return;
     art.authorProfiles = art.authorProfiles.filter(profile => profile.id !== id);
-    art.authors = art.authorProfiles.map(item => item.name).join(', ');
-    const input = document.getElementById('input-authors');
-    if (input) input.value = art.authors;
+    syncAuthorsFromProfiles(art);
     saveToLocalStorage();
     renderAuthorProfiles(art);
     renderLivePreview(art);

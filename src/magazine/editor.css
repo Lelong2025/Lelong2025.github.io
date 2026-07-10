@@ -634,6 +634,51 @@ body.magazine-auth-required #toast-box {
     margin-bottom: 8px;
 }
 
+.preview-author-profiles {
+    margin-top: 14px;
+    padding-top: 8px;
+    font-family: 'Times New Roman', Times, serif;
+    color: #111827;
+}
+
+.preview-author-profile {
+    display: grid;
+    grid-template-columns: 23mm 1fr;
+    gap: 4mm;
+    margin-bottom: 5mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.preview-author-photo {
+    width: 18mm;
+    min-height: 22mm;
+    background: #f1f5f9;
+}
+
+.preview-author-photo img {
+    width: 18mm;
+    height: 22mm;
+    object-fit: cover;
+    display: block;
+}
+
+.preview-author-bio {
+    font-size: 8.5px;
+    line-height: 1.25;
+    text-align: justify;
+}
+
+.preview-author-bio p {
+    margin: 0 0 2px;
+    text-indent: 0;
+}
+
+.preview-author-link {
+    color: #0645ad;
+    text-decoration: underline;
+}
+
 /* =============================================
    DARK / LIGHT MODE TOGGLE SWITCH (Uiverse)
    ============================================= */

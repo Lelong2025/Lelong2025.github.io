@@ -614,20 +614,6 @@
                         </div>
                     </div>
 
-                    <div
-                        class="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-900/40">
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hồ
-                                sơ tác giả</span>
-                            <button type="button" onclick="openAuthorDialog()"
-                                class="rounded bg-blue-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-blue-700">
-                                <i class="fa-solid fa-plus mr-1"></i>Tác giả
-                            </button>
-                        </div>
-                        <div id="author-profiles-list" class="space-y-1.5"></div>
-                    </div>
-
                     <!-- Received/Accepted Dates Input -->
                     <div
                         class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700 text-xs">
@@ -718,6 +704,20 @@
                                 class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
                                 placeholder="https://doi.org/..." oninput="syncFormToPreview()">
                         </div>
+                    </div>
+
+                    <div
+                        class="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-900/40">
+                        <div class="flex items-center justify-between">
+                            <span
+                                class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hồ
+                                sơ tác giả</span>
+                            <button type="button" onclick="openAuthorDialog()"
+                                class="rounded bg-blue-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-blue-700">
+                                <i class="fa-solid fa-plus mr-1"></i>Thêm tác giả
+                            </button>
+                        </div>
+                        <div id="author-profiles-list" class="space-y-1.5"></div>
                     </div>
 
                     <!-- Main Body Content Textarea with Advanced Launcher Button! -->
@@ -987,7 +987,7 @@
     <div id="author-dialog" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/70 p-4">
         <div class="w-full max-w-xl rounded-2xl bg-white shadow-2xl dark:bg-slate-800">
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-                <h3 class="text-sm font-bold text-slate-800 dark:text-white">Them tac gia</h3>
+                <h3 id="author-dialog-title" class="text-sm font-bold text-slate-800 dark:text-white">Thêm tác giả</h3>
                 <button type="button" onclick="closeAuthorDialog()"
                     class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                     <i class="fa-solid fa-xmark"></i>
@@ -1000,14 +1000,15 @@
                     <input id="author-photo-input" type="file" accept="image/*" class="w-full text-[10px]"
                         onchange="uploadAuthorPhotoFromInput()">
                     <input id="author-photo-url" type="hidden">
+                    <input id="author-edit-id" type="hidden">
                 </div>
                 <div class="space-y-2">
                     <input id="author-name-input" type="text"
                         class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
                         placeholder="Ho ten tac gia">
-                    <input id="author-info-input" type="text"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
-                        placeholder="Don vi / thong tin tac gia">
+                    <textarea id="author-info-input" rows="5"
+                        class="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
+                        placeholder="Thông tin tác giả, học vị, đơn vị, lĩnh vực nghiên cứu..."></textarea>
                     <input id="author-email-input" type="email"
                         class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700"
                         placeholder="Email">
@@ -1019,9 +1020,9 @@
             <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
                 <button type="button" onclick="closeAuthorDialog()"
                     class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">Huy</button>
-                <button type="button" onclick="addAuthorProfile()"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Them tac
-                    gia</button>
+                <button id="author-submit-btn" type="button" onclick="addAuthorProfile()"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Thêm tác
+                    giả</button>
             </div>
         </div>
     </div>

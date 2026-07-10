@@ -35,7 +35,8 @@ export function currentExportData() {
         doi: art.doi || '', link_doi: art.linkDoi || '',
         date: footerDateText(art), publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
-        contentHtml, contentText: contentHolder.textContent.trim()
+        contentHtml, contentText: contentHolder.textContent.trim(),
+        authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []
     };
 }
 
@@ -75,6 +76,64 @@ export async function prepareContentImages(zip, html) {
         }
     }
     return { map, relationships: relationships.join('') };
+}
+
+export async function prepareAuthorProfileImages(zip, profiles, prefix = 'author-profile') {
+    const map = new Map();
+    const relationships = [];
+    for (let index = 0; index < profiles.length; index += 1) {
+        const src = profiles[index]?.photoUrl;
+        if (!src || map.has(src)) continue;
+        try {
+            let extension = 'png';
+            let data;
+            let options = {};
+            const match = src.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
+            if (match) {
+                extension = match[1].toLowerCase().replace('jpeg', 'jpg');
+                data = match[2];
+                options = { base64: true };
+            } else {
+                const response = await fetch(src);
+                if (!response.ok) continue;
+                const type = response.headers.get('content-type') || '';
+                extension = type.includes('jpeg') ? 'jpg' : 'png';
+                data = await response.arrayBuffer();
+            }
+            const number = map.size + 1;
+            const relationshipId = `rIdAuthorProfileImage${number}`;
+            const fileName = `${prefix}-${number}.${extension}`;
+            zip.file(`word/media/${fileName}`, data, options);
+            relationships.push(`<Relationship Id="${relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${fileName}"/>`);
+            map.set(src, { relationshipId, width: 650000, height: 820000, id: 300 + number });
+        } catch (error) {
+            console.warn('Không thể nhúng ảnh hồ sơ tác giả:', error);
+        }
+    }
+    return { map, relationships: relationships.join('') };
+}
+
+export function authorProfilesToWordXml(profiles = [], imageMap = new Map()) {
+    if (!profiles.length) return '';
+    return profiles.map((profile, index) => {
+        const imageInfo = imageMap.get(profile.photoUrl);
+        const photo = imageInfo
+            ? wordParagraph(imageDrawingRun(imageInfo.relationshipId, imageInfo.width, imageInfo.height, imageInfo.id), { align: 'center', after: 0 })
+            : wordParagraph('', { after: 0 });
+        const text = wordParagraph(
+            wordRun(profile.name || '', { bold: true, size: 16 }) +
+            wordRun(profile.info ? ` ${profile.info}` : '', { size: 16 }),
+            { after: 20, line: 190 }
+        ) +
+            (profile.email ? wordParagraph(wordRun('His/Her contact is via: ', { size: 16 }) + wordRun(profile.email, { size: 16, color: '0645AD', underline: true }) + wordRun('.', { size: 16 }), { after: 10, line: 190 }) : '') +
+            (profile.orcid ? wordParagraph(wordRun('ORCID: ', { size: 16 }) + wordRun(profile.orcid, { size: 16, color: '0645AD', underline: true }), { after: 0, line: 190 }) : '');
+        return wordTable([[photo, text]], [1050, 8588], {
+            borders: false,
+            cellMargin: 40,
+            verticalAlign: 'top',
+            rowHeight: 1180
+        }) + (index === profiles.length - 1 ? '' : wordParagraph('', { after: 40, line: 100 }));
+    }).join('');
 }
 
 export function headerXml(text, alignment) {
@@ -193,14 +252,15 @@ export async function buildDefaultDocx(data) {
         }
     }
     const contentImages = await prepareContentImages(zip, data.contentHtml);
-    const content = quillHtmlToWordXml(data.contentHtml, contentImages.map);
+    const authorImages = await prepareAuthorProfileImages(zip, data.authorProfiles);
+    const content = quillHtmlToWordXml(data.contentHtml, contentImages.map) + authorProfilesToWordXml(data.authorProfiles, authorImages.map);
     const refs = '<w:headerReference w:type="default" r:id="rIdHeaderOdd"/><w:headerReference w:type="even" r:id="rIdHeaderEven"/><w:footerReference w:type="default" r:id="rIdFooterOdd"/><w:footerReference w:type="even" r:id="rIdFooterEven"/>';
     const coverRefs = '<w:headerReference w:type="first" r:id="rIdHeaderFirst"/><w:footerReference w:type="first" r:id="rIdFooterOdd"/><w:footerReference w:type="default" r:id="rIdFooterOdd"/>';
     const coverSection = `<w:p><w:pPr>${sectionProperties({ columns: 1, nextPage: true, references: coverRefs, titlePage: true, topMargin: 851, startPage: data.startPage || 1 })}</w:pPr></w:p>`;
     const finalSection = sectionProperties({ columns: 2, references: refs });
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${coverXml(data)}${coverSection}${content || wordParagraph(wordRun('Nội dung bài báo bắt đầu từ trang 2.', { italic: true, color: '777777' }), { align: 'center' })}${finalSection}</w:body></w:document>`;
-    const relationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://relationships.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/><Relationship Id="rIdHeaderOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-odd.xml"/><Relationship Id="rIdHeaderEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-even.xml"/><Relationship Id="rIdHeaderFirst" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-first.xml"/><Relationship Id="rIdFooterOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-odd.xml"/><Relationship Id="rIdFooterEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-even.xml"/>${logoLoaded ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image.png"/>' : ''}${contentImages.relationships}</Relationships>`;
-    const hasImages = logoLoaded || contentImages.map.size > 0;
+    const relationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://relationships.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/><Relationship Id="rIdHeaderOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-odd.xml"/><Relationship Id="rIdHeaderEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-even.xml"/><Relationship Id="rIdHeaderFirst" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header-first.xml"/><Relationship Id="rIdFooterOdd" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-odd.xml"/><Relationship Id="rIdFooterEven" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer-even.xml"/>${logoLoaded ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image.png"/>' : ''}${contentImages.relationships}${authorImages.relationships}</Relationships>`;
+    const hasImages = logoLoaded || contentImages.map.size > 0 || authorImages.map.size > 0;
     const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${hasImages ? '<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/>' : ''}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/header-odd.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/header-even.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/header-first.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer-odd.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/word/footer-even.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
     const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="260" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr></w:pPrDefault></w:docDefaults>${[1, 2, 3].map(level => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="160" w:after="80"/></w:pPr><w:rPr><w:b/><w:i w:val="0"/><w:iCs w:val="0"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:color w:val="2A4E8A"/></w:rPr></w:style>`).join('')}<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
     zip.file('[Content_Types].xml', contentTypes);
@@ -279,26 +339,30 @@ export async function exportCurrentArticleWordFromTemplate() {
         data.authors_en = data.authors_en || removeVietnameseDiacritics(data.authors);
 
         const contentImages = await prepareContentImages(zip, data.contentHtml);
+        const authorImages = await prepareAuthorProfileImages(zip, data.authorProfiles);
         const bodyContentXml = quillHtmlToWordXml(data.contentHtml, contentImages.map);
-        data.content = bodyContentXml;
+        const authorProfilesXml = authorProfilesToWordXml(data.authorProfiles, authorImages.map);
+        data.content = bodyContentXml + authorProfilesXml;
 
-        if (contentImages.relationships) {
+        if (contentImages.relationships || authorImages.relationships) {
             const relsPath = 'word/_rels/document.xml.rels';
             const relsFile = zip.file(relsPath);
             if (!relsFile) throw new Error('Template thiếu document.xml.rels để liên kết ảnh nội dung.');
             const relsXml = relsFile.asText().replace(
                 '</Relationships>',
-                `${contentImages.relationships}</Relationships>`
+                `${contentImages.relationships}${authorImages.relationships}</Relationships>`
             );
             zip.file(relsPath, relsXml);
 
             const contentTypesPath = '[Content_Types].xml';
             let contentTypesXml = zip.file(contentTypesPath).asText();
-            if (!contentTypesXml.includes('Extension="jpg"')) {
-                contentTypesXml = contentTypesXml.replace(
-                    '</Types>',
-                    '<Default Extension="jpg" ContentType="image/jpeg"/></Types>'
-                );
+            if (contentImages.relationships || authorImages.relationships) {
+                const defaults = [];
+                if (!contentTypesXml.includes('Extension="jpg"')) defaults.push('<Default Extension="jpg" ContentType="image/jpeg"/>');
+                if (!contentTypesXml.includes('Extension="png"')) defaults.push('<Default Extension="png" ContentType="image/png"/>');
+                if (defaults.length) {
+                    contentTypesXml = contentTypesXml.replace('</Types>', `${defaults.join('')}</Types>`);
+                }
             }
             zip.file(contentTypesPath, contentTypesXml);
         }
@@ -597,7 +661,8 @@ export function getArticleExportData(art) {
         doi: art.doi || '', link_doi: art.linkDoi || '',
         date: footerDateText(art), publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
-        contentHtml, contentText: contentHolder.textContent.trim()
+        contentHtml, contentText: contentHolder.textContent.trim(),
+        authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []
     };
 }
 
