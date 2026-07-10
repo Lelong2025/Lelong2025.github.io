@@ -49,10 +49,11 @@ function makeSectionId(index, heading) {
     return `section-${index + 1}-${hashString(heading).slice(0, 6)}`;
 }
 
-const SECTION_HTML_LIMIT = 8000;
-const SECTION_TEXT_LIMIT = 1600;
-const SECTION_BATCH_HTML_LIMIT = 14000;
-const SECTION_BATCH_COUNT_LIMIT = 3;
+const SECTION_HTML_LIMIT = 5000;
+const SECTION_TEXT_LIMIT = 1200;
+const SECTION_BATCH_HTML_LIMIT = 6000;
+const SECTION_BATCH_COUNT_LIMIT = 1;
+const SECTION_OPTION_TEXT_LIMIT = 1200;
 
 function clipText(value, limit) {
     const text = String(value || '');
@@ -119,14 +120,13 @@ function buildDocumentContext(art, sections) {
 }
 
 function compactReviewSection(section, index, allSections) {
-    const html = clipText(section.html, SECTION_HTML_LIMIT);
     return {
         id: section.id,
         heading: section.heading,
         hash: section.hash,
-        html,
+        htmlExcerpt: clipText(section.html, SECTION_HTML_LIMIT),
         text: clipText(section.text, SECTION_TEXT_LIMIT),
-        isTruncated: section.html.length > html.length,
+        isTruncated: section.html.length > SECTION_HTML_LIMIT,
         previousHeading: allSections[index - 1]?.heading || '',
         nextHeading: allSections[index + 1]?.heading || ''
     };
@@ -151,6 +151,25 @@ function createReviewSectionBatches(sections) {
     });
     if (current.length) batches.push(current);
     return batches;
+}
+
+function buildSectionReplacementNodes(oldNodes, selected) {
+    const replacementRoot = document.createElement('div');
+    const selectedText = String(selected || '').trim();
+    if (/^\s*</.test(selectedText)) {
+        replacementRoot.innerHTML = selectedText;
+        if (replacementRoot.children.length) return Array.from(replacementRoot.childNodes);
+    }
+
+    const heading = oldNodes[0]?.cloneNode(true);
+    if (heading) replacementRoot.appendChild(heading);
+    const paragraphs = selectedText.split(/\n{2,}|\r?\n/).map(part => part.trim()).filter(Boolean);
+    (paragraphs.length ? paragraphs : [selectedText]).forEach(part => {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = part;
+        replacementRoot.appendChild(paragraph);
+    });
+    return Array.from(replacementRoot.childNodes);
 }
 
 function annotatePreviewSections(sections) {
@@ -406,7 +425,7 @@ Chỉ trả về một JSON hợp lệ, không Markdown, đúng cấu trúc:
 
 Mỗi options phải có đúng 3 chuỗi hoàn chỉnh. Với sections, chỉ nhận xét các đề mục thực sự xuất hiện; nếu nội dung chưa có đề mục thì dùng heading "Nội dung chính".
 
-For sections, review only items listed in REVIEW_SECTIONS for this request. Each section result must include the exact sectionId and sectionHash from REVIEW_SECTIONS. Each section option must be complete replacement HTML for only that section, keep the original heading, and must not be just commentary. Use DOCUMENT_CONTEXT to preserve whole-article logic, terminology, previous/next section context, and avoid context drift. Keep output concise.
+For sections, review only items listed in REVIEW_SECTIONS for this request. Each section result must include the exact sectionId and sectionHash from REVIEW_SECTIONS. Each section option must be plain revised body text for only that section, without HTML tags and without repeating the heading. Keep each section option under ${SECTION_OPTION_TEXT_LIMIT} characters. Do not use unescaped double quotes inside JSON strings; use single quotes or omit quotation marks. Use DOCUMENT_CONTEXT to preserve whole-article logic, terminology, previous/next section context, and avoid context drift. Keep output concise.
 
 <ARTICLE_DATA>${JSON.stringify({
         titleVn: art.titleVn || '', titleEn: art.titleEn || '',
@@ -426,7 +445,13 @@ export function parseAiReviewResult(raw) {
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     if (start < 0 || end <= start) throw new Error('AI không trả về JSON hợp lệ.');
-    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    let parsed;
+    try {
+        parsed = JSON.parse(cleaned.slice(start, end + 1));
+    } catch (error) {
+        console.warn('AI review JSON parse failed:', error, cleaned.slice(start, Math.min(end + 1, start + 2000)));
+        throw new Error('AI trả về JSON bị lỗi định dạng. Vui lòng chạy lại AI Review.');
+    }
     const fields = ['titleVn', 'titleEn', 'abstractVn', 'abstractEn', 'keywordsVn', 'keywordsEn'];
     fields.forEach(field => {
         const item = parsed[field];
@@ -444,7 +469,7 @@ export function parseAiReviewResult(raw) {
         sectionHash: String(section.sectionHash || '').trim(),
         heading: String(section.heading || 'Nội dung chính').trim(),
         feedback: String(section.feedback || '').trim(),
-        options: Array.isArray(section.options) ? section.options.slice(0, 3).map(String) : [],
+        options: Array.isArray(section.options) ? section.options.slice(0, 3).map(value => clipText(String(value || '').trim(), SECTION_OPTION_TEXT_LIMIT)) : [],
         selected: 'keep'
     })).filter(section => section.feedback && section.options.length === 3) : [];
     return parsed;
@@ -567,17 +592,10 @@ export function applySelectedSuggestions() {
         sectionReplacements
             .sort((left, right) => right.matched.startIndex - left.matched.startIndex)
             .forEach(({ matched, selected }) => {
-                const replacementRoot = document.createElement('div');
-                replacementRoot.innerHTML = selected;
-                if (!replacementRoot.children.length) {
-                    const paragraph = document.createElement('p');
-                    paragraph.textContent = selected;
-                    replacementRoot.appendChild(paragraph);
-                }
                 const children = Array.from(tempDiv.children);
                 const oldNodes = children.slice(matched.startIndex, matched.endIndex);
                 if (!oldNodes.length) return;
-                oldNodes[0].before(...Array.from(replacementRoot.childNodes));
+                oldNodes[0].before(...buildSectionReplacementNodes(oldNodes, selected));
                 oldNodes.forEach(node => node.remove());
                 changesMadeCount++;
             });
