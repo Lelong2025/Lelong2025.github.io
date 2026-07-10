@@ -545,36 +545,6 @@ export function footerDateText(art) {
     return `JSLHU, Issue ${issueNumber}, ${month} ${dateMatch[1]}`;
 }
 
-export function effectiveHeaderLanguage(art) {
-    const issue = state.appState.issues[state.appState.currentIssueId];
-    return art?.evenHeaderLanguage && art.evenHeaderLanguage !== 'issue'
-        ? art.evenHeaderLanguage : (issue?.evenHeaderLanguage || 'vi');
-}
-
-export function syncHeaderLanguageControls(art) {
-    const issueHeader = document.getElementById('issue-header-language');
-    const articleHeader = document.getElementById('article-header-language');
-    if (issueHeader) issueHeader.value = state.appState.issues[state.appState.currentIssueId]?.evenHeaderLanguage || 'vi';
-    if (articleHeader) articleHeader.value = art?.evenHeaderLanguage || 'issue';
-}
-
-export function setIssueHeaderLanguage(value) {
-    const issue = state.appState.issues[state.appState.currentIssueId];
-    if (!issue) return;
-    issue.evenHeaderLanguage = value === 'en' ? 'en' : 'vi';
-    saveToLocalStorage();
-    const art = issue.articles.find(item => item.id === state.appState.currentArticleId);
-    if (art) renderLivePreview(art);
-}
-
-export function setArticleHeaderLanguage(value) {
-    const art = state.appState.issues[state.appState.currentIssueId]?.articles.find(item => item.id === state.appState.currentArticleId);
-    if (!art) return;
-    art.evenHeaderLanguage = ['vi', 'en'].includes(value) ? value : 'issue';
-    saveToLocalStorage();
-    renderLivePreview(art);
-}
-
 export function formatKeywords(value, fallback) {
     const keywords = String(value || '')
         .split(/[;,]/)
@@ -594,9 +564,7 @@ export function articleDisplayPageNumber(art, articlePageNumber) {
 
 export function runningHeaderTitle(art) {
     if (art?.headerTitle) return art.headerTitle;
-    return toTitleCase(effectiveHeaderLanguage(art) === 'en'
-        ? (art.titleEn || art.titleVn || 'ARTICLE TITLE')
-        : (art.titleVn || art.titleEn || 'TIÊU ĐỀ BÀI BÁO'));
+    return toTitleCase(art?.titleVn || art?.titleEn || 'TIÊU ĐỀ BÀI BÁO');
 }
 
 export function createArticlePage(pageNumber, art) {
@@ -709,8 +677,6 @@ export function renderSingleArticlePreview(art) {
 
     const headerMeta = document.getElementById('preview-header-meta');
     if (headerMeta) headerMeta.textContent = 'Tạp chí Khoa học Lạc Hồng, 2025, 20, 001-005';
-    syncHeaderLanguageControls(art);
-
     const pvTitleVn = document.getElementById('pv-title-vn');
     const pvTitleEn = document.getElementById('pv-title-en');
     const pvAuthorsVn = document.getElementById('pv-authors-vn');
@@ -860,7 +826,6 @@ export function renderLivePreview(art) {
         });
     });
     container.replaceChildren(...compiledPages);
-    syncHeaderLanguageControls(activeArticleObj);
     saveToLocalStorage();
     adjustPreviewScale();
 }
@@ -892,7 +857,6 @@ export function createNewArticle() {
         bodyContent: "",
         pageCount: 1,
         aiReviewSuggestions: null,
-        evenHeaderLanguage: "issue",
         headerTitle: "",
         authorProfiles: []
     };
@@ -953,8 +917,7 @@ export function createNewIssue() {
     const newIssueId = `issue-${Date.now()}`;
     state.appState.issues[newIssueId] = {
         title: name,
-        articles: [],
-        evenHeaderLanguage: 'vi'
+        articles: []
     };
 
     state.appState.currentIssueId = newIssueId;

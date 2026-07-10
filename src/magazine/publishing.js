@@ -58,7 +58,7 @@ async function reloadData() {
 function normalizeWorkspace(input) {
   const workspace = input && typeof input === 'object' ? structuredClone(input) : { issues: {}, currentIssueId: null, currentArticleId: null }
   workspace.issues ||= {}
-  workspace.issues[UNASSIGNED_ID] ||= { title: 'Chưa xếp số', articles: [], evenHeaderLanguage: 'vi', editorialInbox: true }
+  workspace.issues[UNASSIGNED_ID] ||= { title: 'Chưa xếp số', articles: [], editorialInbox: true }
   return workspace
 }
 
@@ -237,7 +237,7 @@ async function createIssue() {
   const title = window.prompt('Tên số báo mới:')?.trim()
   if (!title) return
   const id = `issue-${Date.now()}`
-  state.workspace.issues[id] = { title, articles: [], evenHeaderLanguage: 'vi' }
+  state.workspace.issues[id] = { title, articles: [] }
   state.workspace.currentIssueId ||= id
   await saveWorkspace('Đã tạo số báo mới.')
 }

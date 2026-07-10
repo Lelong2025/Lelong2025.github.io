@@ -60,7 +60,6 @@ export function ensureClientWorkspace() {
         state.appState.issues[issueId] = {
             title: 'Bài báo của tôi',
             articles: [],
-            evenHeaderLanguage: 'vi',
             clientWorkspace: true
         };
     }

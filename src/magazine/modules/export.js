@@ -4,7 +4,7 @@ import {
     quillHtmlToWordXml, wordParagraph, wordRun, wordTable, sectionProperties,
     imageDrawingRun
 } from './utils.js';
-import { activeArticle, effectiveHeaderLanguage, footerDateText, preparePreviewForOutput, formatKeywords } from './ui.js';
+import { activeArticle, footerDateText, preparePreviewForOutput, formatKeywords } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
 
 export function safeExportName(art, extension) {
@@ -24,8 +24,7 @@ export function currentExportData() {
     const contentHtml = art.bodyContent || '';
     const contentHolder = document.createElement('div');
     contentHolder.innerHTML = contentHtml;
-    const selectedTitle = effectiveHeaderLanguage(art) === 'en'
-        ? (art.titleEn || art.titleVn) : (art.titleVn || art.titleEn);
+    const selectedTitle = art.headerTitle || art.titleVn || art.titleEn;
     return {
         title: art.titleVn || '', title_en: art.titleEn || '',
         headerTitle: art.headerTitle || toTitleCase(selectedTitle || 'TIÊU ĐỀ BÀI BÁO'),
@@ -650,8 +649,7 @@ export function getArticleExportData(art) {
     const contentHtml = art.bodyContent || '';
     const contentHolder = document.createElement('div');
     contentHolder.innerHTML = contentHtml;
-    const selectedTitle = effectiveHeaderLanguage(art) === 'en'
-        ? (art.titleEn || art.titleVn) : (art.titleVn || art.titleEn);
+    const selectedTitle = art.headerTitle || art.titleVn || art.titleEn;
     return {
         title: art.titleVn || '', title_en: art.titleEn || '',
         headerTitle: art.headerTitle || toTitleCase(selectedTitle || 'TIÊU ĐỀ BÀI BÁO'),

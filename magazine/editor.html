@@ -212,19 +212,6 @@
                             <i class="fa-solid fa-book-open"></i>
                             <span class="hidden md:inline ml-1">Xem toàn bộ số báo</span>
                         </button>
-                        <select id="issue-header-language" onchange="setIssueHeaderLanguage(this.value)"
-                            class="rounded border border-slate-200 bg-slate-50 px-1 py-1 text-[10px]"
-                            title="Tiêu đề trang chẵn mặc định cho số báo">
-                            <option value="vi">Số: VI</option>
-                            <option value="en">Số: EN</option>
-                        </select>
-                        <select id="article-header-language" onchange="setArticleHeaderLanguage(this.value)"
-                            class="rounded border border-slate-200 bg-slate-50 px-1 py-1 text-[10px]"
-                            title="Ghi đè riêng cho bài hiện tại">
-                            <option value="issue">Bài: theo số</option>
-                            <option value="vi">Bài: VI</option>
-                            <option value="en">Bài: EN</option>
-                        </select>
                         <button id="export-word-btn" onclick="exportCurrentArticleWord()"
                             class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-semibold flex items-center whitespace-nowrap"
                             title="Xuất DOCX trực tiếp từ nội dung Quill">
