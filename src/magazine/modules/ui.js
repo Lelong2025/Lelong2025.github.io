@@ -775,8 +775,11 @@ export function renderSingleArticlePreview(art) {
 export function appendAuthorProfilesToPreview(art) {
     const profiles = Array.isArray(art?.authorProfiles) ? art.authorProfiles : [];
     if (!profiles.length) return;
-    let content = document.querySelector('#content-pages .article-page:last-child .article-page-content');
-    if (!content) content = createArticlePage(2, art);
+    let page = document.querySelector('#content-pages .article-page:last-child');
+    if (!page) {
+        createArticlePage(2, art);
+        page = document.querySelector('#content-pages .article-page:last-child');
+    }
     const wrapper = document.createElement('section');
     wrapper.id = 'pv-author-profiles';
     wrapper.className = 'preview-author-profiles';
@@ -792,12 +795,16 @@ export function appendAuthorProfilesToPreview(art) {
             </div>
         </article>
     `).join('');
-    content.appendChild(wrapper);
-    if (pageHasOverflow(content)) {
-        wrapper.remove();
+    const host = document.createElement('div');
+    host.className = 'preview-author-profiles-host';
+    host.appendChild(wrapper);
+    page.insertBefore(host, page.querySelector('.preview-page-footer'));
+    if (page.scrollHeight > page.clientHeight + 2) {
+        host.remove();
         const pageCount = document.querySelectorAll('#content-pages .article-page').length;
-        content = createArticlePage(pageCount + 2, art);
-        content.appendChild(wrapper);
+        createArticlePage(pageCount + 2, art);
+        page = document.querySelector('#content-pages .article-page:last-child');
+        page.insertBefore(host, page.querySelector('.preview-page-footer'));
     }
 }
 
