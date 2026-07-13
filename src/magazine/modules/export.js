@@ -518,6 +518,9 @@ export function normalizeAndReplaceDocxXml(xml, data) {
                 else if (ph === 'link_doi') val = data.link_doi;
                 else if (ph === 'date') val = data.date;
                 else if (ph === 'journal_meta') val = data.journal_meta;
+                if (ph === 'journal_meta' && fullText.trim().replace(key, '').trim()) {
+                    val = `\n${val}`;
+                }
 
                 fullText = fullText.replaceAll(key, val);
             }
