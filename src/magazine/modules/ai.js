@@ -141,12 +141,12 @@ export function createSpellingCard(correction, index) {
             <input type="radio" name="${name}" value="keep" class="mt-0.5" ${correction.selected === 'keep' ? 'checked' : ''}>
             <span>Giữ nguyên</span>
         </label>
-        <div class="rounded-lg border border-slate-200 bg-white p-2 text-[10.5px] dark:border-slate-700 dark:bg-slate-800">
-            <label class="flex items-center gap-2">
-                <input type="radio" name="${name}" value="custom" class="shrink-0" ${correction.selected === 'custom' ? 'checked' : ''}>
-                <span>Tự nhập từ đúng</span>
+        <div class="spell-custom-option rounded-lg border border-slate-200 bg-white p-2 text-[10.5px] dark:border-slate-700 dark:bg-slate-800">
+            <label class="spell-custom-label">
+                <input type="radio" name="${name}" value="custom" class="spell-custom-radio" ${correction.selected === 'custom' ? 'checked' : ''}>
+                <span class="spell-custom-text">Tự nhập từ đúng</span>
+                <input type="text" value="${escapeHtml(correction.custom || '')}" class="spell-custom-input rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700">
             </label>
-            <input type="text" value="${escapeHtml(correction.custom || '')}" class="spell-custom-input mt-2 w-full rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700">
         </div>
     `;
     card.querySelectorAll(`input[name="${name}"]`).forEach(input => {

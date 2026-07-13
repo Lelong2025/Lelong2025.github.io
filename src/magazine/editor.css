@@ -338,6 +338,37 @@ body.magazine-auth-required #toast-box {
     transform: rotate(0deg);
 }
 
+.spell-custom-label {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 8px;
+    align-items: center;
+}
+
+.spell-custom-radio {
+    grid-column: 1;
+    grid-row: 1;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    align-self: center;
+    justify-self: center;
+}
+
+.spell-custom-text {
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 14px;
+}
+
+.spell-custom-input {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     #ai-review-section,
