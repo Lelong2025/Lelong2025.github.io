@@ -4,12 +4,19 @@ import {
     quillHtmlToWordXml, wordParagraph, wordRun, wordTable, sectionProperties,
     imageDrawingRun
 } from './utils.js';
-import { activeArticle, footerDateText, headerMetaText, preparePreviewForOutput, formatKeywords } from './ui.js';
+import {
+    activeArticle, footerDateText, headerMetaText, articleIssueYear,
+    articleIssueNumber, articlePageRangeText, preparePreviewForOutput, formatKeywords
+} from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
 
 export function safeExportName(art, extension) {
     const base = (art.titleVn || art.titleEn || 'Ban_thao_bai_bao').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 90);
     return `${base}.${extension}`;
+}
+
+export function journalMetaTemplateText(art) {
+    return `${articleIssueYear(art)}, ${articleIssueNumber(art)}, ${articlePageRangeText(art)}`;
 }
 
 export function currentExportData() {
@@ -32,7 +39,10 @@ export function currentExportData() {
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
         doi: art.doi || '', link_doi: art.linkDoi || '',
-        date: footerDateText(art), journal_meta: headerMetaText(art), publishDate: art.datePublished || '',
+        date: footerDateText(art),
+        journal_meta: journalMetaTemplateText(art),
+        journal_meta_full: headerMetaText(art),
+        publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim(),
         authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []
@@ -176,7 +186,7 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
         wordParagraph(wordRun('JOURNAL OF SCIENCE', { color: '1F4E79', size: 32, font: 'Cambria' }), { left: 120, after: 0, line: 260 }) +
         wordParagraph(wordRun('OF LAC HONG UNIVERSITY', { bold: true, color: '1F4E79', size: 20 }), { left: 120, after: 0, line: 180 }),
         wordParagraph(wordRun('ISSN: 2525 - 2186', { bold: true, color: '1F4E79', size: 20 }), { align: 'right', after: 50, line: 210 }) +
-        wordParagraph(wordRun(data.journal_meta || 'Tạp chí Khoa học Lạc Hồng, 2025, 20, 001-005', { color: '1F4E79', size: 20 }), { align: 'right', after: 0, line: 190 })
+        wordParagraph(wordRun(data.journal_meta_full || 'Tạp chí Khoa học Lạc Hồng, 2025, 20, 001-005', { color: '1F4E79', size: 20 }), { align: 'right', after: 0, line: 190 })
     ]], [705, 3513, 5184], {
         borders: false, bottomBorder: true, borderColor: '1F3864', borderSize: 4,
         cellMargin: 0, verticalAlign: 'center', rowHeight: 709
@@ -388,7 +398,7 @@ export async function exportCurrentArticleWordFromTemplate() {
             const file = zip.file(name);
             if (file) {
                 let fxml = file.asText();
-                fxml = normalizeAndReplaceDocxXml(fxml, data, { singleDatePlaceholder: true });
+                fxml = replaceFooterDatePlaceholdersXml(fxml, data.date);
                 zip.file(name, fxml);
             }
         });
@@ -458,6 +468,22 @@ export function enforceZipDocxFonts(zip) {
         const file = zip.file(path);
         if (!file) return;
         zip.file(path, enforceDocxRunFonts(file.asText()));
+    });
+}
+
+function escapeXmlText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+    }[char]));
+}
+
+export function replaceFooterDatePlaceholdersXml(xml, dateText) {
+    let used = false;
+    const escapedDate = escapeXmlText(dateText);
+    return String(xml || '').replace(/\{date\}/g, () => {
+        if (used) return '';
+        used = true;
+        return escapedDate;
     });
 }
 
@@ -535,9 +561,6 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                     }
                 }
                 else if (ph === 'journal_meta') val = data.journal_meta;
-                if (ph === 'journal_meta' && fullText.trim().replace(key, '').trim()) {
-                    val = `\n${val}`;
-                }
 
                 fullText = fullText.replaceAll(key, val);
             }
@@ -679,7 +702,10 @@ export function getArticleExportData(art) {
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
         doi: art.doi || '', link_doi: art.linkDoi || '',
-        date: footerDateText(art), journal_meta: headerMetaText(art), publishDate: art.datePublished || '',
+        date: footerDateText(art),
+        journal_meta: journalMetaTemplateText(art),
+        journal_meta_full: headerMetaText(art),
+        publishDate: art.datePublished || '',
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim(),
         authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []
@@ -897,9 +923,9 @@ export async function exportIssueWord() {
                         const partData = info.originalFilename.includes('header')
                             ? { ...data, title: data.headerTitle || data.title || data.title_en }
                             : data;
-                        fileXml = normalizeAndReplaceDocxXml(fileXml, partData, {
-                            singleDatePlaceholder: info.originalFilename.includes('footer')
-                        });
+                        fileXml = info.originalFilename.includes('footer')
+                            ? replaceFooterDatePlaceholdersXml(fileXml, data.date)
+                            : normalizeAndReplaceDocxXml(fileXml, partData);
                         localRelMap.forEach((mInfo, mOldId) => {
                             fileXml = fileXml.replace(new RegExp(`r:id="${mOldId}"`, 'g'), `r:id="${mInfo.uniqueId}"`);
                             fileXml = fileXml.replace(new RegExp(`r:embed="${mOldId}"`, 'g'), `r:embed="${mInfo.uniqueId}"`);
