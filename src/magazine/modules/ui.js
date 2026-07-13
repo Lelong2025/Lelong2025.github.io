@@ -432,6 +432,10 @@ export function loadArticleIntoEditor(id) {
     }
 
     document.getElementById('input-page-count').value = art.pageCount || 5;
+    const issueYearInput = document.getElementById('input-issue-year');
+    const issueNumberInput = document.getElementById('input-issue-number');
+    if (issueYearInput) issueYearInput.value = art.issueYear || issueYearFallback(art);
+    if (issueNumberInput) issueNumberInput.value = art.issueNumber || issueNumberFallback();
     document.getElementById('input-title-vn').value = art.titleVn || '';
     document.getElementById('input-title-en').value = art.titleEn || '';
     const headerTitle = document.getElementById('input-header-title');
@@ -461,6 +465,10 @@ export function loadArticleIntoEditor(id) {
 
 export function clearEditorForm() {
     document.getElementById('input-page-count').value = 1;
+    const issueYearInput = document.getElementById('input-issue-year');
+    const issueNumberInput = document.getElementById('input-issue-number');
+    if (issueYearInput) issueYearInput.value = '';
+    if (issueNumberInput) issueNumberInput.value = '';
     document.getElementById('input-title-vn').value = '';
     document.getElementById('input-title-en').value = '';
     const headerTitle = document.getElementById('input-header-title');
@@ -499,6 +507,10 @@ export function syncFormToPreview() {
 
     art.titleVn = document.getElementById('input-title-vn').value;
     art.titleEn = document.getElementById('input-title-en').value;
+    const issueYearInput = document.getElementById('input-issue-year');
+    const issueNumberInput = document.getElementById('input-issue-number');
+    art.issueYear = issueYearInput ? issueYearInput.value.trim() : (art.issueYear || '');
+    art.issueNumber = issueNumberInput ? issueNumberInput.value.trim() : (art.issueNumber || '');
     const headerTitle = document.getElementById('input-header-title');
     if (headerTitle) art.headerTitle = headerTitle.value;
     art.authors = document.getElementById('input-authors').value;
@@ -530,19 +542,45 @@ export function syncFormToPreview() {
     }
 }
 
-export function footerDateText(art) {
+export function issueNumberFallback() {
     const issue = state.appState.issues[state.appState.currentIssueId];
     const issueTitle = issue?.title || '';
     const issueMatch = issueTitle.match(/(?:Số|Issue)\s*0*(\d+)/i) || issueTitle.match(/\b0*(\d+)\b/);
-    const issueNumber = issueMatch?.[1] || '20';
-    const dateMatch = String(art?.datePublished || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!dateMatch) return `JSLHU, Issue ${issueNumber}, 2025`;
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    const month = monthNames[Number(dateMatch[2]) - 1];
-    return `JSLHU, Issue ${issueNumber}, ${month} ${dateMatch[1]}`;
+    return issueMatch?.[1] || '20';
+}
+
+export function issueYearFallback(art) {
+    const dateMatch = String(art?.datePublished || '').match(/^(\d{4})-\d{2}-\d{2}$/);
+    if (dateMatch) return dateMatch[1];
+    return String(new Date().getFullYear());
+}
+
+export function articleIssueNumber(art) {
+    return String(art?.issueNumber || '').trim() || issueNumberFallback();
+}
+
+export function articleIssueYear(art) {
+    const inputYear = String(art?.issueYear || '').trim();
+    if (/^\d{4}$/.test(inputYear)) return inputYear;
+    return issueYearFallback(art);
+}
+
+export function formatPageNumber(num) {
+    return String(Math.max(1, parseInt(num || 1, 10))).padStart(3, '0');
+}
+
+export function articlePageRangeText(art) {
+    const start = articleDisplayPageNumber(art, 1);
+    const count = Math.max(1, parseInt(art?.pageCount || 1, 10));
+    return `${formatPageNumber(start)}-${formatPageNumber(start + count - 1)}`;
+}
+
+export function headerMetaText(art) {
+    return `Tạp chí Khoa học Lạc Hồng, ${articleIssueYear(art)}, ${articleIssueNumber(art)}, ${articlePageRangeText(art)}`;
+}
+
+export function footerDateText(art) {
+    return `JSLHU, Issue ${articleIssueNumber(art)}, ${articleIssueYear(art)}`;
 }
 
 export function formatKeywords(value, fallback) {
@@ -565,6 +603,28 @@ export function articleDisplayPageNumber(art, articlePageNumber) {
 export function runningHeaderTitle(art) {
     if (art?.headerTitle) return art.headerTitle;
     return toTitleCase(art?.titleVn || art?.titleEn || 'TIÊU ĐỀ BÀI BÁO');
+}
+
+export function applyHeaderTitleCase(mode) {
+    const input = document.getElementById('input-header-title');
+    if (!input || !mode) return;
+    const value = input.value || '';
+    const firstLetter = text => text.replace(/\p{L}/u, letter => letter.toLocaleUpperCase('vi-VN'));
+    const transforms = {
+        sentence: () => firstLetter(value.toLocaleLowerCase('vi-VN')),
+        lower: () => value.toLocaleLowerCase('vi-VN'),
+        upper: () => value.toLocaleUpperCase('vi-VN'),
+        capitalize: () => value.toLocaleLowerCase('vi-VN').replace(/(^|[\s/-])(\p{L})/gu, (_, prefix, letter) => prefix + letter.toLocaleUpperCase('vi-VN')),
+        toggle: () => Array.from(value).map(char => {
+            const lower = char.toLocaleLowerCase('vi-VN');
+            const upper = char.toLocaleUpperCase('vi-VN');
+            if (char === lower && char !== upper) return upper;
+            if (char === upper && char !== lower) return lower;
+            return char;
+        }).join('')
+    };
+    input.value = transforms[mode]?.() || value;
+    syncFormToPreview();
 }
 
 export function createArticlePage(pageNumber, art) {
@@ -676,7 +736,7 @@ export function renderSingleArticlePreview(art) {
     };
 
     const headerMeta = document.getElementById('preview-header-meta');
-    if (headerMeta) headerMeta.textContent = 'Tạp chí Khoa học Lạc Hồng, 2025, 20, 001-005';
+    if (headerMeta) headerMeta.textContent = headerMetaText(art);
     const pvTitleVn = document.getElementById('pv-title-vn');
     const pvTitleEn = document.getElementById('pv-title-en');
     const pvAuthorsVn = document.getElementById('pv-authors-vn');
@@ -736,6 +796,7 @@ export function renderSingleArticlePreview(art) {
     paginateContent(art.bodyContent, art);
     appendAuthorProfilesToPreview(art);
     syncCurrentArticlePageCountFromPreview(art);
+    if (headerMeta) headerMeta.textContent = headerMetaText(art);
 }
 
 export function appendAuthorProfilesToPreview(art) {
@@ -840,6 +901,8 @@ export function createNewArticle() {
     const newId = `art-${Date.now()}`;
     const newArt = {
         id: newId,
+        issueYear: String(new Date().getFullYear()),
+        issueNumber: issueNumberFallback(),
         titleVn: "",
         titleEn: "",
         authors: "",

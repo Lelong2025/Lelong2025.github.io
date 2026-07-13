@@ -792,17 +792,73 @@ export function splitActiveCell() {
     finishTableCellEdit('Đã tách ô.');
 }
 
-export function addTableRow() {
-    if (!activeEditorCell) return showToast('Hãy đặt con trỏ vào bảng.');
-    const row = activeEditorCell.parentElement;
-    const columnCount = Math.max(...Array.from(activeEditorTable.rows).map(item =>
+function tableMenuMode() {
+    return document.getElementById('table-border-menu')?.dataset.mode || 'editor';
+}
+
+function selectedDraftCell() {
+    return draftSelection.size ? [...draftSelection][0] : null;
+}
+
+function activeTableContext() {
+    if (tableMenuMode() === 'draft') {
+        return { table: draftTable, cell: selectedDraftCell(), mode: 'draft' };
+    }
+    return { table: activeEditorTable, cell: activeEditorCell, mode: 'editor' };
+}
+
+function tableColumnCount(table) {
+    return Math.max(...Array.from(table.rows).map(item =>
         Array.from(item.cells).reduce((sum, cell) => sum + cell.colSpan, 0)));
-    const newRow = activeEditorTable.insertRow(row.rowIndex + 1);
-    for (let index = 0; index < columnCount; index += 1) newRow.appendChild(createEmptyTableCell());
-    finishTableCellEdit('Đã thêm hàng.');
+}
+
+function finishTableStructureEdit(message, mode) {
+    const menu = document.getElementById('table-border-menu');
+    if (menu) menu.classList.add('hidden');
+    if (mode === 'draft') return;
+    finishTableCellEdit(message);
+}
+
+export function insertTableRow(position = 'below') {
+    const { table, cell, mode } = activeTableContext();
+    if (!table || !cell) return showToast('Hay chon mot o trong bang.');
+    const row = cell.parentElement;
+    const columnCount = tableColumnCount(table);
+    const newRow = table.insertRow(position === 'above' ? row.rowIndex : row.rowIndex + 1);
+    for (let index = 0; index < columnCount; index += 1) {
+        const newCell = createEmptyTableCell(cell);
+        newCell.contentEditable = 'true';
+        newRow.appendChild(newCell);
+    }
+    if (mode === 'draft') selectDraftRectangle(newRow.cells[0], newRow.cells[0]);
+    finishTableStructureEdit(position === 'above' ? 'Da them hang tren.' : 'Da them hang duoi.', mode);
+}
+
+export function insertTableRowAbove() {
+    insertTableRow('above');
+}
+
+export function insertTableRowBelow() {
+    insertTableRow('below');
+}
+
+export function addTableRow() {
+    return insertTableRowBelow();
 }
 
 export function deleteTableRow() {
+    if (tableMenuMode() === 'draft') {
+        const cell = selectedDraftCell();
+        if (!draftTable || !cell) return showToast('Hay chon hang can xoa.');
+        if (draftTable.rows.length <= 1) return showToast('Bang can it nhat mot hang.');
+        const rowIndex = cell.parentElement.rowIndex;
+        draftTable.deleteRow(rowIndex);
+        draftSelection.clear();
+        const nextCell = draftTable.rows[Math.min(rowIndex, draftTable.rows.length - 1)]?.cells[0];
+        if (nextCell) selectDraftRectangle(nextCell, nextCell);
+        document.getElementById('table-border-menu')?.classList.add('hidden');
+        return;
+    }
     if (!activeEditorCell) return showToast('Hãy đặt con trỏ vào hàng cần xóa.');
     if (activeEditorTable.rows.length === 1) return deleteSelectedTable();
     const rowIndex = activeEditorCell.parentElement.rowIndex;
@@ -811,14 +867,49 @@ export function deleteTableRow() {
     finishTableCellEdit('Đã xóa hàng.');
 }
 
+export function insertTableColumn(position = 'right') {
+    const { table, cell, mode } = activeTableContext();
+    if (!table || !cell) return showToast('Hay chon mot o trong bang.');
+    const rowIndex = cell.parentElement.rowIndex;
+    const insertIndex = position === 'left' ? cell.cellIndex : cell.cellIndex + 1;
+    Array.from(table.rows).forEach(row => {
+        const newCell = createEmptyTableCell(cell);
+        newCell.contentEditable = 'true';
+        row.insertBefore(newCell, row.cells[insertIndex] || null);
+    });
+    if (mode === 'draft') {
+        const selected = table.rows[rowIndex]?.cells[insertIndex] || table.rows[rowIndex]?.cells[insertIndex - 1];
+        if (selected) selectDraftRectangle(selected, selected);
+    }
+    finishTableStructureEdit(position === 'left' ? 'Da them cot trai.' : 'Da them cot phai.', mode);
+}
+
+export function insertTableColumnLeft() {
+    insertTableColumn('left');
+}
+
+export function insertTableColumnRight() {
+    insertTableColumn('right');
+}
+
 export function addTableColumn() {
-    if (!activeEditorCell) return showToast('Hãy đặt con trỏ vào bảng.');
-    const index = activeEditorCell.cellIndex + 1;
-    Array.from(activeEditorTable.rows).forEach(row => row.insertBefore(createEmptyTableCell(), row.cells[index] || null));
-    finishTableCellEdit('Đã thêm cột.');
+    return insertTableColumnRight();
 }
 
 export function deleteTableColumn() {
+    if (tableMenuMode() === 'draft') {
+        const cell = selectedDraftCell();
+        if (!draftTable || !cell) return showToast('Hay chon cot can xoa.');
+        const columnIndex = cell.cellIndex;
+        const maxColumns = tableColumnCount(draftTable);
+        if (maxColumns <= 1) return showToast('Bang can it nhat mot cot.');
+        Array.from(draftTable.rows).forEach(row => row.cells[columnIndex]?.remove());
+        draftSelection.clear();
+        const nextCell = draftTable.rows[0]?.cells[Math.min(columnIndex, draftTable.rows[0].cells.length - 1)];
+        if (nextCell) selectDraftRectangle(nextCell, nextCell);
+        document.getElementById('table-border-menu')?.classList.add('hidden');
+        return;
+    }
     if (!activeEditorCell) return showToast('Hãy đặt con trỏ vào cột cần xóa.');
     const index = activeEditorCell.cellIndex;
     Array.from(activeEditorTable.rows).forEach(row => {

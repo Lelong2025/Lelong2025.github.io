@@ -415,6 +415,8 @@ body.magazine-auth-required #toast-box {
     outline: none;
     user-select: none;
     border: 1px dashed #cbd5e1;
+    color: #0f172a;
+    background: #ffffff;
 }
 
 #table-draft-canvas td[contenteditable="true"] {
@@ -424,6 +426,16 @@ body.magazine-auth-required #toast-box {
 #table-draft-canvas td.draft-cell-selected {
     background: #dbeafe !important;
     box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.dark #table-draft-canvas {
+    background: #f8fafc;
+}
+
+.dark #table-draft-canvas td {
+    color: #0f172a;
+    background: #ffffff;
+    border-color: #94a3b8;
 }
 
 .preview-page-footer {

@@ -8,7 +8,7 @@ import {
     createArticlePage, pageHasOverflow, appendTextBlockAcrossPages, paginateContent,
     renderSingleArticlePreview, togglePreviewMode, renderLivePreview,
     createNewArticle, deleteCurrentArticle, createNewIssue, zoomPreview,
-    activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale,
+    activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale, applyHeaderTitleCase,
     toggleAiPanel, switchReviewTab, openAuthorDialog, closeAuthorDialog, addAuthorProfile,
     renderAuthorProfiles, removeAuthorProfile
 } from './modules/ui.js';
@@ -17,8 +17,9 @@ import {
     openTableDialog, closeTableDialog, buildDraftTable, mergeDraftSelection,
     splitDraftCell, formatDraftSelection, applyDraftBorder, insertDraftTableAtCursor,
     insertCustomTable, setTableBorderPreset, formatSelectedTable, deleteSelectedTable,
-    mergeCellRight, mergeCellDown, splitActiveCell, addTableRow, deleteTableRow,
-    addTableColumn, deleteTableColumn, formatActiveCell, toggleActiveCellBorder,
+    mergeCellRight, mergeCellDown, splitActiveCell, addTableRow, insertTableRowAbove,
+    insertTableRowBelow, deleteTableRow, addTableColumn, insertTableColumnLeft,
+    insertTableColumnRight, deleteTableColumn, formatActiveCell, toggleActiveCellBorder,
     mergeSelectedTableCells, splitSelectedTableCell, updateCurrentArticlePages
 } from './modules/editor.js';
 import {
@@ -27,7 +28,7 @@ import {
     exportVectorPdf as exportVectorPdfRaw, exportIssue,
     closeExportModal, exportJSON
 } from './modules/export.js';
-import { runAiReview as runAiReviewRaw, applySelectedSuggestions } from './modules/ai.js';
+import { runAiReview as runAiReviewRaw, applySelectedSuggestions, switchAiReviewMode } from './modules/ai.js';
 import { SERVICE_CODES, withServiceUsage } from '../shared/service-access.js';
 import {
     loadProfile, ensureClientWorkspace, applyRoleUi, loadSubmissions, renderSubmissionsList,
@@ -112,6 +113,7 @@ Object.assign(window, {
     toggleDarkMode,
     switchMobileTab,
     adjustPreviewScale,
+    applyHeaderTitleCase,
     toggleAiPanel,
     switchReviewTab,
     openAuthorDialog,
@@ -138,8 +140,12 @@ Object.assign(window, {
     mergeCellDown,
     splitActiveCell,
     addTableRow,
+    insertTableRowAbove,
+    insertTableRowBelow,
     deleteTableRow,
     addTableColumn,
+    insertTableColumnLeft,
+    insertTableColumnRight,
     deleteTableColumn,
     formatActiveCell,
     toggleActiveCellBorder,
@@ -153,6 +159,7 @@ Object.assign(window, {
     closeExportModal,
     exportJSON,
     runAiReview,
+    switchAiReviewMode,
     applySelectedSuggestions: applySelectedSuggestions,
     renderSubmissionsList,
     loadSubmissions,

@@ -463,11 +463,20 @@
                 </div>
 
                 <div id="ai-tab-panel" class="flex min-h-0 flex-1 flex-col">
-                    <div class="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <div class="space-y-2 p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                        <div class="flex items-center gap-2">
+                            <label for="ai-review-mode"
+                                class="shrink-0 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mode</label>
+                            <select id="ai-review-mode" onchange="switchAiReviewMode(this.value)"
+                                class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                                <option value="spelling">Kiểm chính tả</option>
+                                <option value="suggestion">Gợi ý metadata</option>
+                            </select>
+                        </div>
                         <button onclick="runAiReview()"
                             class="w-full bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md transition-all">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
-                            <span>Chạy AI Review Toàn diện</span>
+                            <span id="ai-run-button-label">Chạy kiểm chính tả</span>
                         </button>
                     </div>
 
@@ -551,6 +560,26 @@
                     </div>
 
                     <!-- Vietnamese Title Input -->
+                    <div
+                        class="grid grid-cols-2 gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/30">
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide">Năm
+                                số báo:</label>
+                            <input type="number" id="input-issue-year" min="1900" max="2999"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+                                placeholder="2026" oninput="syncFormToPreview()">
+                        </div>
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide">Số
+                                báo:</label>
+                            <input type="number" id="input-issue-number" min="1" max="999"
+                                class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+                                placeholder="12" oninput="syncFormToPreview()">
+                        </div>
+                    </div>
+
                     <div class="space-y-1">
                         <label
                             class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
@@ -573,9 +602,21 @@
                     </div>
 
                     <div class="space-y-1">
-                        <label
-                            class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
-                            đề header riêng:</label>
+                        <div class="flex items-center justify-between gap-2">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tiêu
+                                đề header riêng:</label>
+                            <select id="header-title-case"
+                                class="w-40 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                                onchange="applyHeaderTitleCase(this.value); this.value='';">
+                                <option value="">Định dạng chữ</option>
+                                <option value="sentence">Sentence case</option>
+                                <option value="lower">lower case</option>
+                                <option value="upper">UPPER CASE</option>
+                                <option value="capitalize">Capitalize Each Word</option>
+                                <option value="toggle">tOGGLE cASE</option>
+                            </select>
+                        </div>
                         <input type="text" id="input-header-title"
                             class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
                             placeholder="Để trống nếu dùng tiêu đề bài" oninput="syncFormToPreview()">
@@ -883,9 +924,15 @@
             </div>
         </div>
         <div id="table-border-menu"
-            class="fixed z-[70] hidden w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl">
-            <p class="px-2 pb-1 text-[10px] font-bold uppercase text-slate-400">Viền vùng đã chọn</p>
+            class="fixed z-[70] hidden w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+            <p class="px-2 pb-1 text-[10px] font-bold uppercase text-slate-400">Bảng và viền ô</p>
             <div class="grid grid-cols-2 gap-1 text-[11px]">
+                <button onclick="insertTableRowAbove()" class="table-tool-button">Hàng trên</button><button
+                    onclick="insertTableRowBelow()" class="table-tool-button">Hàng dưới</button>
+                <button onclick="insertTableColumnLeft()" class="table-tool-button">Cột trái</button><button
+                    onclick="insertTableColumnRight()" class="table-tool-button">Cột phải</button>
+                <button onclick="deleteTableRow()" class="table-tool-button text-rose-600">Xóa hàng</button><button
+                    onclick="deleteTableColumn()" class="table-tool-button text-rose-600">Xóa cột</button>
                 <button onclick="mergeSelectedTableCells()" class="table-tool-button">Merge</button><button
                     onclick="splitSelectedTableCell()" class="table-tool-button">Tách</button>
                 <button onclick="applyDraftBorder('top')" class="table-tool-button">Trên</button><button
