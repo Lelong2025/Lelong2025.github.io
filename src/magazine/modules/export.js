@@ -383,6 +383,16 @@ export async function exportCurrentArticleWordFromTemplate() {
             }
         });
 
+        const footerNames = ['word/footer1.xml', 'word/footer2.xml', 'word/footer3.xml', 'word/footer4.xml', 'word/footer5.xml', 'word/footer6.xml'];
+        footerNames.forEach(name => {
+            const file = zip.file(name);
+            if (file) {
+                let fxml = file.asText();
+                fxml = normalizeAndReplaceDocxXml(fxml, data);
+                zip.file(name, fxml);
+            }
+        });
+
         enforceZipDocxFonts(zip);
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
