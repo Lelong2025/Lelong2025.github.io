@@ -248,6 +248,13 @@ Schema bắt buộc:
 
 Nếu không có lỗi, corrections là mảng rỗng. Không kiểm bodyContent.
 
+Strict token-level rules:
+- Report only obvious spelling-token problems: abbreviation/informal shortened word, missing Vietnamese diacritics on one word, wrong keyboard typo, missing/extra/swapped letter inside a word, or clearly misspelled English word.
+- Do not report phrase-level rewrites, style improvements, grammar suggestions, terminology changes, capitalization preferences, punctuation preferences, keyword quality, or semantic improvements.
+- Do not replace a whole phrase if only one word is wrong. The "original" value must be the exact suspicious token from the text, usually one word.
+- Use a short phrase only when the typo itself spans a fixed compound term.
+- If a word, proper name, academic term, or phrase could be valid, ignore it.
+
 <ARTICLE_METADATA>${JSON.stringify(metadata)}</ARTICLE_METADATA>`;
     }
     return `Bạn là biên tập viên tạp chí khoa học. Chỉ gợi ý cải thiện metadata trong ARTICLE_METADATA, không review hoặc sửa nội dung bài/bodyContent. Không bịa dữ liệu, tác giả, kết quả hoặc trích dẫn. Chỉ trả JSON hợp lệ, không Markdown.
@@ -273,12 +280,20 @@ function parseJsonObject(raw) {
     }
 }
 
+function isTokenLevelCorrection(item) {
+    const original = String(item?.original || '').trim();
+    const suggestion = String(item?.suggestion || '').trim();
+    if (!original || !suggestion) return false;
+    if (/\s/.test(original) || /\s/.test(suggestion)) return false;
+    return original.length <= 40 && suggestion.length <= 40;
+}
+
 export function parseAiReviewResult(raw, mode = currentAiMode()) {
     const parsed = parseJsonObject(raw);
     if (mode === 'spelling') {
         return {
             mode: 'spelling',
-            corrections: Array.isArray(parsed.corrections) ? parsed.corrections.map(item => ({
+            corrections: Array.isArray(parsed.corrections) ? parsed.corrections.filter(isTokenLevelCorrection).map(item => ({
                 field: METADATA_FIELDS.some(field => field.id === item.field) ? item.field : 'titleVn',
                 original: String(item.original || '').trim(),
                 suggestion: String(item.suggestion || '').trim(),
