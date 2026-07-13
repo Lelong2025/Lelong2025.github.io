@@ -492,6 +492,25 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
     const doc = parser.parseFromString(xml, 'application/xml');
     const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
+    const replaceInlineJournalMeta = () => {
+        const allTextNodes = Array.from(doc.getElementsByTagName('w:t'));
+        allTextNodes.forEach(node => {
+            if (node.textContent.includes('{journal_meta}')) {
+                node.textContent = node.textContent.replaceAll('{journal_meta}', data.journal_meta || '');
+            }
+        });
+        for (let index = 0; index < allTextNodes.length - 2; index += 1) {
+            const open = allTextNodes[index];
+            const name = allTextNodes[index + 1];
+            const close = allTextNodes[index + 2];
+            if (open.textContent === '{' && name.textContent === 'journal_meta' && close.textContent === '}') {
+                open.textContent = '';
+                name.textContent = data.journal_meta || '';
+                close.textContent = '';
+            }
+        }
+    };
+
     const setRunTextWithBreaks = (textNode, value) => {
         const run = textNode?.parentNode;
         if (!run) return;
@@ -507,9 +526,11 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
         });
     };
 
+    replaceInlineJournalMeta();
+
     const placeholders = [
         'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
-        'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'journal_meta', 'content'
+        'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'content'
     ];
     let dateReplacementUsed = false;
 
@@ -560,7 +581,6 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                         dateReplacementUsed = true;
                     }
                 }
-                else if (ph === 'journal_meta') val = data.journal_meta;
 
                 fullText = fullText.replaceAll(key, val);
             }
