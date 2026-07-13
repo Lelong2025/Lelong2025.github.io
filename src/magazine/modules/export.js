@@ -494,6 +494,21 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
 
     const replaceInlineJournalMeta = () => {
         const allTextNodes = Array.from(doc.getElementsByTagName('w:t'));
+        const normalizeText = value => String(value || '').replace(/\s+/g, ' ').trim();
+
+        Array.from(doc.getElementsByTagName('w:p')).forEach(paragraph => {
+            const textNodes = Array.from(paragraph.getElementsByTagName('w:t'));
+            const paragraphText = textNodes.map(node => node.textContent).join('');
+            if (!paragraphText.includes('journal_meta')) return;
+            if (!/Tạp\s*chí\s*Khoa\s*học\s*Lạc\s*Hồng/i.test(normalizeText(paragraphText))) return;
+            const fullMeta = data.journal_meta_full || (data.journal_meta ? `Tạp chí Khoa học Lạc Hồng, ${data.journal_meta}` : '');
+            const startIndex = textNodes.findIndex(node => /Tạp/i.test(node.textContent));
+            textNodes.forEach((node, index) => {
+                if (index < startIndex) return;
+                node.textContent = index === startIndex ? fullMeta : '';
+            });
+        });
+
         allTextNodes.forEach(node => {
             if (node.textContent.includes('{journal_meta}')) {
                 node.textContent = node.textContent.replaceAll('{journal_meta}', data.journal_meta || '');
