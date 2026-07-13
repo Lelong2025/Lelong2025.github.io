@@ -249,11 +249,14 @@ Schema bắt buộc:
 Nếu không có lỗi, corrections là mảng rỗng. Không kiểm bodyContent.
 
 Strict token-level rules:
-- Report only obvious spelling-token problems: abbreviation/informal shortened word, missing Vietnamese diacritics on one word, wrong keyboard typo, missing/extra/swapped letter inside a word, or clearly misspelled English word.
+- Read each full metadata field first to understand the sentence context, then report each wrong token as a separate correction.
+- Report obvious spelling-token problems: abbreviation/informal shortened word, missing Vietnamese diacritics on one word, wrong keyboard typo, missing/extra/swapped letter inside a word, wrong casing inside a word, or clearly misspelled English word.
+- A token that is a valid word by itself can still be wrong if the full sentence makes the intended word obvious. Example: in "YẾU TỐ ẢH HƯNG NHU CẦU HỌC TIẾNG ANH SINH VIn DU LỊCH", report ẢH -> ẢNH, HƯNG -> HƯỞNG, VIn -> VIÊN as three separate corrections.
 - Do not report phrase-level rewrites, style improvements, grammar suggestions, terminology changes, capitalization preferences, punctuation preferences, keyword quality, or semantic improvements.
 - Do not replace a whole phrase if only one word is wrong. The "original" value must be the exact suspicious token from the text, usually one word.
+- The "suggestion" value must preserve the surrounding text style/casing when obvious. For all-caps Vietnamese titles, suggest all-caps tokens with correct diacritics.
 - Use a short phrase only when the typo itself spans a fixed compound term.
-- If a word, proper name, academic term, or phrase could be valid, ignore it.
+- If the intended token is not clear from the full field context, ignore it.
 
 <ARTICLE_METADATA>${JSON.stringify(metadata)}</ARTICLE_METADATA>`;
     }
