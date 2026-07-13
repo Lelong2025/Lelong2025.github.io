@@ -383,12 +383,12 @@ export async function exportCurrentArticleWordFromTemplate() {
             }
         });
 
-        const footerNames = ['word/footer1.xml', 'word/footer2.xml', 'word/footer3.xml', 'word/footer4.xml', 'word/footer5.xml', 'word/footer6.xml'];
+        const footerNames = Object.keys(zip.files || {}).filter(name => /^word\/footer[^/]*\.xml$/i.test(name));
         footerNames.forEach(name => {
             const file = zip.file(name);
             if (file) {
                 let fxml = file.asText();
-                fxml = normalizeAndReplaceDocxXml(fxml, data);
+                fxml = normalizeAndReplaceDocxXml(fxml, data, { singleDatePlaceholder: true });
                 zip.file(name, fxml);
             }
         });
@@ -461,7 +461,7 @@ export function enforceZipDocxFonts(zip) {
     });
 }
 
-export function normalizeAndReplaceDocxXml(xml, data) {
+export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'application/xml');
     const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -485,6 +485,7 @@ export function normalizeAndReplaceDocxXml(xml, data) {
         'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
         'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'journal_meta', 'content'
     ];
+    let dateReplacementUsed = false;
 
     const paragraphs = doc.getElementsByTagName('w:p');
     for (let p of paragraphs) {
@@ -526,7 +527,13 @@ export function normalizeAndReplaceDocxXml(xml, data) {
                 else if (ph === 'keywords_en') val = formatKeywords(data.keywords_en, '');
                 else if (ph === 'doi') val = data.doi;
                 else if (ph === 'link_doi') val = data.link_doi;
-                else if (ph === 'date') val = data.date;
+                else if (ph === 'date') {
+                    val = data.date;
+                    if (options.singleDatePlaceholder) {
+                        val = dateReplacementUsed ? '' : data.date;
+                        dateReplacementUsed = true;
+                    }
+                }
                 else if (ph === 'journal_meta') val = data.journal_meta;
                 if (ph === 'journal_meta' && fullText.trim().replace(key, '').trim()) {
                     val = `\n${val}`;
@@ -890,7 +897,9 @@ export async function exportIssueWord() {
                         const partData = info.originalFilename.includes('header')
                             ? { ...data, title: data.headerTitle || data.title || data.title_en }
                             : data;
-                        fileXml = normalizeAndReplaceDocxXml(fileXml, partData);
+                        fileXml = normalizeAndReplaceDocxXml(fileXml, partData, {
+                            singleDatePlaceholder: info.originalFilename.includes('footer')
+                        });
                         localRelMap.forEach((mInfo, mOldId) => {
                             fileXml = fileXml.replace(new RegExp(`r:id="${mOldId}"`, 'g'), `r:id="${mInfo.uniqueId}"`);
                             fileXml = fileXml.replace(new RegExp(`r:embed="${mOldId}"`, 'g'), `r:embed="${mInfo.uniqueId}"`);
