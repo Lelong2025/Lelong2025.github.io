@@ -2,7 +2,7 @@
 
 This directory is the main app. The sibling `Lelong2025.github.io` and
 `LHU-magazine` directories are legacy references only and should not be edited
-for current development.
+for current development. 
 
 ## Routes
 
