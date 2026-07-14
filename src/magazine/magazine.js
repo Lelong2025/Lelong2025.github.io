@@ -1,0 +1,247 @@
+import { state, handleLogout, saveToLocalStorage, saveToSupabase } from './modules/state.js';
+import { showToast, allowDrop, handleAbstractPaste } from './modules/utils.js';
+import {
+    initApp, toggleSidebar, populateIssueSelector, recalculateContinuousPages,
+    syncCurrentArticlePageCountFromPreview, renderArticlesList, selectArticle,
+    loadArticleIntoEditor, clearEditorForm, syncFormToPreview, footerDateText,
+    formatKeywords, articleDisplayPageNumber,
+    createArticlePage, pageHasOverflow, appendTextBlockAcrossPages, paginateContent,
+    renderSingleArticlePreview, togglePreviewMode, renderLivePreview,
+    createNewArticle, deleteCurrentArticle, createNewIssue, zoomPreview,
+    activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale, applyHeaderTitleCase,
+    toggleAiPanel, switchReviewTab, openAuthorDialog, closeAuthorDialog, addAuthorProfile,
+    renderAuthorProfiles, removeAuthorProfile
+} from './modules/ui.js';
+import {
+    initQuill, openRichTextWorkspace, closeRichTextWorkspace, formatDoc,
+    openTableDialog, closeTableDialog, buildDraftTable, mergeDraftSelection,
+    splitDraftCell, formatDraftSelection, applyDraftBorder, insertDraftTableAtCursor,
+    insertCustomTable, setTableBorderPreset, formatSelectedTable, deleteSelectedTable,
+    mergeCellRight, mergeCellDown, splitActiveCell, addTableRow, insertTableRowAbove,
+    insertTableRowBelow, deleteTableRow, addTableColumn, insertTableColumnLeft,
+    insertTableColumnRight, deleteTableColumn, formatActiveCell, toggleActiveCellBorder,
+    mergeSelectedTableCells, splitSelectedTableCell, updateCurrentArticlePages
+} from './modules/editor.js';
+import {
+    exportCurrentArticleWord as exportCurrentArticleWordRaw,
+    exportIssueWord as exportIssueWordRaw,
+    exportVectorPdf as exportVectorPdfRaw, exportIssue,
+    closeExportModal, exportJSON
+} from './modules/export.js';
+import { runAiReview as runAiReviewRaw, applySelectedSuggestions, switchAiReviewMode } from './modules/ai.js';
+import { SERVICE_CODES, withServiceUsage } from '../shared/service-access.js';
+import {
+    loadProfile, ensureClientWorkspace, applyRoleUi, loadSubmissions, renderSubmissionsList,
+    openLhjLogin, openMediaLibrary, closeMediaLibrary, handleMediaUpload,
+    uploadAuthorPhotoFromInput, submitCurrentArticle, renderSubmissionCard, isClient
+} from './modules/cloud.js';
+
+// Expose states to global window scope for inline scripts
+window.state = state;
+Object.defineProperty(window, 'appState', {
+    get() { return state.appState; },
+    set(val) { state.appState = val; }
+});
+
+const denyService = message => {
+    showToast(message);
+    if (window.confirm(`${message}\n\nMở trang tài khoản để xem và mua gói?`)) {
+        window.location.href = '/portal/?page=dashboard';
+    }
+};
+
+const exportCurrentArticleWord = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'article_word',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, exportCurrentArticleWordRaw);
+
+const exportVectorPdf = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'article_pdf',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, exportVectorPdfRaw);
+
+const exportIssueWord = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_EXPORT,
+    action: 'issue_word',
+    metadata: { issue_id: state.appState.currentIssueId },
+    onDenied: denyService
+}, exportIssueWordRaw);
+
+const runAiReview = () => withServiceUsage({
+    productCode: SERVICE_CODES.MAGAZINE_AI_REVIEW,
+    action: 'full_review',
+    metadata: { article_id: state.appState.currentArticleId },
+    onDenied: denyService
+}, runAiReviewRaw);
+
+// Expose functions to global window scope for inline HTML event handlers
+Object.assign(window, {
+    handleLogout,
+    saveToLocalStorage,
+    saveToSupabase,
+    showToast,
+    allowDrop,
+    initApp,
+    toggleSidebar,
+    populateIssueSelector,
+    recalculateContinuousPages,
+    syncCurrentArticlePageCountFromPreview,
+    renderArticlesList,
+    selectArticle,
+    loadArticleIntoEditor,
+    clearEditorForm,
+    syncFormToPreview,
+    footerDateText,
+    formatKeywords,
+    articleDisplayPageNumber,
+    createArticlePage,
+    pageHasOverflow,
+    appendTextBlockAcrossPages,
+    paginateContent,
+    renderSingleArticlePreview,
+    togglePreviewMode,
+    renderLivePreview,
+    createNewArticle,
+    deleteCurrentArticle,
+    createNewIssue,
+    zoomPreview,
+    activeArticle,
+    toggleDarkMode,
+    switchMobileTab,
+    adjustPreviewScale,
+    applyHeaderTitleCase,
+    toggleAiPanel,
+    switchReviewTab,
+    openAuthorDialog,
+    closeAuthorDialog,
+    addAuthorProfile,
+    renderAuthorProfiles,
+    removeAuthorProfile,
+    openRichTextWorkspace,
+    closeRichTextWorkspace,
+    formatDoc,
+    openTableDialog,
+    closeTableDialog,
+    buildDraftTable,
+    mergeDraftSelection,
+    splitDraftCell,
+    formatDraftSelection,
+    applyDraftBorder,
+    insertDraftTableAtCursor,
+    insertCustomTable,
+    setTableBorderPreset,
+    formatSelectedTable,
+    deleteSelectedTable,
+    mergeCellRight,
+    mergeCellDown,
+    splitActiveCell,
+    addTableRow,
+    insertTableRowAbove,
+    insertTableRowBelow,
+    deleteTableRow,
+    addTableColumn,
+    insertTableColumnLeft,
+    insertTableColumnRight,
+    deleteTableColumn,
+    formatActiveCell,
+    toggleActiveCellBorder,
+    mergeSelectedTableCells,
+    splitSelectedTableCell,
+    updateCurrentArticlePages,
+    exportCurrentArticleWord,
+    exportIssueWord,
+    exportVectorPdf,
+    exportIssue,
+    closeExportModal,
+    exportJSON,
+    runAiReview,
+    switchAiReviewMode,
+    applySelectedSuggestions: applySelectedSuggestions,
+    renderSubmissionsList,
+    loadSubmissions,
+    submitCurrentArticle,
+    renderSubmissionCard,
+    openLhjLogin,
+    openMediaLibrary,
+    closeMediaLibrary,
+    handleMediaUpload,
+    uploadAuthorPhotoFromInput
+});
+
+async function boot() {
+    const savedState = localStorage.getItem(state.LOCAL_STATE_KEY);
+    if (savedState) {
+        try {
+            state.appState = JSON.parse(savedState);
+        } catch (e) {
+            console.error("Lỗi phục hồi dữ liệu, khởi chạy mặc định", e);
+        }
+    }
+
+    const savedTheme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || document.documentElement.dataset.theme || 'dark';
+    const theme = savedTheme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('mixing-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
+
+    try {
+        state.cloudUser = await window.lhuRequireAuth();
+        if (!state.cloudUser) return;
+        await loadProfile();
+        const { data, error } = await window.lhuSupabase
+            .from('magazine_workspaces')
+            .select('state')
+            .eq('user_id', state.cloudUser.id)
+            .eq('workspace_id', state.CLOUD_WORKSPACE_ID)
+            .maybeSingle();
+        if (error) throw error;
+        if (data?.state && typeof data.state === 'object') {
+            state.appState = data.state;
+            state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
+            localStorage.setItem(state.LOCAL_STATE_KEY, JSON.stringify(state.appState));
+        }
+        ensureClientWorkspace();
+        state.cloudSyncEnabled = true;
+        if (!data) await saveToSupabase();
+    } catch (error) {
+        console.error('Không thể tải workspace từ Supabase:', error);
+        setTimeout(() => showToast('Chưa đồng bộ được Supabase; tạm dùng bản lưu trên máy.'), 300);
+    }
+
+    // Bind pasting abstracts
+    ['input-abstract-vn', 'input-abstract-en'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('paste', handleAbstractPaste);
+    });
+
+    // Initialize Quill editor
+    initQuill();
+
+    // Initialize layout and articles list
+    initApp();
+    applyRoleUi();
+    if (isClient()) loadSubmissions();
+}
+
+function markEditorReady() {
+    window.dispatchEvent(new CustomEvent('mixing:page-ready'));
+}
+
+function startEditor() {
+    boot()
+        .catch(error => console.error('Không thể khởi tạo trình soạn báo:', error))
+        .finally(markEditorReady);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startEditor);
+} else {
+    startEditor();
+}

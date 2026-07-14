@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+
+<head>
+  <script>
+    (function applyInitialTheme() {
+      try {
+        var theme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || document.documentElement.dataset.theme || 'dark';
+        theme = theme === 'light' || theme === 'dark' ? theme : 'dark';
+        document.documentElement.dataset.theme = theme;
+      } catch (_) {
+        document.documentElement.dataset.theme = document.documentElement.dataset.theme || 'dark';
+      }
+    })();
+  </script>
+  <script>
+    // Some third-party analytics code installs a document.onkeydown handler and
+    // assumes every synthetic event has a string `key`. Ignore malformed events
+    // and consume rejected async handlers so they cannot become unhandled errors.
+    (function guardDocumentKeydown() {
+      let handler = null;
+      Object.defineProperty(document, 'onkeydown', {
+        get() { return handler; },
+        set(fn) {
+          handler = typeof fn === 'function' ? function (event) {
+            if (typeof event?.key !== 'string') return;
+            try {
+              const result = fn.call(this, event);
+              if (result && typeof result.catch === 'function') result.catch(() => { });
+              return result;
+            } catch (_) {
+              return undefined;
+            }
+          } : fn;
+        },
+        configurable: false
+      });
+    })();
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XKNM5RRLQW"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-XKNM5RRLQW', {
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    });
+  </script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://*.supabase.co wss://*.supabase.co %VITE_API_URL% https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+
+  <!-- SEO Meta Tags -->
+  <title>Portal tài khoản</title>
+  <meta name="description"
+    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Hỗ trợ tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, trạng thái danh mục Scopus nhanh chóng, chính xác." />
+  <meta name="keywords"
+    content="tra cứu tạp chí, điểm khung hdgsnn 2025, jcr impact factor, phân hạng Q, danh mục scopus, tạp chí khoa học" />
+  <meta name="author" content="Lelong2025" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lelong2025.github.io/" />
+  <meta property="og:title" content="Tra Cứu Thông Tin Tạp Chí" />
+  <meta property="og:description"
+    content="Hệ thống tra cứu thông tin tạp chí khoa học trong và ngoài nước. Tra cứu điểm khung HĐGSNN 2025, chỉ số JCR Impact Factor, phân hạng Q, danh mục Scopus." />
+  <meta property="og:image" content="https://lelong2025.github.io/logo.png" />
+
+  <!-- Google Search Console Verification Code Placeholder -->
+  <!-- Thay thế content bằng mã xác minh của bạn từ Google Search Console nếu cần -->
+  <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />
+
+  <link rel="canonical" href="https://lelong2025.github.io/" />
+
+  <!-- Schema.org JSON-LD Structured Data for Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Tra Cứu Thông Tin Tạp Chí",
+    "url": "https://lelong2025.github.io/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://lelong2025.github.io/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script>window.__APP_CONFIG__={SUPABASE_URL:"%VITE_SUPABASE_URL%",SUPABASE_PUBLISHABLE_KEY:"%VITE_SUPABASE_PUBLISHABLE_KEY%",API_URL:"%VITE_API_URL%"};</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
+  <!-- SheetJS — xuất Excel .xlsx (defer: không chặn render trang) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF — xuất PDF hóa đơn (defer: không chặn render trang) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/src/tapchi/tapchi.css">
+</head>
+
+<body class="portal-page-shell">
+
+  <!-- ===== ĐĂNG NHẬP / TÀI KHOẢN VIP ===== -->
+  <div id="userModal" class="vip-modal" >
+    <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <div class="vip-card-head">
+        <h2 id="userModalTitle"><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
+        <button class="vip-close" data-action="close-user-modal" aria-label="Đóng">&times;</button>
+      </div>
+
+      <div id="accountView" style="display:none">
+        <div class="vip-status-box">
+          <div class="vip-account-email"><i class="fas fa-user-circle"></i><strong id="accountEmail"></strong></div>
+          <div class="vip-detail-row"><span>Trạng thái</span><span id="vipStatus" class="vip-inactive">Chưa kích
+              hoạt</span></div>
+          <div id="vipExpiryRow" class="vip-detail-row" style="display:none"><span>Dùng thử đến</span><strong
+              id="vipExpiry"></strong></div>
+          <div class="vip-detail-row"><span>Lượt AI còn lại</span><strong id="vipUsage">0 lượt</strong></div>
+          <div class="vip-detail-row"><span>Số dư</span><strong id="vipWalletBalance">0 đ</strong></div>
+        </div>
+        <div class="vip-actions">
+          <button class="vip-primary" type="button" data-action="open-shared-purchase"><i class="fas fa-crown"></i>&nbsp;
+            Mua thêm lượt · 25.000đ</button>
+          <button class="vip-secondary" type="button" data-action="create-wallet-topup-order"><i
+              class="fas fa-wallet"></i>&nbsp; Nạp số dư</button>
+          <button class="vip-secondary" type="button" data-action="sign-out"><i class="fas fa-sign-out-alt"></i>&nbsp;
+            Đăng xuất</button>
+        </div>
+        <div id="paymentBox" class="payment-box">
+          <h3>Quét QR để thanh toán</h3>
+          <p class="payment-subtitle">Mở ứng dụng ngân hàng và quét mã bên dưới</p>
+          <div class="payment-qr-wrap"><img id="paymentQr" alt="Mã QR thanh toán Chatbox AI"></div>
+          <p class="payment-amount"><strong id="paymentAmount">25.000đ</strong></p>
+          <p class="payment-label">Nội dung chuyển khoản</p>
+          <p id="paymentCode" class="payment-code"></p>
+          <p id="paymentCountdown" class="vip-message"></p>
+          <p class="payment-note"><i class="fas fa-shield-alt"></i> Giữ nguyên số tiền và nội dung chuyển khoản.</p>
+        </div>
+      </div>
+      <div id="authMessage" class="vip-message" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <div id="walletTopupModal" class="wallet-modal" >
+    <section class="wallet-card" role="dialog" aria-modal="true" aria-labelledby="walletTopupTitle">
+      <div class="wallet-card-head">
+        <div>
+          <h3 id="walletTopupTitle"><i class="fas fa-wallet"></i> Nạp số dư</h3>
+          <p>Số dư sẽ được tự động trừ khi bạn dùng hết lượt AI.</p>
+        </div>
+        <button class="vip-close" type="button" data-action="close-wallet-topup-modal" aria-label="Đóng">&times;</button>
+      </div>
+      <form id="walletTopupForm" class="vip-form">
+        <div class="portal-field">
+          <label for="walletTopupAmount">Số tiền nạp (VND)</label>
+          <input id="walletTopupAmount" type="number" min="1000" step="1000" value="50000" inputmode="numeric">
+        </div>
+        <div class="wallet-presets">
+          <button type="button" data-wallet-amount="50000">50.000đ</button>
+          <button type="button" data-wallet-amount="100000">100.000đ</button>
+          <button type="button" data-wallet-amount="200000">200.000đ</button>
+        </div>
+        <p id="walletTopupMessage" class="vip-message" style="margin:0;"></p>
+        <div class="wallet-actions">
+          <button class="vip-secondary" type="button" data-action="close-wallet-topup-modal">Hủy</button>
+          <button class="vip-primary" type="submit"><i class="fas fa-qrcode"></i>&nbsp; Tạo mã nạp</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- ===== USER / ADMIN PORTAL ===== -->
+  <section id="accountPortal" class="portal-shell" aria-hidden="true">
+    <button type="button" class="portal-nav-backdrop" aria-label="Đóng menu" ></button>
+    <button type="button" class="portal-menu-toggle" aria-label="Mở menu tài khoản" ><i
+        class="fas fa-bars"></i></button>
+    <aside class="portal-sidebar">
+      <div class="portal-brand">
+        <img class="portal-brand-image" src="/logo.png" alt="Logo">
+        <span id="portalRoleLabel" hidden>Tài khoản người dùng</span>
+      </div>
+
+      <div class="portal-section-label">Menu chính</div>
+      <nav class="portal-nav" aria-label="Điều hướng tài khoản">
+        <button type="button" data-action="close-account-portal"><i class="fas fa-magnifying-glass"></i><span>Về trang tra
+            cứu</span></button>
+        <button id="portalOverviewNav" type="button" class="active" data-page="userOverview"
+          data-portal-page="userOverview"><i class="fas fa-gauge-high"></i><span>Tổng quan</span></button>
+        <button id="portalTransactionsNav" type="button" data-page="userTransactions"
+          data-portal-page="userTransactions"><i class="fas fa-clock-rotate-left"></i><span>Lịch sử giao
+            dịch</span></button>
+        <button id="adminDashboardNav" type="button" data-admin-only data-page="adminDashboard"
+          data-portal-page="adminDashboard"><i class="fas fa-chart-pie"></i><span>Dashboard admin</span></button>
+        <button type="button" data-admin-only data-page="adminUsers" data-portal-page="adminUsers"><i
+            class="fas fa-users"></i><span>Người dùng</span></button>
+        <button id="adminInvoicesNav" type="button" data-admin-only data-page="adminInvoices"
+          data-portal-page="adminInvoices"><i class="fas fa-file-invoice-dollar"></i><span>Hóa đơn</span></button>
+        <button type="button" data-admin-only data-page="adminSettings" data-portal-page="adminSettings"><i
+            class="fas fa-gears"></i><span>Cài đặt</span></button>
+      </nav>
+
+      <div class="portal-spacer"></div>
+      <button type="button" class="portal-btn danger" data-action="sign-out" style="margin-bottom:12px;width:100%;"><i
+          class="fas fa-right-from-bracket"></i> Đăng xuất</button>
+      <div class="portal-profile">
+        <div id="portalAvatar" class="portal-avatar">U</div>
+        <div><strong id="portalProfileName">Người dùng</strong><span id="portalProfileStatus">Online</span></div>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-topbar">
+        <div class="portal-title">
+          <h2 id="portalPageTitle">Chào mừng trở lại!</h2>
+          <p id="portalPageSubtitle">Quản lý tài khoản và theo dõi gói VIP tại đây.</p>
+        </div>
+      </div>
+
+      <section id="userOverview" class="portal-page active">
+        <div class="portal-grid two">
+          <div class="portal-vip-card">
+            <div class="portal-vip-title">
+              <div>
+                <span class="portal-pill">Hạng thành viên</span>
+                <h3 id="portalVipPlan">PREMIUM VIP</h3>
+              </div>
+              <span id="portalVipBadge" class="portal-pill green"><i class="fas fa-circle-check"></i>&nbsp;
+                ACTIVE</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;font-weight:800;">
+              <span id="portalVipProgressLabel">Tiến trình sử dụng gói</span><span id="portalVipPercent">80%</span>
+            </div>
+            <div class="portal-progress-line"><span id="portalVipProgress"></span></div>
+            <div class="portal-vip-meta">
+              <div><small>Ngày kích hoạt</small><strong id="portalVipStart">Chưa kích hoạt</strong></div>
+              <div><small>Lượt còn lại</small><strong id="portalVipEnd">0 lượt</strong></div>
+              <button type="button" class="portal-btn" data-action="open-shared-purchase">Mua thêm
+                ngay</button>
+            </div>
+          </div>
+          <div class="portal-panel portal-balance">
+            <i class="fas fa-wallet"></i>
+            <div><span style="color:#64748b;">Số dư tài khoản</span><strong id="portalWalletBalance">0 đ</strong>
+              <p id="portalWalletNote">Dùng để tự gia hạn gói VIP khi hết lượt.</p>
+            </div>
+            <button type="button" class="portal-btn" style="width:100%;"
+              data-action="open-shared-purchase">Xem các gói</button>
+            <button type="button" class="portal-btn" style="width:100%;margin-top:10px;"
+              data-action="create-wallet-topup-order-and-open"><i class="fas fa-wallet"></i> Nạp số dư</button>
+          </div>
+        </div>
+
+        <div class="portal-grid two" style="margin-top:24px;">
+          <section class="portal-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3><i class="fas fa-file-invoice-dollar" style="color:#2f6df6;"></i> Hóa đơn gần đây</h3>
+                <p>Các hóa đơn gần đây nhất</p>
+              </div><button class="vip-link" type="button"
+                data-action="portal-smart-transactions">Xem tất
+                cả</button>
+            </div>
+            <div class="portal-table-wrap">
+              <table class="portal-table" id="portalTransactionTable"></table>
+            </div>
+          </section>
+          <section class="portal-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3><i class="fas fa-lock" style="color:#2f6df6;"></i> Đổi mật khẩu</h3>
+                <p>Cập nhật thông tin bảo mật tài khoản</p>
+              </div>
+            </div>
+            <form class="portal-form" data-action="change-portal-password">
+              <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password"
+                  autocomplete="current-password" placeholder="••••••••"></div>
+              <div class="portal-field"><label>Mật khẩu mới</label><input id="portalNewPassword" type="password"
+                  minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+              <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalConfirmPassword"
+                  type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+              <button class="portal-btn primary" type="submit">Cập nhật mật khẩu</button>
+              <p id="portalPasswordMessage" class="vip-message" style="text-align:center;margin:0;"></p>
+            </form>
+          </section>
+        </div>
+
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head">
+            <div>
+              <h3><i class="fas fa-chart-line" style="color:#2f6df6;"></i> Tần suất truy cập & sử dụng tài nguyên</h3>
+              <p id="userChartSubtitle">Theo dõi lượt sử dụng trong tuần</p>
+            </div>
+            <div id="userChartFilter" class="portal-segment"><button class="active" data-mode="week"
+                data-user-chart-mode="week">Hằng tuần</button><button data-mode="month"
+                data-user-chart-mode="month">Hằng tháng</button></div>
+          </div>
+          <div class="portal-line-chart" id="userUsageChart"></div>
+        </section>
+      </section>
+
+      <section id="userTransactions" class="portal-page">
+        <section class="portal-panel">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Lịch sử giao dịch</h3>
+              <p>Nạp tiền, mua VIP theo lượt và tài nguyên lẻ</p>
+            </div>
+            <button type="button" class="portal-btn primary" data-action="open-shared-purchase"><i class="fas fa-bolt"></i> Mua thêm lượt</button>
+          </div>
+          <div class="portal-table-wrap">
+            <table class="portal-table" id="portalTransactionFullTable"></table>
+          </div>
+        </section>
+      </section>
+
+
+
+      <section id="adminDashboard" class="portal-page">
+        <div class="portal-grid cards">
+          <div class="portal-card"><small>Tổng doanh thu</small><strong id="adminRevenueMetric">0 đ</strong><span>Giao
+              dịch đã thanh toán</span><i class="fas fa-sack-dollar"></i></div>
+          <div class="portal-card"><small>Người dùng VIP</small><strong id="adminVipMetric">0</strong><span>Còn lượt
+              sử dụng</span><i class="fas fa-crown"></i></div>
+          <div class="portal-card"><small>Lượt dùng AI</small><strong id="adminUsageMetric">0</strong><span>Tổng lượt đã
+              ghi nhận</span><i class="fas fa-users-viewfinder"></i></div>
+          <div class="portal-card"><small>Lượt AI Review</small><strong id="adminReviewUsageMetric">0</strong><span>Lượt đánh giá
+              bài báo</span><i class="fas fa-wand-magic-sparkles"></i></div>
+          <div class="portal-card"><small>Lượt xuất báo</small><strong id="adminExportUsageMetric">0</strong><span>Word và
+              PDF</span><i class="fas fa-file-export"></i></div>
+          <div class="portal-card"><small>Tổng tài khoản</small><strong id="adminUsersMetric">0</strong><span>Supabase
+              Auth</span><i class="fas fa-user-plus"></i></div>
+        </div>
+        <div class="portal-grid two" style="margin-top:24px;">
+          <section class="portal-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3>Phân tích Doanh thu</h3>
+                <p id="adminChartSubtitle">Doanh thu 7 ngày gần nhất</p>
+              </div>
+              <div id="adminChartFilter" class="portal-segment"><button class="active" data-mode="day"
+                  data-admin-chart-mode="day">Ngày</button><button data-mode="week"
+                  data-admin-chart-mode="week">Tuần</button><button data-mode="month"
+                  data-admin-chart-mode="month">Tháng</button></div>
+            </div>
+            <div class="portal-line-chart" id="adminRevenueChart"></div>
+          </section>
+          <section class="portal-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3>Tỷ lệ Người dùng</h3>
+                <p>Phân loại theo hạng mức</p>
+              </div>
+            </div>
+            <div class="portal-donut">
+              <div id="adminUserDonut" class="portal-donut-ring"></div>
+            </div>
+            <div class="portal-legend">
+              <div class="portal-legend-row"><span><i class="portal-dot green"></i>VIP</span><strong
+                  id="adminVipPercent">0%</strong></div>
+              <div class="portal-legend-row"><span><i class="portal-dot gray"></i>STANDARD</span><strong
+                  id="adminStandardPercent">100%</strong></div>
+            </div>
+          </section>
+        </div>
+        <section class="portal-panel" style="margin-top:24px;">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Hóa đơn gần đây</h3>
+              <p>Các giao dịch mới nhất từ mua lượt VIP và nạp số dư</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="portal-btn" data-portal-page="adminInvoices">Xem tất cả</button>
+              <button class="portal-btn primary" data-action="export-admin-summary"><i class="fas fa-file-excel"></i> Xuất báo cáo tổng hợp</button>
+            </div>
+          </div>
+          <div class="portal-table-wrap">
+            <table class="portal-table" id="adminRecentInvoicesTable"></table>
+          </div>
+        </section>
+      </section>
+
+      <section id="adminUsers" class="portal-page">
+        <section class="portal-panel">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Quản lý người dùng</h3>
+              <p>Theo dõi trạng thái VIP, email và lượt còn lại.</p>
+            </div><button class="portal-btn primary" data-action="export-admin-users"><i class="fas fa-file-excel"></i> Xuất Excel</button>
+          </div>
+          <div class="portal-table-wrap">
+            <table class="portal-table" id="adminUsersTable"></table>
+          </div>
+        </section>
+      </section>
+
+      <section id="adminInvoices" class="portal-page">
+        <section class="portal-panel">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Quản lý hóa đơn</h3>
+              <p>Theo dõi mã thanh toán, khách hàng, số lượt và trạng thái giao dịch.</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="portal-btn primary" data-action="export-admin-invoices"><i class="fas fa-file-excel"></i> Xuất Excel</button>
+              <button class="portal-btn" data-action="export-admin-invoices-pdf"><i class="fas fa-file-pdf"></i> Xuất PDF</button>
+            </div>
+          </div>
+          <div class="portal-table-wrap">
+            <table class="portal-table" id="adminInvoicesTable"></table>
+          </div>
+        </section>
+      </section>
+
+      <section id="adminSettings" class="portal-page">
+        <div class="portal-settings">
+          <div class="portal-grid">
+            <section class="portal-panel">
+              <div class="portal-panel-head">
+                <div>
+                  <h3><i class="fas fa-tags" style="color:#2f6df6;"></i> Tạo gói dịch vụ</h3>
+                  <p>Tạo gói mua lượt hoặc gói theo tháng cho từng dịch vụ.</p>
+                </div>
+              </div>
+              <form id="adminServicePlanForm" class="portal-form">
+                <div class="portal-settings-row">
+                  <div class="portal-field"><label>Mã gói</label><div style="display:flex;gap:8px"><input id="servicePlanId" required maxlength="50" placeholder="chatbox-100"><button class="portal-btn" id="randomServicePlanId" type="button" title="Tạo mã ngẫu nhiên"><i class="fas fa-shuffle"></i></button></div></div>
+                  <div class="portal-field"><label>Tên gói</label><input id="servicePlanName" required maxlength="100" placeholder="100 lượt Chatbox AI"></div>
+                  <div class="portal-field"><label>Dịch vụ</label><select id="servicePlanProduct" required><option value="chatbox_ai">Chatbox AI</option><option value="magazine_export">Xuất Word/PDF</option><option value="magazine_ai_review">AI Review</option></select></div>
+                  <div class="portal-field"><label>Loại gói</label><select id="servicePlanBilling" required><option value="credit_pack">Gói lượt</option><option value="monthly">Gói tháng</option></select></div>
+                  <div class="portal-field"><label>Giá (VND)</label><input id="servicePlanPrice" type="text" inputmode="numeric" autocomplete="off" placeholder="500,000" required></div>
+                  <div class="portal-field"><label id="servicePlanCreditsLabel" for="servicePlanCredits">Tổng số lượt</label><input id="servicePlanCredits" type="number" min="1" required></div>
+                  <div id="servicePlanDurationField" class="portal-field" hidden><label>Thời hạn gói tháng (ngày)</label><input id="servicePlanDuration" type="number" min="1" max="31" value="30"></div>
+                </div>
+                <button class="portal-btn primary" type="submit"><i class="fas fa-plus"></i> Tạo gói</button>
+                <p id="servicePlanMessage" class="vip-message" style="margin:0;"></p>
+              </form>
+            </section>
+            <section class="portal-panel">
+              <div class="portal-panel-head">
+                <div>
+                  <h3>Trial mặc định</h3>
+                  <p>Ba dịch vụ được khởi tạo 14 ngày, 30 lượt/ngày cho tài khoản mới.</p>
+                </div>
+              </div>
+              <p class="portal-panel-note">Admin có quyền sử dụng không giới hạn và không trừ lượt.</p>
+            </section>
+          </div>
+          <div class="portal-grid">
+            <section class="portal-panel">
+              <div class="portal-panel-head">
+                <div>
+                  <h3><i class="fas fa-layer-group" style="color:#f59e0b;"></i> Các gói hiện có</h3>
+                  <p>Bật hoặc ngừng bán từng gói dịch vụ.</p>
+                </div>
+              </div>
+              <p id="adminServicePlansStatus" class="vip-message portal-panel-note">Đang tải dữ liệu...</p>
+              <div id="adminServicePlans" class="portal-grid"></div>
+            </section>
+            <section class="portal-panel">
+              <div class="portal-panel-head">
+                <div>
+                  <h3><i class="fas fa-lock" style="color:#f59e0b;"></i> Đổi mật khẩu</h3>
+                  <p>Cập nhật thông tin bảo mật cho tài khoản admin</p>
+                </div>
+              </div>
+              <form class="portal-form" data-action="change-portal-password">
+                <div class="portal-field"><label>Mật khẩu hiện tại</label><input type="password"
+                    autocomplete="current-password" placeholder="••••••••"></div>
+                <div class="portal-field"><label>Mật khẩu mới</label><input id="portalAdminNewPassword" type="password"
+                    minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+                <div class="portal-field"><label>Xác nhận mật khẩu mới</label><input id="portalAdminConfirmPassword"
+                    type="password" minlength="8" autocomplete="new-password" placeholder="••••••••" required></div>
+                <button class="portal-btn primary" type="submit">Cập nhật mật khẩu</button>
+                <p class="vip-message" style="text-align:center;margin:0;"></p>
+              </form>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div class="main-content">
+    <div id="searchBox">
+      <input id="searchInput" placeholder="Nhập ISSN hoặc tên tạp chí..." />
+      <button id="searchButton"><i class="fas fa-search"></i> Tìm kiếm</button>
+    </div>
+
+    <div class="info-card" style="text-align: center;">
+      <h3 style="color: var(--primary-color); margin-top: 0; font-size: 22px; margin-bottom: 20px;">
+        <i class="fas fa-bullhorn"></i> Thông báo
+      </h3>
+      <a href="https://hdgsnn.gov.vn/tin-tuc/quyet-dinh-so-26-qd-hdgsnn-phe-duyet-danh-muc-tap-chi-khoa-hoc-duoc-tinh-diem-nam-2025_816/"
+        target="_blank" rel="noopener noreferrer"
+        style="color: white; background: linear-gradient(135deg, #f59e0b, #ea580c); text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; font-size: 18px; display: inline-block; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); transition: transform 0.2s, box-shadow 0.2s;">
+        Hội đồng giáo sư nhà nước 2025
+      </a>
+    </div>
+
+    <div id="excelInfo" class="info-card"></div>
+
+    <div id="externalLinks" class="info-card">
+      <strong><i class="fas fa-link"></i> Liên kết hệ thống ngoài:</strong>
+      <div class="links-grid">
+        <a id="clarivateLink" href="#" target="_blank" rel="noopener noreferrer">Clarivate Master Journal List</a>
+        <a id="Non-APC" href="https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/"
+          target="_blank" rel="noopener noreferrer">Danh sách Non-APC</a>
+        <a id="scopusLink" href="#" target="_blank" rel="noopener noreferrer">Scopus Preview</a>
+        <a id="scimagoLink" href="#" target="_blank" rel="noopener noreferrer">SCImago Journal & Country Rank</a>
+      </div>
+    </div>
+
+    <!-- Khối nút mở popup hệ thống ngoài -->
+    <div id="iframeLinksSection" class="info-card" style="display: none; text-align: center; margin-top: 30px;">
+      <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color);">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div class="iframe-buttons-grid">
+        <button data-iframe-type="noapc" class="iframe-btn noapc-btn">
+          <i class="fas fa-file-invoice-dollar"></i> Xem Non-APC
+        </button>
+        <button data-iframe-type="resurchify" class="iframe-btn resurchify-btn">
+          <i class="fas fa-chart-line"></i> Xem Resurchify
+        </button>
+        <button data-iframe-type="wos" class="iframe-btn wos-btn">
+          <i class="fas fa-globe"></i> Xem Web Of Science
+        </button>
+      </div>
+    </div>
+
+    <!-- Khối nhúng trực tiếp iframes trên PC -->
+    <div id="iframeInlineSection" class="info-card" style="display: none; margin-top: 30px;">
+      <strong
+        style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color); text-align: center;">
+        <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
+      </strong>
+      <div id="iframes">
+        <div class="iframe-block">
+          <p><i class="fas fa-file-invoice-dollar"></i> Non-APC</p>
+          <iframe id="noapcFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-chart-line"></i> Resurchify</p>
+          <iframe id="resurchifyFrame" src=""></iframe>
+        </div>
+        <div class="iframe-block">
+          <p><i class="fas fa-globe"></i> Web Of Science</p>
+          <iframe id="wosFrame" src=""></iframe>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Modal Iframe Popup -->
+    <div id="iframeModal" class="iframe-modal" >
+      <div class="iframe-modal-content">
+        <div class="iframe-modal-header">
+          <span id="modalTitle" class="iframe-modal-title">Hệ thống tích hợp</span>
+          <button class="iframe-modal-close" data-action="close-iframe-modal">&times;</button>
+        </div>
+        <div class="iframe-modal-body">
+          <iframe id="modalIframe" src="" title="Nội dung nguồn bên ngoài" loading="lazy"
+            sandbox="allow-scripts allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AI CHATBOX ===== -->
+  <button id="ai-chat-btn" title="Hỏi về tạp chí" >
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z"
+        fill="white" />
+      <circle cx="8" cy="11" r="1.3" fill="#10a37f" />
+      <circle cx="12" cy="11" r="1.3" fill="#10a37f" />
+      <circle cx="16" cy="11" r="1.3" fill="#10a37f" />
+    </svg>
+    <span id="ai-chat-badge" style="display:none;">1</span>
+  </button>
+
+  <div id="ai-chat-panel">
+    <!-- Intro Modal -->
+    <div id="ai-settings-modal">
+      <div class="settings-box">
+        <h4><i class="fas fa-robot"></i> Trợ lý Tạp chí AI</h4>
+        <p>
+          Chào! Tôi có thể hỗ trợ bạn:<br>
+          📊 <strong style="color:#10a37f;">JCR Impact Factor &amp; Phân hạng Q</strong><br>
+          🇻🇳 <strong style="color:#10a37f;">Điểm HĐGSNN 2025</strong> theo ngành<br>
+          🌍 <strong style="color:#10a37f;">Scopus — Trạng thái, Publisher</strong><br>
+          💡 <strong style="color:#10a37f;">Tư vấn</strong> xuất bản khoa học
+        </p>
+        <div class="settings-btn-row">
+          <button class="btn-save-settings" id="ai-settings-start">🚀 Bắt đầu ngay!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div id="ai-chat-header">
+      <div class="ai-avatar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.408 5.506 3.623 7.237L4.5 22l4.388-1.49C10.1 21.155 11.033 21.486 12 21.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2Z"
+            fill="white" />
+          <circle cx="8" cy="11" r="1.3" fill="#10a37f" />
+          <circle cx="12" cy="11" r="1.3" fill="#10a37f" />
+          <circle cx="16" cy="11" r="1.3" fill="#10a37f" />
+        </svg>
+      </div>
+      <div class="ai-info">
+        <p class="ai-name">Trợ lý Tạp chí</p>
+        <span class="ai-status"><span class="status-dot"></span> Powered by Supabase + AI</span>
+      </div>
+      <div class="chat-header-actions">
+        <button class="btn-action" title="Xóa lịch sử" id="ai-clear-history" style="font-size:12px;"><i
+            class="fas fa-trash-alt"></i></button>
+        <button class="btn-action" title="Giới thiệu" id="ai-open-settings"><i
+            class="fas fa-info-circle"></i></button>
+        <button class="btn-action" id="ai-chat-close" title="Đóng"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="ai-chat-messages"></div>
+
+    <!-- Input -->
+    <div id="chat-access-note">Cần thời gian dùng thử hoặc VIP còn lượt để sử dụng AI.</div>
+    <div id="ai-chat-footer">
+      <div id="ai-input-row">
+        <textarea id="ai-chat-input" placeholder="Nhập tên tạp chí, ISSN, hoặc câu hỏi..." rows="1"
+           ></textarea>
+        <button id="ai-send-btn"  title="Gửi (Enter)">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="chat-footer-hint">
+        <i class="fas fa-database" style="color:#10a37f;font-size:10px;"></i>
+        22k JCR &middot; 48k Scopus &middot; HĐGSNN 2025
+      </div>
+    </div>
+  </div>
+  <script src="/tapchi/embedded-data.js"></script>
+  <script src="/tapchi/chat-data.js"></script>
+  <script type="module" src="/src/portal/main.js"></script>
+</body>
+
+</html>
+
