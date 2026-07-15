@@ -822,10 +822,46 @@
                             <option value="3"></option>
                             <option selected></option>
                         </select>
+                        <select class="ql-fontSize" title="Cỡ chữ">
+                            <option value="8pt">8</option>
+                            <option value="9pt">9</option>
+                            <option value="10pt">10</option>
+                            <option value="11pt">11</option>
+                            <option value="12pt" selected>12</option>
+                            <option value="14pt">14</option>
+                            <option value="16pt">16</option>
+                            <option value="18pt">18</option>
+                            <option value="20pt">20</option>
+                            <option value="24pt">24</option>
+                            <option value="28pt">28</option>
+                            <option value="32pt">32</option>
+                        </select>
                     </span>
                     <span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button
                             class="ql-underline"></button><button class="ql-strike"></button></span>
                     <span class="ql-formats"><select class="ql-align"></select></span>
+                    <span class="ql-formats">
+                        <select class="ql-lineHeight" title="Giãn dòng">
+                            <option value="1">1.0</option>
+                            <option value="1.15" selected>1.15</option>
+                            <option value="1.5">1.5</option>
+                            <option value="2">2.0</option>
+                        </select>
+                    </span>
+                    <span class="ql-formats">
+                        <div class="change-case-menu">
+                            <button id="change-case-trigger" type="button" title="Change Case"
+                                onclick="toggleChangeCaseMenu(event)">Aa</button>
+                            <div id="change-case-options" class="hidden">
+                                <button type="button" onclick="chooseChangeCase('lower')">abc</button>
+                                <button type="button" onclick="chooseChangeCase('sentence')">Abc...</button>
+                                <button type="button" onclick="chooseChangeCase('title')">Abc Def</button>
+                                <button type="button" onclick="chooseChangeCase('upper')">ABC</button>
+                                <button type="button" onclick="chooseChangeCase('inverseTitle')">aBC dEF</button>
+                                <button type="button" onclick="chooseChangeCase('toggle')">tOGGLE</button>
+                            </div>
+                        </div>
+                    </span>
                     <span class="ql-formats"><button class="ql-indent" value="-1"></button><button class="ql-indent"
                             value="+1"></button></span>
                     <span class="ql-formats">
@@ -895,22 +931,57 @@
                 </div>
             </div>
             <div id="table-builder-workspace" class="hidden flex-1 overflow-auto p-5">
-                <div class="mb-3 flex flex-wrap items-center gap-1.5">
-                    <button type="button" onclick="mergeDraftSelection()" class="table-tool-button"><i
-                            class="fa-solid fa-object-group mr-1"></i>Merge ô</button>
-                    <button type="button" onclick="splitDraftCell()" class="table-tool-button">Tách ô</button>
-                    <button type="button" onclick="formatDraftSelection('bold')"
-                        class="table-tool-button font-bold">B</button>
-                    <button type="button" onclick="formatDraftSelection('italic')"
-                        class="table-tool-button italic">I</button>
-                    <button type="button" onclick="formatDraftSelection('align','left')"
-                        class="table-tool-button">Trái</button>
-                    <button type="button" onclick="formatDraftSelection('align','center')"
-                        class="table-tool-button">Giữa</button>
-                    <button type="button" onclick="formatDraftSelection('align','right')"
-                        class="table-tool-button">Phải</button>
-                    <span class="ml-2 text-[10px] text-slate-500">Kéo chuột để chọn vùng ô · Nhấp phải để chỉnh
-                        viền</span>
+                <div class="table-builder-ribbon mb-3">
+                    <div class="table-tool-group">
+                        <span class="table-tool-label">Hàng / cột</span>
+                        <button type="button" onclick="insertDraftRowAbove()" class="table-tool-button" title="Thêm hàng phía trên"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button type="button" onclick="insertDraftRowBelow()" class="table-tool-button" title="Thêm hàng phía dưới"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button type="button" onclick="insertDraftColumnLeft()" class="table-tool-button" title="Thêm cột bên trái"><i class="fa-solid fa-arrow-left"></i></button>
+                        <button type="button" onclick="insertDraftColumnRight()" class="table-tool-button" title="Thêm cột bên phải"><i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="button" onclick="deleteDraftRow()" class="table-tool-button text-rose-600" title="Xóa hàng đang chọn"><i class="fa-solid fa-minus"></i> Hàng</button>
+                        <button type="button" onclick="deleteDraftColumn()" class="table-tool-button text-rose-600" title="Xóa cột đang chọn"><i class="fa-solid fa-minus"></i> Cột</button>
+                    </div>
+                    <div class="table-tool-group">
+                        <span class="table-tool-label">Ô</span>
+                        <button type="button" onclick="mergeDraftSelection()" class="table-tool-button"><i class="fa-solid fa-object-group"></i> Merge</button>
+                        <button type="button" onclick="splitDraftCell()" class="table-tool-button"><i class="fa-solid fa-table-cells"></i> Tách</button>
+                        <button type="button" onclick="distributeDraftColumns()" class="table-tool-button" title="Chia đều độ rộng cột"><i class="fa-solid fa-table-columns"></i></button>
+                        <button type="button" onclick="distributeDraftRows()" class="table-tool-button" title="Chia đều chiều cao hàng"><i class="fa-solid fa-grip-lines"></i></button>
+                    </div>
+                    <div class="table-tool-group">
+                        <span class="table-tool-label">Chữ</span>
+                        <button type="button" onclick="formatDraftSelection('bold')" class="table-tool-button font-bold">B</button>
+                        <button type="button" onclick="formatDraftSelection('italic')" class="table-tool-button italic">I</button>
+                        <button type="button" onclick="formatDraftSelection('align','left')" class="table-tool-button" title="Căn trái"><i class="fa-solid fa-align-left"></i></button>
+                        <button type="button" onclick="formatDraftSelection('align','center')" class="table-tool-button" title="Căn giữa"><i class="fa-solid fa-align-center"></i></button>
+                        <button type="button" onclick="formatDraftSelection('align','right')" class="table-tool-button" title="Căn phải"><i class="fa-solid fa-align-right"></i></button>
+                        <button type="button" onclick="formatDraftSelection('verticalAlign','top')" class="table-tool-button" title="Canh trên"><i class="fa-solid fa-align-left fa-rotate-90"></i></button>
+                        <button type="button" onclick="formatDraftSelection('verticalAlign','middle')" class="table-tool-button" title="Canh giữa dọc"><i class="fa-solid fa-align-center fa-rotate-90"></i></button>
+                        <button type="button" onclick="formatDraftSelection('verticalAlign','bottom')" class="table-tool-button" title="Canh dưới"><i class="fa-solid fa-align-right fa-rotate-90"></i></button>
+                    </div>
+                    <div class="table-tool-group">
+                        <span class="table-tool-label">Viền</span>
+                        <input id="table-border-color" type="color" value="#000000" title="Màu viền" class="table-color-input">
+                        <select id="table-border-width" class="table-compact-select" title="Độ dày viền">
+                            <option value="0.5px">0.5</option>
+                            <option value="1px" selected>1</option>
+                            <option value="1.5px">1.5</option>
+                            <option value="2px">2</option>
+                            <option value="3px">3</option>
+                        </select>
+                        <button type="button" onclick="applyDraftBorder('top')" class="table-tool-button" title="Viền trên">T</button>
+                        <button type="button" onclick="applyDraftBorder('bottom')" class="table-tool-button" title="Viền dưới">B</button>
+                        <button type="button" onclick="applyDraftBorder('left')" class="table-tool-button" title="Viền trái">L</button>
+                        <button type="button" onclick="applyDraftBorder('right')" class="table-tool-button" title="Viền phải">R</button>
+                        <button type="button" onclick="applyDraftBorder('insideH')" class="table-tool-button" title="Viền ngang bên trong"><i class="fa-solid fa-grip-lines"></i></button>
+                        <button type="button" onclick="applyDraftBorder('insideV')" class="table-tool-button" title="Viền dọc bên trong"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                        <button type="button" onclick="applyDraftBorder('all')" class="table-tool-button" title="Tất cả viền"><i class="fa-solid fa-border-all"></i></button>
+                        <button type="button" onclick="applyDraftBorder('none')" class="table-tool-button text-rose-600" title="Bỏ viền"><i class="fa-solid fa-border-none"></i></button>
+                    </div>
+                    <div class="table-tool-group">
+                        <span class="table-tool-label">Bảng</span>
+                        <button type="button" onclick="deleteDraftTableFromArticle()" class="table-tool-button text-rose-600"><i class="fa-solid fa-trash"></i> Xóa bảng</button>
+                    </div>
                 </div>
                 <div id="table-draft-canvas"
                     class="overflow-auto rounded-xl border border-dashed border-indigo-300 bg-white p-5"></div>

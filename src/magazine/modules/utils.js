@@ -98,6 +98,54 @@ export function cssLengthToTwips(value) {
     return Math.round(number * 20);
 }
 
+export function cssBorderWidthToWordSize(value) {
+    const twips = cssLengthToTwips(value);
+    if (!twips) return 0;
+    return Math.max(2, Math.min(48, Math.round(twips / 2.5)));
+}
+
+export function cssColorToHex(value) {
+    const raw = String(value || '').trim();
+    if (!raw || raw === 'transparent') return '000000';
+    const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)?.[1];
+    if (hex) {
+        return hex.length === 3
+            ? hex.split('').map(part => `${part}${part}`).join('').toUpperCase()
+            : hex.toUpperCase();
+    }
+    const rgb = raw.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (!rgb) return '000000';
+    return rgb.slice(1, 4).map(part => Math.max(0, Math.min(255, Number(part))).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+const ARTICLE_COLUMN_WIDTH_TWIPS = 4510;
+
+export function cssTableWidthToTwips(value, totalWidth = ARTICLE_COLUMN_WIDTH_TWIPS) {
+    const raw = String(value || '').trim();
+    if (!raw) return 0;
+    const number = parseFloat(raw);
+    if (!Number.isFinite(number)) return 0;
+    if (raw.includes('%')) return Math.round(totalWidth * number / 100);
+    return cssLengthToTwips(raw);
+}
+
+export function normalizeTableWidths(widths, count, totalWidth = ARTICLE_COLUMN_WIDTH_TWIPS) {
+    const usable = Array.from({ length: count }, (_, index) => Math.max(0, widths[index] || 0));
+    const sum = usable.reduce((total, width) => total + width, 0);
+    if (!sum) return Array.from({ length: count }, () => Math.floor(totalWidth / count));
+    const scaled = usable.map(width => Math.max(120, Math.round(width / sum * totalWidth)));
+    const delta = totalWidth - scaled.reduce((total, width) => total + width, 0);
+    scaled[scaled.length - 1] += delta;
+    return scaled;
+}
+
+export function cssFontSizeToHalfPoints(value) {
+    const number = parseFloat(value);
+    if (!Number.isFinite(number)) return 0;
+    if (String(value).includes('px')) return Math.round(number * 1.5);
+    return Math.round(number * 2);
+}
+
 export function wordParagraphOptions(node, base = {}) {
     const style = node.style || {};
     const lineHeight = parseFloat(style.lineHeight);
@@ -120,9 +168,12 @@ export function inlineHtmlToWord(node, inherited = {}) {
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
     if (node.tagName === 'BR') return '<w:r><w:br/></w:r>';
     const next = { ...inherited };
+    const style = node.style || {};
+    const fontSize = cssFontSizeToHalfPoints(style.fontSize || '');
+    if (fontSize) next.size = fontSize;
     if (['STRONG', 'B'].includes(node.tagName)) next.bold = true;
     if (['EM', 'I'].includes(node.tagName) && !next.suppressItalic) next.italic = true;
-    if (node.tagName === 'U') next.underline = true;
+    if (node.tagName === 'U' || style.textDecorationLine?.includes('underline') || style.textDecoration?.includes('underline')) next.underline = true;
     return Array.from(node.childNodes).map(child => inlineHtmlToWord(child, next)).join('');
 }
 
@@ -142,8 +193,13 @@ export function wordTable(rows, widths, options = {}) {
                 ? '<w:tcBorders><w:bottom w:val="single" w:sz="6" w:color="000000"/></w:tcBorders>' : '';
             const span = value.gridSpan > 1 ? `<w:gridSpan w:val="${value.gridSpan}"/>` : '';
             const verticalMerge = value.vMerge ? `<w:vMerge${value.vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : '';
-            const individualBorders = value.borders ? `<w:tcBorders>${['top', 'bottom', 'left', 'right'].map(side =>
-                `<w:${side} w:val="${value.borders[side] ? 'single' : 'nil'}" w:sz="6" w:color="000000"/>`).join('')}</w:tcBorders>` : '';
+            const individualBorders = value.borders ? `<w:tcBorders>${['top', 'bottom', 'left', 'right'].map(side => {
+                const border = value.borders[side];
+                const enabled = typeof border === 'object' ? border.enabled : Boolean(border);
+                const size = typeof border === 'object' ? border.size || 6 : 6;
+                const color = typeof border === 'object' ? border.color || '000000' : '000000';
+                return `<w:${side} w:val="${enabled ? 'single' : 'nil'}" w:sz="${size}" w:color="${color}"/>`;
+            }).join('')}</w:tcBorders>` : '';
             const width = value.width || widths[index] || widths[0];
             return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${span}${verticalMerge}${shading}${cellBorder}${individualBorders}<w:vAlign w:val="${value.verticalAlign || verticalAlign}"/><w:tcMar><w:top w:w="${cellMargin}" w:type="dxa"/><w:left w:w="${cellMargin}" w:type="dxa"/><w:bottom w:w="${cellMargin}" w:type="dxa"/><w:right w:w="${cellMargin}" w:type="dxa"/></w:tcMar></w:tcPr>${value.content || wordParagraph('', {})}</w:tc>`;
         }).join('')}</w:tr>`;
@@ -195,16 +251,17 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             const count = Math.max(1, ...htmlRows.map(row =>
                 Array.from(row.cells).reduce((sum, cell) => sum + cell.colSpan, 0)));
             const savedCols = Array.from(node.querySelectorAll(':scope > colgroup > col'))
-                .map(col => cssLengthToTwips(col.style.width || col.getAttribute('width') || ''))
+                .map(col => cssTableWidthToTwips(col.style.width || col.getAttribute('width') || ''))
                 .filter(Boolean);
             const firstRowWidths = Array.from(htmlRows[0]?.cells || [])
                 .flatMap(cell => {
                     const span = Math.max(1, cell.colSpan || 1);
-                    const width = cssLengthToTwips(cell.style.width || '');
+                    const width = cssTableWidthToTwips(cell.style.width || cell.style.minWidth || '');
                     return Array(span).fill(width ? Math.floor(width / span) : 0);
                 });
-            const widths = Array.from({ length: count }, (_, index) =>
-                savedCols[index] || firstRowWidths[index] || Math.floor(4510 / count));
+            const rawWidths = Array.from({ length: count }, (_, index) =>
+                savedCols[index] || firstRowWidths[index] || 0);
+            const widths = normalizeTableWidths(rawWidths, count);
             const matrix = Array.from({ length: htmlRows.length }, () => Array(count).fill(null));
             htmlRows.forEach((row, rowIndex) => {
                 let columnIndex = 0;
@@ -219,16 +276,26 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                     };
                     const cellAlign = cellStyle.textAlign === 'center' ? 'center' :
                         cellStyle.textAlign === 'right' ? 'right' : 'left';
+                    const cellVerticalAlign = cellStyle.verticalAlign === 'middle' ? 'center' :
+                        cellStyle.verticalAlign === 'bottom' ? 'bottom' : 'top';
                     const borders = {};
                     ['top', 'bottom', 'left', 'right'].forEach(side => {
-                        const widthValue = cellStyle[`border${side[0].toUpperCase()}${side.slice(1)}Width`];
-                        borders[side] = parseFloat(widthValue) > 0;
+                        const borderName = `border${side[0].toUpperCase()}${side.slice(1)}`;
+                        const widthValue = cellStyle[`${borderName}Width`];
+                        const styleValue = cellStyle[`${borderName}Style`];
+                        const size = cssBorderWidthToWordSize(widthValue);
+                        borders[side] = {
+                            enabled: size > 0 && styleValue !== 'none',
+                            size: size || 6,
+                            color: cssColorToHex(cellStyle[`${borderName}Color`])
+                        };
                     });
                     matrix[rowIndex][columnIndex] = {
                         content: wordParagraph(inlineHtmlToWord(cell, { ...inherited, size: 20 }), { align: cellAlign, after: 40 }),
                         gridSpan: columnSpan,
                         vMerge: rowSpan > 1 ? 'restart' : '',
                         width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
+                        verticalAlign: cellVerticalAlign,
                         borders
                     };
                     for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex][columnIndex + x] = { skip: true };
@@ -236,6 +303,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                         matrix[rowIndex + y][columnIndex] = {
                             content: wordParagraph('', {}), gridSpan: columnSpan, vMerge: 'continue',
                             width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
+                            verticalAlign: cellVerticalAlign,
                             borders
                         };
                         for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex + y][columnIndex + x] = { skip: true };
@@ -261,7 +329,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             blocks.push(wordTable(rows, widths, {
                 borderConfig,
                 headerBorder: node.dataset.header === 'true',
-                autofit: node.dataset.autofit || 'window'
+                autofit: 'fixed'
             }));
         } else if (node.tagName === 'IMG' || node.querySelector(':scope > img')) {
             const image = node.tagName === 'IMG' ? node : node.querySelector(':scope > img');

@@ -24,26 +24,36 @@ export let draftDragging = false;
 export let editorTableSelection = new Set();
 export let editorDragStart = null;
 export let editorDragging = false;
+let activeTableEmbedNode = null;
 let embeddedTableSyncTimer = null;
-export const tableBorderIds = ['top', 'bottom', 'left', 'right', 'inside-h', 'inside-v', 'header'];
 
 // Register Quill Custom Table Blot
 let QuillBlockEmbed;
 if (window.Quill) {
     const Parchment = window.Quill.import('parchment');
+    const FontSizeStyle = new Parchment.Attributor.Style('fontSize', 'font-size', {
+        scope: Parchment.Scope.INLINE,
+        whitelist: ['8pt', '9pt', '10pt', '11pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt', '28pt', '32pt']
+    });
+    const LineHeightStyle = new Parchment.Attributor.Style('lineHeight', 'line-height', {
+        scope: Parchment.Scope.BLOCK,
+        whitelist: ['1', '1.15', '1.5', '2']
+    });
     const TextIndentStyle = new Parchment.Attributor.Style('textIndent', 'text-indent', {
         scope: Parchment.Scope.BLOCK,
         whitelist: ['0.5cm', '1cm', '1.27cm', '1.5cm', '2cm']
     });
+    window.Quill.register(FontSizeStyle, true);
+    window.Quill.register(LineHeightStyle, true);
     window.Quill.register(TextIndentStyle, true);
 
     QuillBlockEmbed = window.Quill.import('blots/block/embed');
     class ScientificTableBlot extends QuillBlockEmbed {
         static create(value) {
             const node = super.create();
-            node.setAttribute('contenteditable', 'true');
+            node.setAttribute('contenteditable', 'false');
             node.innerHTML = String(value || '');
-            node.querySelectorAll('td,th').forEach(cell => cell.setAttribute('contenteditable', 'true'));
+            node.querySelectorAll('td,th').forEach(cell => cell.setAttribute('contenteditable', 'false'));
             return node;
         }
         static value(node) { return node.innerHTML; }
@@ -97,6 +107,56 @@ export function initQuill() {
     quill.root.addEventListener('contextmenu', handleEditorTableContextMenu);
     quill.root.addEventListener('mousedown', handleEditorTableMouseDown);
     quill.root.addEventListener('mouseover', handleEditorTableMouseOver);
+    document.addEventListener('click', event => {
+        if (!event.target.closest?.('.change-case-menu')) {
+            document.getElementById('change-case-options')?.classList.add('hidden');
+        }
+    });
+}
+
+export function applyChangeCase(mode) {
+    if (!quill || !mode) return;
+    const range = quill.getSelection(true);
+    if (!range || range.length === 0) {
+        showToast('Hãy chọn đoạn chữ cần đổi kiểu.');
+        return;
+    }
+    const original = quill.getText(range.index, range.length);
+    const locale = 'vi-VN';
+    const lower = value => value.toLocaleLowerCase(locale);
+    const upper = value => value.toLocaleUpperCase(locale);
+    const transformWord = (value, invert = false) => value.replace(/(^|[\s\-–—/([{])([\p{L}\p{N}])([\p{L}\p{N}]*)/gu,
+        (_, separator, first, rest) => separator + (invert ? lower(first) + upper(rest) : upper(first) + lower(rest)));
+    const transforms = {
+        lower: value => lower(value),
+        sentence: value => lower(value).replace(/(^\s*|[.!?]\s+)([\p{L}\p{N}])/gu,
+            (_, prefix, character) => prefix + upper(character)),
+        title: value => transformWord(value),
+        upper: value => upper(value),
+        inverseTitle: value => transformWord(value, true),
+        toggle: value => value.replace(/[\p{L}]/gu, character =>
+            character === upper(character) ? lower(character) : upper(character))
+    };
+    const nextText = (transforms[mode] || transforms.sentence)(original);
+    const formats = quill.getFormat(range.index, Math.max(1, range.length));
+    quill.deleteText(range.index, range.length, 'user');
+    quill.insertText(range.index, nextText, formats, 'user');
+    quill.setSelection(range.index, nextText.length, 'silent');
+    syncRichEditorToState();
+}
+
+export function toggleChangeCaseMenu(event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const menu = document.getElementById('change-case-options');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+}
+
+export function chooseChangeCase(mode) {
+    const menu = document.getElementById('change-case-options');
+    if (menu) menu.classList.add('hidden');
+    applyChangeCase(mode);
 }
 
 export function normalizeClipboardTable(table, clipboardRoot) {
@@ -191,7 +251,7 @@ export function openRichTextWorkspace() {
     else quill.setText('', 'silent');
     quillArticleId = art.id;
     loadingQuillContent = false;
-    quill.root.querySelectorAll('.scientific-table-embed').forEach(embed => embed.setAttribute('contenteditable', 'true'));
+    quill.root.querySelectorAll('.scientific-table-embed').forEach(embed => embed.setAttribute('contenteditable', 'false'));
     quill.root.querySelectorAll('table').forEach(ensureTableResizeHandles);
 
     const workspace = document.getElementById('rich-text-workspace');
@@ -259,6 +319,11 @@ export function formatDoc(cmd, value = null) {
 
 export function getCleanRichEditorHtml() {
     const clone = quill.root.cloneNode(true);
+    const sourceTables = Array.from(quill.root.querySelectorAll('.scientific-table-embed table'));
+    const clonedTables = Array.from(clone.querySelectorAll('.scientific-table-embed table'));
+    clonedTables.forEach((table, index) => {
+        if (sourceTables[index]) normalizeTableColumnRatios(sourceTables[index], table);
+    });
     clone.querySelectorAll('.table-col-resizer, .table-row-resizer').forEach(node => node.remove());
     clone.querySelectorAll('.editor-cell-selected, .draft-cell-selected').forEach(node => {
         node.classList.remove('editor-cell-selected', 'draft-cell-selected');
@@ -268,6 +333,50 @@ export function getCleanRichEditorHtml() {
         node.removeAttribute('data-resize-bound');
     });
     return clone.innerHTML;
+}
+
+function cleanTableClone(table, editable = false) {
+    const clone = table.cloneNode(true);
+    if (!editable) normalizeTableColumnRatios(table, clone);
+    clone.querySelectorAll('.table-col-resizer, .table-row-resizer').forEach(node => node.remove());
+    clone.querySelectorAll('.editor-cell-selected, .draft-cell-selected').forEach(node => {
+        node.classList.remove('editor-cell-selected', 'draft-cell-selected');
+    });
+    clone.querySelectorAll('td,th').forEach(cell => {
+        cell.contentEditable = editable ? 'true' : 'false';
+        cell.removeAttribute('data-resize-bound');
+    });
+    clone.removeAttribute('data-resize-ready');
+    return clone;
+}
+
+function normalizeTableColumnRatios(sourceTable, targetTable) {
+    const columnCount = tableColumnCount(sourceTable);
+    if (!columnCount) return;
+    const fallbackWidth = sourceTable.getBoundingClientRect().width / columnCount || 1;
+    const widths = Array.from({ length: columnCount }, (_, index) => {
+        const cells = getCellsInVisualColumn(sourceTable, index).filter(cell => (cell.colSpan || 1) === 1);
+        const measured = cells
+            .map(cell => cell.getBoundingClientRect().width || parseFloat(cell.style.width) || parseFloat(cell.style.minWidth) || 0)
+            .filter(Boolean);
+        return measured.length ? Math.max(...measured) : fallbackWidth;
+    });
+    const total = widths.reduce((sum, width) => sum + width, 0) || columnCount;
+    targetTable.querySelector(':scope > colgroup')?.remove();
+    const colgroup = document.createElement('colgroup');
+    widths.forEach(width => {
+        const col = document.createElement('col');
+        col.style.width = `${(width / total * 100).toFixed(4)}%`;
+        colgroup.appendChild(col);
+    });
+    targetTable.prepend(colgroup);
+    targetTable.querySelectorAll('td,th').forEach(cell => {
+        cell.style.width = '';
+        cell.style.minWidth = '';
+    });
+    targetTable.style.width = '100%';
+    targetTable.style.tableLayout = 'fixed';
+    targetTable.dataset.autofit = 'fixed';
 }
 
 export function syncRichEditorToState() {
@@ -320,6 +429,7 @@ export function restoreEditorSelection() {
 
 export function openTableDialog() {
     rememberEditorSelection();
+    activeTableEmbedNode = null;
     const dialog = document.getElementById('table-dialog');
     const workspace = document.getElementById('rich-text-workspace');
     if (dialog && workspace && !workspace.classList.contains('hidden') && dialog.parentElement !== workspace) {
@@ -342,6 +452,42 @@ export function openTableDialog() {
     if (rowsInput) rowsInput.focus();
 }
 
+export function openExistingTableEditor(table) {
+    if (!table) return;
+    const dialog = document.getElementById('table-dialog');
+    const workspace = document.getElementById('rich-text-workspace');
+    if (dialog && workspace && !workspace.classList.contains('hidden') && dialog.parentElement !== workspace) {
+        workspace.appendChild(dialog);
+    }
+    activeTableEmbedNode = table.closest('.scientific-table-embed');
+    activeEditorTable = table;
+    draftTable = cleanTableClone(table, true);
+    draftSelection.clear();
+    const canvas = document.getElementById('table-draft-canvas');
+    const builder = document.getElementById('table-builder-workspace');
+    const confirmBtn = document.getElementById('confirm-draft-table');
+    const rowsInput = document.getElementById('table-row-count');
+    const columnsInput = document.getElementById('table-column-count');
+    const autofitInput = document.getElementById('table-autofit');
+    if (canvas) canvas.replaceChildren(draftTable);
+    if (builder) builder.classList.remove('hidden');
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i>Cập nhật bảng';
+    }
+    if (rowsInput) rowsInput.value = String(draftTable.rows.length || 1);
+    if (columnsInput) columnsInput.value = String(tableColumnCount(draftTable));
+    if (autofitInput) autofitInput.value = draftTable.dataset.autofit || 'window';
+    ensureTableResizeHandles(draftTable);
+    setTableMenuMode('draft');
+    if (dialog) {
+        dialog.classList.remove('hidden');
+        dialog.classList.add('flex');
+    }
+    bindDraftTableEvents();
+    showToast('Đang chỉnh bảng. Bấm Cập nhật bảng để lưu lại vào nội dung.');
+}
+
 export function closeTableDialog() {
     const dialog = document.getElementById('table-dialog');
     if (dialog) {
@@ -350,6 +496,9 @@ export function closeTableDialog() {
     }
     const borderMenu = document.getElementById('table-border-menu');
     if (borderMenu) borderMenu.classList.add('hidden');
+    activeTableEmbedNode = null;
+    const confirmBtn = document.getElementById('confirm-draft-table');
+    if (confirmBtn) confirmBtn.innerHTML = '<i class="fa-solid fa-plus mr-1"></i>Thêm vào nội dung';
 }
 
 function placeTableBorderMenu(mode) {
@@ -391,6 +540,8 @@ export function buildDraftTable() {
     const confirmBtn = document.getElementById('confirm-draft-table');
     if (builder) builder.classList.remove('hidden');
     if (confirmBtn) confirmBtn.disabled = false;
+    ensureTableResizeHandles(draftTable);
+    setTableMenuMode('draft');
     bindDraftTableEvents();
 }
 
@@ -412,6 +563,7 @@ export function selectDraftRectangle(startCell, endCell) {
 
 export function bindDraftTableEvents() {
     draftTable.addEventListener('mousedown', event => {
+        if (event.target.closest('.table-col-resizer, .table-row-resizer')) return;
         const cell = event.target.closest('td,th');
         if (!cell || event.button !== 0) return;
         draftDragStart = cell;
@@ -424,6 +576,7 @@ export function bindDraftTableEvents() {
         if (draftDragging && cell) selectDraftRectangle(draftDragStart, cell);
     });
     draftTable.addEventListener('contextmenu', event => {
+        if (event.target.closest('.table-col-resizer, .table-row-resizer')) return;
         const cell = event.target.closest('td,th');
         if (!cell) return;
         event.preventDefault();
@@ -458,6 +611,7 @@ export function mergeDraftSelection() {
     draftSelection.clear();
     draftSelection.add(anchor);
     anchor.classList.add('draft-cell-selected');
+    ensureTableResizeHandles(draftTable);
 }
 
 export function splitDraftCell() {
@@ -467,28 +621,47 @@ export function splitDraftCell() {
     activeEditorTable = draftTable;
     splitActiveCell();
     selectDraftRectangle(cell, cell);
+    activeEditorTable = null;
+    activeEditorCell = null;
+    ensureTableResizeHandles(draftTable);
 }
 
 export function formatDraftSelection(type, value) {
     if (!draftSelection.size) return showToast('Hãy chọn ô cần định dạng.');
     draftSelection.forEach(cell => {
         if (type === 'align') cell.style.textAlign = value;
+        if (type === 'verticalAlign') cell.style.verticalAlign = value;
         if (type === 'bold') cell.style.fontWeight = cell.style.fontWeight === 'bold' ? 'normal' : 'bold';
         if (type === 'italic') cell.style.fontStyle = cell.style.fontStyle === 'italic' ? 'normal' : 'italic';
     });
 }
 
+function currentDraftBorderStyle() {
+    const width = document.getElementById('table-border-width')?.value || '1px';
+    const color = document.getElementById('table-border-color')?.value || '#000000';
+    return `${width} solid ${color}`;
+}
+
 export function applyDraftBorder(mode) {
     const menu = document.getElementById('table-border-menu');
+    if (!document.getElementById('table-builder-workspace')?.classList.contains('hidden')) {
+        setTableMenuMode('draft');
+        if (!draftSelection.size) useDraftTableContext();
+    }
+    if (menu && !menu.dataset.mode && activeEditorTable) menu.dataset.mode = 'editor';
+    if (menu?.dataset.mode !== 'draft' && !editorTableSelection.size && activeEditorCell) {
+        selectEditorRectangle(activeEditorCell, activeEditorCell);
+    }
     const useEditorSelection = menu?.dataset.mode === 'editor' && editorTableSelection.size > 0;
     const bounds = useEditorSelection ? selectedEditorBounds() : selectedDraftBounds();
     if (!bounds) return;
     const cells = useEditorSelection ? [...editorTableSelection] : [...draftSelection];
+    const borderStyle = currentDraftBorderStyle();
     if (mode === 'none') cells.forEach(cell => cell.style.border = '0 solid #000');
     else cells.forEach(cell => {
         const position = useEditorSelection ? editorCellPosition(cell) : draftCellPosition(cell);
-        const set = side => cell.style[`border${side}`] = '1px solid #000';
-        if (mode === 'all') cell.style.border = '1px solid #000';
+        const set = side => cell.style[`border${side}`] = borderStyle;
+        if (mode === 'all') cell.style.border = borderStyle;
         if (mode === 'top' && position.row === bounds.minRow) set('Top');
         if (mode === 'bottom' && position.row === bounds.maxRow) set('Bottom');
         if (mode === 'left' && position.column === bounds.minColumn) set('Left');
@@ -515,115 +688,35 @@ export function pasteGridIntoDraftTable(event) {
 
 export function insertDraftTableAtCursor() {
     if (!draftTable) return;
-    const table = draftTable.cloneNode(true);
-    table.querySelectorAll('td,th').forEach(cell => { cell.contentEditable = 'true'; cell.classList.remove('draft-cell-selected'); });
-    ensureTableResizeHandles(table);
+    const table = cleanTableClone(draftTable, false);
+    const targetEmbed = activeTableEmbedNode;
+    const tableHtml = table.outerHTML;
+    if (targetEmbed && quill.root.contains(targetEmbed)) {
+        const blot = window.Quill?.find(targetEmbed);
+        const embedIndex = blot ? quill.getIndex(blot) : -1;
+        if (embedIndex >= 0) {
+            quill.deleteText(embedIndex, 1, 'user');
+            quill.insertEmbed(embedIndex, 'scientificTable', tableHtml, 'user');
+            quill.setSelection(embedIndex + 1, 0, 'silent');
+            closeTableDialog();
+            activeEditorTable = null;
+            activeEditorCell = null;
+            syncRichEditorToState();
+            showToast('Đã cập nhật bảng.');
+            return;
+        }
+    }
     const insertionIndex = Math.max(0, Math.min(savedQuillRange?.index ?? (quill.getLength() - 1), quill.getLength() - 1));
     closeTableDialog();
     quill.focus();
     if (savedQuillRange?.length) quill.deleteText(insertionIndex, savedQuillRange.length, 'user');
-    quill.insertEmbed(insertionIndex, 'scientificTable', table.outerHTML, 'user');
+    quill.insertEmbed(insertionIndex, 'scientificTable', tableHtml, 'user');
     quill.insertText(insertionIndex + 1, '\n', 'user');
     quill.setSelection(insertionIndex + 2, 0, 'silent');
     const tableEmbeds = quill.root.querySelectorAll('.scientific-table-embed table');
     activeEditorTable = tableEmbeds[tableEmbeds.length - 1] || null;
     activeEditorCell = null;
     syncRichEditorToState();
-}
-
-export function insertCustomTable() {
-    const rows = Math.min(50, Math.max(1, parseInt(document.getElementById('table-row-count').value, 10) || 1));
-    const columns = Math.min(20, Math.max(1, parseInt(document.getElementById('table-column-count').value, 10) || 1));
-    closeTableDialog();
-    restoreEditorSelection();
-    const table = document.createElement('table');
-    table.dataset.borderMode = document.getElementById('table-border-preset').value;
-    const tbody = document.createElement('tbody');
-    for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
-        const row = document.createElement('tr');
-        for (let columnIndex = 0; columnIndex < columns; columnIndex += 1) {
-            const cell = document.createElement('td');
-            cell.innerHTML = '<br>';
-            row.appendChild(cell);
-        }
-        tbody.appendChild(row);
-    }
-    table.appendChild(tbody);
-    applyTableLayout(table, document.getElementById('table-autofit').value);
-    applyBordersToTable(table, readTableBorderControls());
-    const editor = quill.root;
-    const selection = window.getSelection();
-    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-    const rangeInsideEditor = range && editor.contains(range.commonAncestorContainer);
-    if (rangeInsideEditor) {
-        range.deleteContents();
-        range.insertNode(table);
-        const spacer = document.createElement('p');
-        spacer.innerHTML = '<br>';
-        table.after(spacer);
-    } else {
-        editor.append(table, document.createElement('p'));
-    }
-    activeEditorTable = table;
-    const firstCell = table.querySelector('td');
-    if (firstCell) {
-        activeEditorCell = firstCell;
-        const cellRange = document.createRange();
-        cellRange.selectNodeContents(firstCell);
-        selection.removeAllRanges();
-        selection.addRange(cellRange);
-    }
-    syncRichEditorToState();
-}
-
-export function setTableBorderPreset(preset) {
-    const presets = {
-        apa: { top: true, bottom: true, header: true },
-        all: { top: true, bottom: true, left: true, right: true, insideH: true, insideV: true },
-        outer: { top: true, bottom: true, left: true, right: true },
-        horizontal: { top: true, bottom: true, insideH: true },
-        none: {}
-    };
-    if (preset === 'custom') return;
-    const config = presets[preset] || presets.apa;
-    tableBorderIds.forEach(id => {
-        const key = id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        const input = document.getElementById(`border-${id}`);
-        if (input) input.checked = Boolean(config[key]);
-    });
-}
-
-export function readTableBorderControls() {
-    const config = {};
-    tableBorderIds.forEach(id => {
-        const key = id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        const input = document.getElementById(`border-${id}`);
-        config[key] = input ? input.checked : false;
-    });
-    return config;
-}
-
-export function loadTableBorderControls(table) {
-    const autofit = document.getElementById('table-autofit');
-    if (autofit) autofit.value = table.dataset.autofit || 'window';
-    const hasSavedBorderConfig = tableBorderIds.some(id => {
-        const key = id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        return key in table.dataset;
-    });
-    if (!hasSavedBorderConfig) {
-        const legacyPreset = table.dataset.borderMode || 'all';
-        const presetInput = document.getElementById('table-border-preset');
-        if (presetInput) presetInput.value = legacyPreset;
-        setTableBorderPreset(legacyPreset);
-        return;
-    }
-    const presetInput = document.getElementById('table-border-preset');
-    if (presetInput) presetInput.value = table.dataset.borderMode || 'custom';
-    tableBorderIds.forEach(id => {
-        const key = id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        const input = document.getElementById(`border-${id}`);
-        if (input) input.checked = table.dataset[key] === 'true';
-    });
 }
 
 export function applyTableLayout(table, mode) {
@@ -642,35 +735,6 @@ export function applyTableLayout(table, mode) {
     }
 }
 
-export function applyBordersToTable(table, config) {
-    if (!table) return;
-    const rows = Array.from(table.rows);
-    const rowCount = rows.length;
-    const columnCount = Math.max(0, ...rows.map(row => row.cells.length));
-    rows.forEach((row, rowIndex) => Array.from(row.cells).forEach((cell, columnIndex) => {
-        cell.style.border = '0 solid #000';
-        if (config.top && rowIndex === 0) cell.style.borderTop = '1px solid #000';
-        if (config.bottom && rowIndex === rowCount - 1) cell.style.borderBottom = '1px solid #000';
-        if (config.left && columnIndex === 0) cell.style.borderLeft = '1px solid #000';
-        if (config.right && columnIndex === columnCount - 1) cell.style.borderRight = '1px solid #000';
-        if (config.insideH && rowIndex < rowCount - 1) cell.style.borderBottom = '1px solid #000';
-        if (config.insideV && columnIndex < columnCount - 1) cell.style.borderRight = '1px solid #000';
-        if (config.header && rowIndex === 0) cell.style.borderBottom = '1px solid #000';
-    }));
-    Object.entries(config).forEach(([key, value]) => table.dataset[key] = String(Boolean(value)));
-}
-
-export function formatSelectedTable() {
-    if (!activeEditorTable) {
-        showToast('Hãy đặt con trỏ vào bảng cần định dạng.');
-        return;
-    }
-    activeEditorTable.dataset.borderMode = document.getElementById('table-border-preset').value;
-    applyTableLayout(activeEditorTable, document.getElementById('table-autofit').value);
-    applyBordersToTable(activeEditorTable, readTableBorderControls());
-    closeTableDialog();
-    syncRichEditorToState();
-}
 
 export function deleteSelectedTable() {
     if (!activeEditorTable || !quill.root.contains(activeEditorTable)) {
@@ -709,6 +773,7 @@ export function createEmptyTableCell(sourceCell = null) {
     }
     if (sourceCell) {
         if (sourceCell.style.textAlign) cell.style.textAlign = sourceCell.style.textAlign;
+        if (sourceCell.style.verticalAlign) cell.style.verticalAlign = sourceCell.style.verticalAlign;
         if (sourceCell.style.fontWeight) cell.style.fontWeight = sourceCell.style.fontWeight;
         if (sourceCell.style.fontStyle) cell.style.fontStyle = sourceCell.style.fontStyle;
         const borderStyles = [
@@ -800,6 +865,24 @@ function selectedDraftCell() {
     return draftSelection.size ? [...draftSelection][0] : null;
 }
 
+function setTableMenuMode(mode) {
+    const menu = document.getElementById('table-border-menu');
+    if (menu) menu.dataset.mode = mode;
+}
+
+function useDraftTableContext() {
+    setTableMenuMode('draft');
+    if (!draftTable) {
+        showToast('Hay mo hoac tao bang truoc.');
+        return false;
+    }
+    if (!draftSelection.size) {
+        const firstCell = draftTable.rows[0]?.cells[0];
+        if (firstCell) selectDraftRectangle(firstCell, firstCell);
+    }
+    return true;
+}
+
 function activeTableContext() {
     if (tableMenuMode() === 'draft') {
         return { table: draftTable, cell: selectedDraftCell(), mode: 'draft' };
@@ -812,11 +895,135 @@ function tableColumnCount(table) {
         Array.from(item.cells).reduce((sum, cell) => sum + cell.colSpan, 0)));
 }
 
+function visualColumnIndex(table, cell, side = 'left') {
+    const grid = getLogicalTableCells(table);
+    const position = grid.positions.get(cell);
+    if (!position) return cell.cellIndex;
+    return position.column + (side === 'right' ? Math.max(1, cell.colSpan || 1) : 0);
+}
+
+function insertVisualTableColumn(table, index, sourceCell) {
+    const grid = getLogicalTableCells(table);
+    Array.from(table.rows).forEach((row, rowIndex) => {
+        const spanningCell = grid.occupied[rowIndex]?.[index];
+        const spanningPosition = spanningCell ? grid.positions.get(spanningCell) : null;
+        if (spanningCell && spanningPosition?.column < index) {
+            spanningCell.colSpan += 1;
+            return;
+        }
+        const newCell = createEmptyTableCell(sourceCell);
+        newCell.contentEditable = 'true';
+        const beforeCell = Array.from(row.cells).find(cell => (grid.positions.get(cell)?.column ?? Infinity) >= index);
+        row.insertBefore(newCell, beforeCell || null);
+    });
+}
+
+function deleteVisualTableColumn(table, index) {
+    const grid = getLogicalTableCells(table);
+    const touched = new Set();
+    Array.from(table.rows).forEach((row, rowIndex) => {
+        const cell = grid.occupied[rowIndex]?.[index];
+        if (!cell || touched.has(cell)) return;
+        touched.add(cell);
+        if ((cell.colSpan || 1) > 1) cell.colSpan -= 1;
+        else cell.remove();
+    });
+}
+
 function finishTableStructureEdit(message, mode) {
     const menu = document.getElementById('table-border-menu');
     if (menu) menu.classList.add('hidden');
-    if (mode === 'draft') return;
+    if (mode === 'draft') {
+        ensureTableResizeHandles(draftTable);
+        return;
+    }
     finishTableCellEdit(message);
+}
+
+export function insertDraftRowAbove() {
+    if (!useDraftTableContext()) return;
+    insertTableRowAbove();
+}
+
+export function insertDraftRowBelow() {
+    if (!useDraftTableContext()) return;
+    insertTableRowBelow();
+}
+
+export function insertDraftColumnLeft() {
+    if (!useDraftTableContext()) return;
+    insertTableColumnLeft();
+}
+
+export function insertDraftColumnRight() {
+    if (!useDraftTableContext()) return;
+    insertTableColumnRight();
+}
+
+export function deleteDraftRow() {
+    if (!useDraftTableContext()) return;
+    deleteTableRow();
+    ensureTableResizeHandles(draftTable);
+}
+
+export function deleteDraftColumn() {
+    if (!useDraftTableContext()) return;
+    deleteTableColumn();
+    ensureTableResizeHandles(draftTable);
+}
+
+export function distributeDraftColumns() {
+    if (!useDraftTableContext()) return;
+    const columnCount = tableColumnCount(draftTable);
+    draftTable.querySelector(':scope > colgroup')?.remove();
+    const colgroup = document.createElement('colgroup');
+    for (let index = 0; index < columnCount; index += 1) {
+        const col = document.createElement('col');
+        col.style.width = `${100 / columnCount}%`;
+        colgroup.appendChild(col);
+    }
+    draftTable.prepend(colgroup);
+    draftTable.style.width = '100%';
+    draftTable.style.tableLayout = 'fixed';
+    draftTable.dataset.autofit = 'fixed';
+    draftTable.querySelectorAll('td,th').forEach(cell => {
+        cell.style.width = '';
+        cell.style.minWidth = '';
+    });
+    ensureTableResizeHandles(draftTable);
+    showToast('Da chia deu cot.');
+}
+
+export function distributeDraftRows() {
+    if (!useDraftTableContext()) return;
+    const rows = Array.from(draftTable.rows);
+    const height = Math.max(34, ...rows.map(row => row.getBoundingClientRect().height || parseFloat(row.style.height) || 34));
+    rows.forEach(row => {
+        row.style.height = `${height}px`;
+    });
+    ensureTableResizeHandles(draftTable);
+    showToast('Da chia deu hang.');
+}
+
+export function deleteDraftTableFromArticle() {
+    if (activeTableEmbedNode && quill?.root.contains(activeTableEmbedNode)) {
+        const blot = window.Quill?.find(activeTableEmbedNode);
+        const embedIndex = blot ? quill.getIndex(blot) : -1;
+        if (embedIndex >= 0) {
+            quill.deleteText(embedIndex, 1, 'user');
+            closeTableDialog();
+            activeTableEmbedNode = null;
+            activeEditorTable = null;
+            activeEditorCell = null;
+            syncRichEditorToState();
+            showToast('Da xoa bang.');
+            return;
+        }
+    }
+    draftTable = null;
+    draftSelection.clear();
+    document.getElementById('table-draft-canvas')?.replaceChildren();
+    closeTableDialog();
 }
 
 export function insertTableRow(position = 'below') {
@@ -871,14 +1078,10 @@ export function insertTableColumn(position = 'right') {
     const { table, cell, mode } = activeTableContext();
     if (!table || !cell) return showToast('Hay chon mot o trong bang.');
     const rowIndex = cell.parentElement.rowIndex;
-    const insertIndex = position === 'left' ? cell.cellIndex : cell.cellIndex + 1;
-    Array.from(table.rows).forEach(row => {
-        const newCell = createEmptyTableCell(cell);
-        newCell.contentEditable = 'true';
-        row.insertBefore(newCell, row.cells[insertIndex] || null);
-    });
+    const insertIndex = visualColumnIndex(table, cell, position);
+    insertVisualTableColumn(table, insertIndex, cell);
     if (mode === 'draft') {
-        const selected = table.rows[rowIndex]?.cells[insertIndex] || table.rows[rowIndex]?.cells[insertIndex - 1];
+        const selected = table.rows[rowIndex]?.cells[Math.min(insertIndex, table.rows[rowIndex].cells.length - 1)];
         if (selected) selectDraftRectangle(selected, selected);
     }
     finishTableStructureEdit(position === 'left' ? 'Da them cot trai.' : 'Da them cot phai.', mode);
@@ -900,10 +1103,10 @@ export function deleteTableColumn() {
     if (tableMenuMode() === 'draft') {
         const cell = selectedDraftCell();
         if (!draftTable || !cell) return showToast('Hay chon cot can xoa.');
-        const columnIndex = cell.cellIndex;
+        const columnIndex = visualColumnIndex(draftTable, cell);
         const maxColumns = tableColumnCount(draftTable);
         if (maxColumns <= 1) return showToast('Bang can it nhat mot cot.');
-        Array.from(draftTable.rows).forEach(row => row.cells[columnIndex]?.remove());
+        deleteVisualTableColumn(draftTable, columnIndex);
         draftSelection.clear();
         const nextCell = draftTable.rows[0]?.cells[Math.min(columnIndex, draftTable.rows[0].cells.length - 1)];
         if (nextCell) selectDraftRectangle(nextCell, nextCell);
@@ -911,11 +1114,8 @@ export function deleteTableColumn() {
         return;
     }
     if (!activeEditorCell) return showToast('Hãy đặt con trỏ vào cột cần xóa.');
-    const index = activeEditorCell.cellIndex;
-    Array.from(activeEditorTable.rows).forEach(row => {
-        const cell = row.cells[index];
-        if (cell) cell.remove();
-    });
+    const index = visualColumnIndex(activeEditorTable, activeEditorCell);
+    deleteVisualTableColumn(activeEditorTable, index);
     activeEditorCell = null;
     finishTableCellEdit('Đã xóa cột.');
 }
@@ -941,7 +1141,7 @@ export function clearEditorTableSelection() {
 }
 
 function editorCellPosition(cell) {
-    return { row: cell.parentElement.rowIndex, column: cell.cellIndex };
+    return getLogicalTableCells(cell.closest('table')).positions.get(cell) || { row: cell.parentElement.rowIndex, column: cell.cellIndex };
 }
 
 export function selectEditorRectangle(startCell, endCell) {
@@ -1094,7 +1294,15 @@ export function splitSelectedTableCell() {
 
 export function handleTableClick(event) {
     const table = event.target.closest?.('#rich-editor-field table');
-    if (!table) return;
+    if (!table) {
+        return;
+    }
+    if (!event.target.closest('.table-col-resizer, .table-row-resizer')) {
+        event.preventDefault();
+        event.stopPropagation();
+        openExistingTableEditor(table);
+        return;
+    }
     activeEditorTable = table;
     activeEditorCell = event.target.closest('td, th');
     ensureTableResizeHandles(table);
@@ -1169,14 +1377,15 @@ export function getCellsInVisualColumn(table, colIndex) {
 
 export function ensureTableResizeHandles(table) {
     if (!table) return;
+    const isDraftTable = Boolean(table.closest('#table-draft-canvas'));
     table.dataset.resizeReady = 'true';
     table.style.position = table.style.position || 'relative';
-    table.closest('.scientific-table-embed')?.setAttribute('contenteditable', 'true');
+    table.closest('.scientific-table-embed')?.setAttribute('contenteditable', 'false');
     Array.from(table.rows).forEach(row => {
         if (!row.style.height) row.style.height = `${Math.max(34, row.getBoundingClientRect().height || 34)}px`;
         Array.from(row.cells).forEach(cell => {
             cell.style.position = 'relative';
-            cell.contentEditable = 'true';
+            cell.contentEditable = isDraftTable ? 'true' : 'false';
             let colHandle = cell.querySelector(':scope > .table-col-resizer');
             if (!colHandle) {
                 colHandle = document.createElement('span');
@@ -1185,6 +1394,7 @@ export function ensureTableResizeHandles(table) {
             }
             colHandle.contentEditable = 'false';
             colHandle.setAttribute('draggable', 'false');
+            cell.appendChild(colHandle);
             if (colHandle.dataset.resizeBound !== 'true') {
                 colHandle.dataset.resizeBound = 'true';
                 colHandle.addEventListener('dragstart', event => event.preventDefault());
@@ -1199,6 +1409,7 @@ export function ensureTableResizeHandles(table) {
             }
             rowHandle.contentEditable = 'false';
             rowHandle.setAttribute('draggable', 'false');
+            cell.appendChild(rowHandle);
             if (rowHandle.dataset.resizeBound !== 'true') {
                 rowHandle.dataset.resizeBound = 'true';
                 rowHandle.addEventListener('dragstart', event => event.preventDefault());
@@ -1211,6 +1422,7 @@ export function ensureTableResizeHandles(table) {
 export function startColumnResize(event, table, cell) {
     event.preventDefault();
     event.stopPropagation();
+    const isDraftTable = Boolean(table.closest('#table-draft-canvas'));
     table.classList.add('table-resizing');
     table.style.tableLayout = 'fixed';
     const startX = event.clientX;
@@ -1224,10 +1436,13 @@ export function startColumnResize(event, table, cell) {
     const colSpan1Cells = colCells.filter(c => (c.colSpan || 1) === 1);
     const referenceCell = colSpan1Cells.includes(cell) ? cell : (colSpan1Cells[0] || cell);
     const startWidth = referenceCell.getBoundingClientRect().width;
+    const colgroup = table.querySelector(':scope > colgroup');
+    const col = colgroup?.children?.[vColIndex] || null;
 
     const move = (moveEvent) => {
         moveEvent.preventDefault();
         const nextWidth = Math.max(32, startWidth + moveEvent.clientX - startX);
+        if (col) col.style.width = `${nextWidth}px`;
         colSpan1Cells.forEach(target => {
             target.style.width = `${nextWidth}px`;
             target.style.minWidth = `${nextWidth}px`;
@@ -1243,7 +1458,7 @@ export function startColumnResize(event, table, cell) {
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
         table.classList.remove('table-resizing');
-        syncRichEditorToState();
+        if (!isDraftTable) syncRichEditorToState();
     };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
@@ -1255,6 +1470,7 @@ export function startRowResize(event, _table, row) {
     event.preventDefault();
     event.stopPropagation();
     const table = row.closest('table');
+    const isDraftTable = Boolean(table?.closest('#table-draft-canvas'));
     table?.classList.add('table-resizing');
     const startY = event.clientY;
     const startHeight = row.getBoundingClientRect().height;
@@ -1268,7 +1484,7 @@ export function startRowResize(event, _table, row) {
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
         table?.classList.remove('table-resizing');
-        syncRichEditorToState();
+        if (!isDraftTable) syncRichEditorToState();
     };
     document.body.style.cursor = 'row-resize';
     document.body.style.userSelect = 'none';
