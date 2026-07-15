@@ -690,7 +690,7 @@ export function formatDraftSelection(type, value) {
     if (!draftSelection.size) return showToast('Hãy chọn ô cần định dạng.');
     draftSelection.forEach(cell => {
         if (type === 'align') cell.style.textAlign = value;
-        if (type === 'verticalAlign') cell.style.verticalAlign = value;
+        if (type === 'verticalAlign') applyDraftCellVerticalAlign(cell, value);
         if (type === 'fontFamily' && value) cell.style.fontFamily = value;
         if (type === 'fontSize' && value) cell.style.fontSize = value;
         if (type === 'color' && value) cell.style.color = value;
@@ -702,6 +702,11 @@ export function formatDraftSelection(type, value) {
         if (type === 'case') cell.innerHTML = transformHtmlTextCase(cell.innerHTML, value);
         if (type === 'clear') clearDraftCellFormatting(cell);
     });
+}
+
+function applyDraftCellVerticalAlign(cell, value) {
+    cell.style.verticalAlign = value;
+    cell.style.alignContent = value === 'top' ? 'start' : value === 'bottom' ? 'end' : 'center';
 }
 
 function toggleCellDecoration(cell, decoration) {
@@ -1568,6 +1573,9 @@ export function ensureTableResizeHandles(table) {
         Array.from(row.cells).forEach(cell => {
             cell.style.position = 'relative';
             cell.contentEditable = isDraftTable ? 'true' : 'false';
+            if (isDraftTable && cell.style.verticalAlign) {
+                cell.style.alignContent = cell.style.verticalAlign === 'top' ? 'start' : cell.style.verticalAlign === 'bottom' ? 'end' : 'center';
+            }
             let colHandle = cell.querySelector(':scope > .table-col-resizer');
             if (!colHandle) {
                 colHandle = document.createElement('span');

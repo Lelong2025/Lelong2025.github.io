@@ -456,6 +456,9 @@ body.magazine-auth-required #toast-box {
 }
 
 .table-tool-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     border: 1px solid #c7d2fe;
     border-radius: 6px;
     background: #fff;
@@ -467,6 +470,85 @@ body.magazine-auth-required #toast-box {
 
 .table-tool-button:hover {
     background: #eef2ff;
+}
+
+.table-insert-icon {
+    --accent-row: 1;
+    --accent-col: 1;
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: repeat(3, 4px);
+    grid-template-rows: repeat(3, 4px);
+    gap: 1px;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #2563eb;
+    background: #ffffff;
+    padding: 1px;
+}
+
+.table-insert-icon::before,
+.table-insert-icon::after {
+    content: "";
+    position: absolute;
+    background: #60a5fa;
+    opacity: 0.9;
+}
+
+.table-insert-icon::before {
+    inset: calc((var(--accent-row) - 1) * 5px + 1px) 1px auto 1px;
+    height: 4px;
+}
+
+.table-insert-icon::after {
+    inset: 1px auto 1px calc((var(--accent-col) - 1) * 5px + 1px);
+    width: 4px;
+}
+
+.insert-row-above,
+.insert-row-below {
+    background:
+        linear-gradient(#cbd5e1 0 0) 1px 5px / 14px 1px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 1px 10px / 14px 1px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 5px 1px / 1px 14px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 10px 1px / 1px 14px no-repeat,
+        #ffffff;
+}
+
+.insert-col-left,
+.insert-col-right {
+    background:
+        linear-gradient(#cbd5e1 0 0) 1px 5px / 14px 1px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 1px 10px / 14px 1px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 5px 1px / 1px 14px no-repeat,
+        linear-gradient(#cbd5e1 0 0) 10px 1px / 1px 14px no-repeat,
+        #ffffff;
+}
+
+.insert-row-above {
+    --accent-row: 1;
+}
+
+.insert-row-below {
+    --accent-row: 3;
+}
+
+.insert-row-above::after,
+.insert-row-below::after {
+    display: none;
+}
+
+.insert-col-left {
+    --accent-col: 1;
+}
+
+.insert-col-right {
+    --accent-col: 3;
+}
+
+.insert-col-left::before,
+.insert-col-right::before {
+    display: none;
 }
 
 .table-builder-ribbon {
@@ -629,6 +711,7 @@ body.magazine-auth-required #toast-box {
     height: 38px;
     padding: 6px;
     vertical-align: middle;
+    align-content: center;
     outline: none;
     user-select: none;
     border: 1px dashed #cbd5e1;
