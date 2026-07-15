@@ -1196,6 +1196,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const linkInput = document.getElementById('lookupResultUrl');
       const keywordInput = document.getElementById('lookupSampleKeyword');
       const templateInput = document.getElementById('lookupUrlTemplate');
+      const sourceTypeInput = document.getElementById('lookupSourceType');
       const link = linkInput?.value.trim() || '';
       const keyword = keywordInput?.value.trim() || '';
       if (!link) {
@@ -1212,10 +1213,10 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       const matched = keywordVariants(keyword).find(variant => template.includes(variant));
       if (matched) {
         template = template.replaceAll(matched, '{{query}}');
-        if (sourceType) sourceType.value = 'search';
+        if (sourceTypeInput) sourceTypeInput.value = 'search';
         setLookupSourceMessage('Xong rồi. Bạn có thể bấm Xem thử để kiểm tra.', 'success');
       } else {
-        if (sourceType) sourceType.value = 'search';
+        if (sourceTypeInput) sourceTypeInput.value = 'search';
         setLookupSourceMessage('Chưa nhận ra từ khóa trong link. Hãy kiểm tra lại link kết quả và từ khóa đã gõ.', 'error');
       }
       if (templateInput) templateInput.value = template;
