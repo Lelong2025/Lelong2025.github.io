@@ -470,14 +470,55 @@ body.magazine-auth-required #toast-box {
 }
 
 .table-builder-ribbon {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: stretch;
     border: 1px solid #dbe3ef;
     border-radius: 8px;
     background: #f8fafc;
-    padding: 8px;
+    overflow: hidden;
+}
+
+.table-ribbon-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid #dbe3ef;
+    background: #eef2ff;
+    padding: 6px 8px 0;
+}
+
+.table-ribbon-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 7px 7px 0 0;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 7px 12px;
+}
+
+.table-ribbon-tab:hover {
+    background: rgba(255, 255, 255, 0.65);
+    color: #3730a3;
+}
+
+.table-ribbon-tab.active {
+    border-color: #dbe3ef;
+    background: #ffffff;
+    color: #4338ca;
+}
+
+.table-ribbon-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+    min-height: 58px;
+    padding: 10px;
+}
+
+.table-ribbon-panel.active {
+    display: flex;
 }
 
 .table-tool-group {
@@ -492,6 +533,10 @@ body.magazine-auth-required #toast-box {
 .table-tool-group:last-child {
     border-right: 0;
     padding-right: 0;
+}
+
+.table-tool-group-wide {
+    flex: 1 1 360px;
 }
 
 .table-tool-label {
@@ -536,6 +581,26 @@ body.magazine-auth-required #toast-box {
 .dark .table-builder-ribbon {
     border-color: #334155;
     background: #0f172a;
+}
+
+.dark .table-ribbon-tabs {
+    border-color: #334155;
+    background: #111827;
+}
+
+.dark .table-ribbon-tab {
+    color: #cbd5e1;
+}
+
+.dark .table-ribbon-tab:hover {
+    background: rgba(30, 41, 59, 0.8);
+    color: #c7d2fe;
+}
+
+.dark .table-ribbon-tab.active {
+    border-color: #334155;
+    background: #0f172a;
+    color: #c7d2fe;
 }
 
 .dark .table-tool-group {

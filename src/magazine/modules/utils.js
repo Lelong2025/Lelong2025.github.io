@@ -66,6 +66,7 @@ export function wordRun(text, options = {}) {
         options.bold ? '<w:b/>' : '',
         options.italic === true ? '<w:i/><w:iCs/>' : (options.italic === false ? '<w:i w:val="0"/><w:iCs w:val="0"/>' : ''),
         options.underline ? '<w:u w:val="single"/>' : '',
+        options.strike ? '<w:strike/>' : '',
         options.color ? `<w:color w:val="${options.color}"/>` : '',
         options.size ? `<w:sz w:val="${options.size}"/><w:szCs w:val="${options.size}"/>` : '',
         options.shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${options.shading}"/>` : ''
@@ -171,9 +172,12 @@ export function inlineHtmlToWord(node, inherited = {}) {
     const style = node.style || {};
     const fontSize = cssFontSizeToHalfPoints(style.fontSize || '');
     if (fontSize) next.size = fontSize;
+    if (style.fontFamily) next.font = style.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+    if (style.color) next.color = cssColorToHex(style.color);
     if (['STRONG', 'B'].includes(node.tagName)) next.bold = true;
     if (['EM', 'I'].includes(node.tagName) && !next.suppressItalic) next.italic = true;
     if (node.tagName === 'U' || style.textDecorationLine?.includes('underline') || style.textDecoration?.includes('underline')) next.underline = true;
+    if (node.tagName === 'S' || node.tagName === 'STRIKE' || style.textDecorationLine?.includes('line-through') || style.textDecoration?.includes('line-through')) next.strike = true;
     return Array.from(node.childNodes).map(child => inlineHtmlToWord(child, next)).join('');
 }
 
@@ -272,8 +276,16 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                     const cellStyle = cell.style;
                     const inherited = {
                         bold: cellStyle.fontWeight === 'bold' || Number(cellStyle.fontWeight) >= 600,
-                        italic: cellStyle.fontStyle === 'italic'
+                        italic: cellStyle.fontStyle === 'italic',
+                        underline: cellStyle.textDecorationLine?.includes('underline') || cellStyle.textDecoration?.includes('underline'),
+                        strike: cellStyle.textDecorationLine?.includes('line-through') || cellStyle.textDecoration?.includes('line-through')
                     };
+                    const cellFontSize = cssFontSizeToHalfPoints(cellStyle.fontSize || '');
+                    if (cellFontSize) inherited.size = cellFontSize;
+                    if (cellStyle.fontFamily) inherited.font = cellStyle.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+                    if (cellStyle.color) inherited.color = cssColorToHex(cellStyle.color);
+                    const shadingColor = cellStyle.backgroundColor && cellStyle.backgroundColor !== 'transparent'
+                        ? cssColorToHex(cellStyle.backgroundColor) : '';
                     const cellAlign = cellStyle.textAlign === 'center' ? 'center' :
                         cellStyle.textAlign === 'right' ? 'right' : 'left';
                     const cellVerticalAlign = cellStyle.verticalAlign === 'middle' ? 'center' :
@@ -291,11 +303,12 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                         };
                     });
                     matrix[rowIndex][columnIndex] = {
-                        content: wordParagraph(inlineHtmlToWord(cell, { ...inherited, size: 20 }), { align: cellAlign, after: 40 }),
+                        content: wordParagraph(inlineHtmlToWord(cell, { ...inherited, size: inherited.size || 20 }), { align: cellAlign, after: 40 }),
                         gridSpan: columnSpan,
                         vMerge: rowSpan > 1 ? 'restart' : '',
                         width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
                         verticalAlign: cellVerticalAlign,
+                        shading: shadingColor,
                         borders
                     };
                     for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex][columnIndex + x] = { skip: true };
@@ -304,6 +317,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                             content: wordParagraph('', {}), gridSpan: columnSpan, vMerge: 'continue',
                             width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
                             verticalAlign: cellVerticalAlign,
+                            shading: shadingColor,
                             borders
                         };
                         for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex + y][columnIndex + x] = { skip: true };
