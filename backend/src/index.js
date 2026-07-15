@@ -47,13 +47,26 @@ export default {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleCleanAdminDashboard(req, env, ctx, apiCors));
     }
     if (path === "/api/admin/settings" && request.method === "PATCH") {
-      return jsonResponse({ error: "Legacy VIP settings endpoint was removed" }, 410, apiCors.headers);
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminSettings(req, env, ctx, apiCors));
     }
     if (path === "/api/admin/service-plans" && request.method === "POST") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminCreateServicePlan(req, env, ctx, apiCors));
     }
     if (path === "/api/admin/service-plans" && request.method === "PATCH") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminUpdateServicePlan(req, env, ctx, apiCors));
+    }
+    if (path === "/api/admin/lookup-sources" && request.method === "GET") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminListLookupSources(req, env, ctx, apiCors));
+    }
+    if (path === "/api/admin/lookup-sources" && request.method === "POST") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminCreateLookupSource(req, env, ctx, apiCors));
+    }
+    if (path === "/api/admin/lookup-sources" && request.method === "PATCH") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminUpdateLookupSource(req, env, ctx, apiCors));
+    }
+    const lookupSourceMatch = path.match(/^\/api\/admin\/lookup-sources\/([0-9a-f-]{36})$/i);
+    if (lookupSourceMatch && request.method === "DELETE") {
+      return withUserAuth(request, env, apiCors, (req, ctx) => handleAdminDeleteLookupSource(req, env, ctx, apiCors, lookupSourceMatch[1]));
     }
     if (path === "/api/orders" && request.method === "POST") {
       return withUserAuth(request, env, apiCors, (req, ctx) => handleCreateOrder(req, env, ctx, apiCors));
@@ -871,6 +884,160 @@ async function handleAdminUpdateServicePlan(request, env, ctx, cors) {
   }
 }
 
+const LOOKUP_SOURCE_COLUMNS = "id, name, result_url, sample_keyword, url_template, source_type, display_mode, is_active, sort_order, created_by, created_at, updated_at";
+const DEFAULT_LOOKUP_SOURCE_SEEDS = [
+  {
+    name: "Non-APC",
+    result_url: "https://noapc.com/journal.php?q=iatreia",
+    sample_keyword: "iatreia",
+    url_template: "https://noapc.com/journal.php?q={{query}}",
+    source_type: "search",
+    display_mode: "both",
+    is_active: true,
+    sort_order: 10
+  },
+  {
+    name: "Resurchify",
+    result_url: "https://www.resurchify.com/find/?query=2773+0123#search_results",
+    sample_keyword: "2773 0123",
+    url_template: "https://www.resurchify.com/find/?query={{query}}#search_results",
+    source_type: "search",
+    display_mode: "both",
+    is_active: true,
+    sort_order: 20
+  },
+  {
+    name: "Web Of Science",
+    result_url: "https://wos-journal.info/?jsearch=iatreia",
+    sample_keyword: "iatreia",
+    url_template: "https://wos-journal.info/?jsearch={{query}}",
+    source_type: "search",
+    display_mode: "both",
+    is_active: true,
+    sort_order: 30
+  }
+];
+
+function isHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch (_) {
+    return false;
+  }
+}
+
+function normalizeLookupSourceInput(body, existing = {}) {
+  const allowedSourceTypes = new Set(["fixed", "search"]);
+  const sourceType = allowedSourceTypes.has(body.source_type) ? body.source_type : "search";
+  const displayMode = ["iframe", "link", "both"].includes(body.display_mode) ? body.display_mode : "both";
+  const resultUrl = String(body.result_url ?? existing.result_url ?? "").trim();
+  const urlTemplate = String(body.url_template ?? existing.url_template ?? resultUrl).trim();
+  const source = {
+    name: String(body.name ?? existing.name ?? "").trim().slice(0, 120),
+    result_url: resultUrl || null,
+    sample_keyword: String(body.sample_keyword ?? existing.sample_keyword ?? "").trim().slice(0, 200),
+    url_template: urlTemplate,
+    source_type: sourceType,
+    display_mode: displayMode,
+    is_active: body.is_active !== false,
+    sort_order: Number.isSafeInteger(Number(body.sort_order)) ? Number(body.sort_order) : 100,
+    updated_at: new Date().toISOString()
+  };
+  const valid = source.name
+    && source.url_template
+    && isHttpsUrl(source.url_template)
+    && (!source.result_url || isHttpsUrl(source.result_url))
+    && (source.source_type !== "search" || source.url_template.includes("{{query}}"));
+  return valid ? source : null;
+}
+
+async function ensureDefaultLookupSources(ctx) {
+  const { data: existingRows, error: existingError } = await ctx.supabaseAdmin.from("lookup_sources")
+    .select("name");
+  if (existingError) throw existingError;
+  const existingNames = new Set((existingRows || []).map(row => String(row.name || "").trim().toLowerCase()));
+  const missing = DEFAULT_LOOKUP_SOURCE_SEEDS.filter(seed => !existingNames.has(seed.name.toLowerCase()));
+  if (!missing.length) return;
+  const { error } = await ctx.supabaseAdmin.from("lookup_sources").insert(missing);
+  if (error) throw error;
+}
+
+async function handleAdminListLookupSources(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    await ensureDefaultLookupSources(ctx);
+    const { data, error } = await ctx.supabaseAdmin.from("lookup_sources")
+      .select(LOOKUP_SOURCE_COLUMNS)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return jsonResponse({ sources: (data || []).filter(source => source.source_type !== "journal_checker_widget") }, 200, cors.headers);
+  } catch (error) {
+    console.error("List lookup sources error", error.message);
+    return jsonResponse({ error: "Unable to load lookup sources" }, 500, cors.headers);
+  }
+}
+
+async function handleAdminCreateLookupSource(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const source = normalizeLookupSourceInput(await request.json().catch(() => ({})));
+    if (!source) return jsonResponse({ error: "Nguồn tra cứu không hợp lệ" }, 400, cors.headers);
+    source.created_by = ctx.userClaims.id;
+    const { data, error } = await ctx.supabaseAdmin.from("lookup_sources")
+      .insert(source)
+      .select(LOOKUP_SOURCE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return jsonResponse({ source: data }, 201, cors.headers);
+  } catch (error) {
+    console.error("Create lookup source error", error.message);
+    return jsonResponse({ error: "Unable to create lookup source" }, 500, cors.headers);
+  }
+}
+
+async function handleAdminUpdateLookupSource(request, env, ctx, cors) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const id = String(body.id || "");
+    const { data: existing, error: existingError } = await ctx.supabaseAdmin.from("lookup_sources")
+      .select(LOOKUP_SOURCE_COLUMNS)
+      .eq("id", id)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) return jsonResponse({ error: "Lookup source not found" }, 404, cors.headers);
+    const source = normalizeLookupSourceInput(body, existing);
+    if (!source) return jsonResponse({ error: "Nguồn tra cứu không hợp lệ" }, 400, cors.headers);
+    const { data, error } = await ctx.supabaseAdmin.from("lookup_sources")
+      .update(source)
+      .eq("id", id)
+      .select(LOOKUP_SOURCE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return jsonResponse({ source: data }, 200, cors.headers);
+  } catch (error) {
+    console.error("Update lookup source error", error.message);
+    return jsonResponse({ error: "Unable to update lookup source" }, 500, cors.headers);
+  }
+}
+
+async function handleAdminDeleteLookupSource(request, env, ctx, cors, id) {
+  const denied = requireAdmin(ctx, cors);
+  if (denied) return denied;
+  try {
+    const { error } = await ctx.supabaseAdmin.from("lookup_sources").delete().eq("id", id);
+    if (error) throw error;
+    return jsonResponse({ deleted: true }, 200, cors.headers);
+  } catch (error) {
+    console.error("Delete lookup source error", error.message);
+    return jsonResponse({ error: "Unable to delete lookup source" }, 500, cors.headers);
+  }
+}
+
 function requireAdmin(ctx, cors) {
   if (ctx.userClaims?.role === "admin") return null;
   return jsonResponse({ error: "Admin access required" }, 403, cors.headers);
@@ -887,7 +1054,7 @@ async function handlePublicConfig(env, cors) {
     if (error) throw error;
     if (planError) throw planError;
     return jsonResponse({
-      trial_days: Number(product?.trial_days || 14),
+      trial_days: Number(product?.trial_days ?? 14),
       price_vnd: Number(plans?.[0]?.price_vnd || 0)
     }, 200, cors.headers);
   } catch (error) {
@@ -911,7 +1078,7 @@ async function handleCleanAdminDashboard(request, env, ctx, cors) {
   const denied = requireAdmin(ctx, cors);
   if (denied) return denied;
   try {
-    const [users, paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes] = await Promise.all([
+    const [users, paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes, productsRes] = await Promise.all([
       listAllAuthUsers(ctx.supabaseAdmin),
       ctx.supabaseAdmin.from("payments")
         .select("id, user_id, product_code, service_plan_id, payment_code, amount_vnd, status, credits_granted, wallet_amount_vnd, order_type, created_at, paid_at")
@@ -923,9 +1090,12 @@ async function handleCleanAdminDashboard(request, env, ctx, cors) {
         .select("user_id, product_code, action, status, created_at").eq("status", "consumed").order("created_at"),
       ctx.supabaseAdmin.from("service_plans")
         .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, payment_prefix, active, sort_order")
-        .order("product_code").order("sort_order")
+        .order("product_code").order("sort_order"),
+      ctx.supabaseAdmin.from("service_products")
+        .select("code, name, description, trial_days, trial_daily_limit, active")
+        .order("created_at")
     ]);
-    for (const result of [paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes]) {
+    for (const result of [paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes, productsRes]) {
       if (result.error) throw result.error;
     }
     const profiles = new Map((profilesRes.data || []).map(row => [row.user_id, row]));
@@ -970,6 +1140,7 @@ async function handleCleanAdminDashboard(request, env, ctx, cors) {
       payments,
       service_usage: usageRes.data || [],
       service_plans: plansRes.data || [],
+      products: productsRes.data || [],
       plans: []
     }, 200, cors.headers);
   } catch (error) {
@@ -1107,38 +1278,55 @@ async function handleAdminSettings(request, env, ctx, cors) {
   const denied = requireAdmin(ctx, cors);
   if (denied) return denied;
   try {
-    const body = await request.json();
-    const id = String(body.id || "chatbox_ai");
-    const price = Number(body.price_vnd);
-    const credits = Number(body.ai_credit_amount);
-    const walletUnitPrice = Number(body.ai_wallet_unit_price_vnd);
-    const trialDays = Number(body.trial_days);
-    const limit = Number(body.daily_ai_limit);
-    if (!Number.isSafeInteger(price) || price < 0 || !Number.isSafeInteger(credits) || credits < 1
-      || !Number.isSafeInteger(walletUnitPrice) || walletUnitPrice < 1
-      || !Number.isSafeInteger(trialDays) || trialDays < 1 || trialDays > 365
-      || !Number.isSafeInteger(limit) || limit < 1) {
-      return jsonResponse({ error: "Invalid plan settings" }, 400, cors.headers);
+    const body = await request.json().catch(() => ({}));
+    const trialEnabled = body.trial_enabled !== false;
+    const trialDays = trialEnabled ? Number(body.trial_days) : 0;
+    const chatDailyLimit = trialEnabled ? Number(body.chat_daily_limit) : 0;
+    const reviewDailyLimit = trialEnabled ? Number(body.review_daily_limit) : 0;
+    const validDays = Number.isSafeInteger(trialDays) && trialDays >= 0 && trialDays <= 365;
+    const validChatLimit = Number.isSafeInteger(chatDailyLimit) && chatDailyLimit >= 0 && chatDailyLimit <= 9999;
+    const validReviewLimit = Number.isSafeInteger(reviewDailyLimit) && reviewDailyLimit >= 0 && reviewDailyLimit <= 9999;
+    if (!validDays || !validChatLimit || !validReviewLimit
+      || (trialEnabled && (trialDays < 1 || chatDailyLimit < 1 || reviewDailyLimit < 1))) {
+      return jsonResponse({ error: "Giá trị dùng thử chưa hợp lệ" }, 400, cors.headers);
     }
-    const { data, error } = await ctx.supabaseAdmin.from("vip_plans")
-      .update({ price_vnd: price, ai_credit_amount: credits, ai_wallet_unit_price_vnd: walletUnitPrice, trial_days: trialDays, daily_ai_limit: limit })
-      .eq("id", id)
-      .select("id, name, price_vnd, trial_days, daily_ai_limit, ai_credit_amount, ai_wallet_unit_price_vnd, active")
-      .single();
-    if (error) throw error;
+
+    const updates = [
+      ctx.supabaseAdmin.from("service_products")
+        .update({ trial_days: trialDays, trial_daily_limit: chatDailyLimit })
+        .eq("code", "chatbox_ai"),
+      ctx.supabaseAdmin.from("service_products")
+        .update({ trial_days: trialDays, trial_daily_limit: reviewDailyLimit })
+        .eq("code", "magazine_ai_review")
+    ];
+    const updateResults = await Promise.all(updates);
+    for (const result of updateResults) {
+      if (result.error) throw result.error;
+    }
+
     let syncedTrials = 0;
-    try {
-      const { data: syncRes, error: syncError } = await ctx.supabaseAdmin
-        .rpc("sync_active_trial_duration", { p_trial_days: trialDays });
-      if (syncError) {
-        console.warn("RPC sync_active_trial_duration failed or not defined in Supabase:", syncError.message);
-      } else {
-        syncedTrials = syncRes || 0;
-      }
-    } catch (rpcErr) {
-      console.warn("Exception during sync_active_trial_duration call:", rpcErr.message);
+    const productLimits = [
+      ["chatbox_ai", chatDailyLimit],
+      ["magazine_ai_review", reviewDailyLimit]
+    ];
+    for (const [productCode, dailyLimit] of productLimits) {
+      let query = ctx.supabaseAdmin.from("user_entitlements")
+        .update({
+          trial_daily_limit: dailyLimit,
+          trial_ends_at: trialEnabled ? new Date(Date.now() + trialDays * 86400000).toISOString() : new Date().toISOString()
+        })
+        .eq("product_code", productCode)
+        .gt("trial_ends_at", new Date().toISOString());
+      const { data, error } = await query.select("user_id");
+      if (error) throw error;
+      syncedTrials += data?.length || 0;
     }
-    return jsonResponse({ plan: data, synced_trials: syncedTrials }, 200, cors.headers);
+
+    const { data: products, error: productError } = await ctx.supabaseAdmin.from("service_products")
+      .select("code, name, description, trial_days, trial_daily_limit, active")
+      .order("created_at");
+    if (productError) throw productError;
+    return jsonResponse({ products: products || [], synced_trials: syncedTrials }, 200, cors.headers);
   } catch (error) {
     console.error("Admin settings error", error.message);
     return jsonResponse({ error: "Unable to save admin settings" }, 500, cors.headers);

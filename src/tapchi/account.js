@@ -48,6 +48,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     let adminPlanSearch = '';
     let adminPlanProduct = 'all';
     let adminPlanStatus = 'all';
+    let adminLookupSources = [];
     let accountRealtimeChannel = null;
     let accountRealtimeUserId = null;
     let accountRealtimeTimer = null;
@@ -61,13 +62,15 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     let configuredTrialDays = 14;
     let configuredPlanPrice = 0;
     let publicConfigPromise = null;
+    let backendUnavailable = false;
+    let backendUnavailableReason = '';
 
     function loadPublicConfig() {
       if (publicConfigPromise) return publicConfigPromise;
       publicConfigPromise = fetch(apiUrl('/api/public/config'))
         .then(response => response.ok ? response.json() : Promise.reject(new Error('Không tải được cấu hình')))
         .then(config => {
-          configuredTrialDays = Number(config.trial_days || 14);
+          configuredTrialDays = Number(config.trial_days ?? 14);
           configuredPlanPrice = Number(config.price_vnd || 0);
           updateConfiguredPlanPrice();
           return configuredTrialDays;
@@ -378,12 +381,15 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       dashboard: { admin: 'adminDashboard', client: 'userOverview' },
       invoices: { admin: 'adminInvoices', client: 'userTransactions' },
       payments: { admin: 'adminInvoices', client: 'userTransactions' },
+      lookup: { admin: 'adminLookupSources', client: 'userOverview' },
+      sources: { admin: 'adminLookupSources', client: 'userOverview' },
       users: { admin: 'adminUsers', client: 'userOverview' },
       settings: { admin: 'adminSettings', client: 'userOverview' },
       userOverview: { admin: 'adminDashboard', client: 'userOverview' },
       userTransactions: { admin: 'adminInvoices', client: 'userTransactions' },
       adminDashboard: { admin: 'adminDashboard', client: 'userOverview' },
       adminInvoices: { admin: 'adminInvoices', client: 'userTransactions' },
+      adminLookupSources: { admin: 'adminLookupSources', client: 'userOverview' },
       adminUsers: { admin: 'adminUsers', client: 'userOverview' },
       adminSettings: { admin: 'adminSettings', client: 'userOverview' }
     };
@@ -397,7 +403,59 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         || accountUser.user_metadata?.role
         || account?.role
         || currentAccount?.role;
-      return role === 'admin' || account?.role === 'admin' || currentAccount?.role === 'admin';
+      return role === 'admin'
+        || account?.role === 'admin'
+        || currentAccount?.role === 'admin'
+        || account?.services?.is_admin === true
+        || currentAccount?.services?.is_admin === true;
+    }
+
+    async function detectAdminFromSupabase(user = currentSession?.user) {
+      if (!user || !db) return false;
+      const metadataRole = user.app_metadata?.role || user.user_metadata?.role;
+      if (metadataRole === 'admin') return true;
+      try {
+        const { data, error } = await db.rpc('is_magazine_admin');
+        if (!error && data === true) return true;
+      } catch (_) { }
+      try {
+        const { data } = await db.from('admin_users').select('email').ilike('email', user.email || '').maybeSingle();
+        if (data) return true;
+      } catch (_) { }
+      try {
+        const { data } = await db.from('profiles').select('role').or(`user_id.eq.${user.id},id.eq.${user.id}`).maybeSingle();
+        if (data?.role === 'admin') return true;
+      } catch (_) { }
+      return false;
+    }
+
+    async function buildFallbackAccount(error = null) {
+      const user = currentSession?.user;
+      if (!user) return null;
+      backendUnavailable = true;
+      backendUnavailableReason = error?.message || 'Backend đang tạm thời chưa sẵn sàng';
+      const isAdmin = await detectAdminFromSupabase(user);
+      const fallback = {
+        user,
+        role: isAdmin ? 'admin' : 'user',
+        payments: [],
+        usage: [],
+        services: {
+          is_admin: isAdmin,
+          products: [],
+          plans: [],
+          wallet_balance_vnd: 0,
+          unavailable: true,
+          error: backendUnavailableReason
+        },
+        is_trial: false,
+        is_vip: isAdmin,
+        remaining_credits: 0,
+        wallet_balance_vnd: 0
+      };
+      currentAccount = fallback;
+      renderAccount(fallback);
+      return fallback;
     }
 
     function formatPortalDate(value, fallback = 'Chưa kích hoạt') {
@@ -562,12 +620,69 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       return location.hash.replace(/^#/, '');
     }
 
+    function syncShellActiveFromPortalPage(page = getRequestedPortalPage()) {
+      const shellId = ({
+        dashboard: 'dashboard',
+        invoices: 'invoices',
+        payments: 'payments',
+        lookup: 'lookup',
+        sources: 'lookup',
+        users: 'users',
+        settings: 'settings'
+      })[page] || 'dashboard';
+      document.querySelectorAll('[data-shell-nav]').forEach(link => {
+        link.setAttribute('aria-current', link.dataset.shellNav === shellId ? 'page' : 'false');
+      });
+    }
+
+    function getPortalPageUrlFromLink(link) {
+      if (!link) return null;
+      try {
+        const url = new URL(link.getAttribute('href') || '', location.href);
+        if (url.origin !== location.origin) return null;
+        if (!url.pathname.startsWith('/portal')) return null;
+        if (!url.searchParams.get('page')) return null;
+        return url;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function routePortalUrl(url, { replace = false } = {}) {
+      if (!url) return;
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      const current = `${location.pathname}${location.search}${location.hash}`;
+      if (next !== current) {
+        if (replace) history.replaceState(history.state, '', next);
+        else history.pushState(history.state, '', next);
+      }
+      syncShellActiveFromPortalPage(url.searchParams.get('page'));
+      await handlePortalRouting();
+    }
+
+    function handlePortalLinkClick(event) {
+      const link = event.target.closest?.('a[href]');
+      if (!link || link.closest('[data-shell-action="buy-credits"]')) return;
+      const url = getPortalPageUrlFromLink(link);
+      if (!url) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      void routePortalUrl(url);
+    }
+
     async function handlePortalRouting() {
       const requestedPage = getRequestedPortalPage();
+      syncShellActiveFromPortalPage(requestedPage);
       if (!requestedPage) {
         if (isPortalRoute()) {
           if (!currentSession) openUserModal(true);
-          else await openAccountPortal(resolvePortalPage('dashboard'));
+          else {
+            const account = currentAccount || await refreshAccount();
+            const page = resolvePortalPage('dashboard', isAdminAccount(account));
+            await openAccountPortal(page, { updateUrl: false });
+            switchPortalPage(page, { updateUrl: false });
+          }
         } else {
           closeAccountPortal();
         }
@@ -577,11 +692,14 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         openUserModal(true);
         return;
       }
-      const admin = isAdminAccount();
-      await openAccountPortal(resolvePortalPage(requestedPage, admin));
+      const account = currentAccount || await refreshAccount();
+      const admin = isAdminAccount(account);
+      const page = resolvePortalPage(requestedPage, admin);
+      await openAccountPortal(page, { updateUrl: false });
+      switchPortalPage(page, { updateUrl: false });
     }
 
-    async function openAccountPortal(page = 'userOverview') {
+    async function openAccountPortal(page = 'userOverview', { updateUrl = true } = {}) {
       if (!currentSession) {
         openUserModal(true);
         return;
@@ -592,14 +710,14 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       renderPortalTables();
       renderPortalCharts();
       if (isAdminAccount(account) && page === 'userOverview') page = 'adminDashboard';
-      switchPortalPage(page);
+      switchPortalPage(page, { updateUrl });
       const portal = document.getElementById('accountPortal');
       togglePortalNav(false);
       portal.classList.add('open');
       portal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('portal-open');
       document.body.style.overflow = 'hidden';
-      if (isPortalRoute()) {
+      if (isPortalRoute() && updateUrl) {
         updatePortalUrl(page);
       } else if (!portalHistoryPushed) {
         history.pushState({ accountPortal: true }, '', location.href);
@@ -632,11 +750,15 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     window.addEventListener('popstate', () => {
-      const portal = document.getElementById('accountPortal');
-      if (portal?.classList.contains('open')) closeAccountPortal(true);
+      if (isPortalRoute()) void handlePortalRouting();
+      else {
+        const portal = document.getElementById('accountPortal');
+        if (portal?.classList.contains('open')) closeAccountPortal(true);
+      }
     });
 
     window.addEventListener('hashchange', handlePortalRouting);
+    window.addEventListener('mixing:portal-route', handlePortalRouting);
 
     function togglePortalNav(force) {
       const portal = document.getElementById('accountPortal');
@@ -650,7 +772,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       }
     }
 
-    function switchPortalPage(pageId) {
+    function switchPortalPage(pageId, { updateUrl = true } = {}) {
       if (pageId === 'userOverview' && isAdminAccount()) pageId = 'adminDashboard';
       if (pageId === 'userTransactions' && isAdminAccount()) pageId = 'adminInvoices';
       const page = document.getElementById(pageId);
@@ -663,6 +785,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         adminDashboard: ['Trình điều khiển', 'Dữ liệu thực từ thanh toán, tài khoản và lượt dùng AI.'],
         adminUsers: ['Quản lý người dùng', 'Theo dõi số lượng tài khoản và trạng thái VIP.'],
         adminInvoices: ['Quản lý hóa đơn', 'Theo dõi thanh toán, số lượt cộng và trạng thái giao dịch.'],
+        adminLookupSources: ['Nguồn tra cứu', 'Tạo iframe hoặc liên kết ngoài cho các hệ thống tra cứu.'],
         adminSettings: ['Cài đặt hệ thống', 'Cấu hình giá VIP và số lượt sử dụng.']
       };
       const [title, subtitle] = labels[pageId] || labels.userOverview;
@@ -671,7 +794,8 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       document.querySelector('.portal-main')?.scrollTo({ top: 0, behavior: 'smooth' });
       if (window.matchMedia('(max-width: 720px)').matches) togglePortalNav(false);
       if (pageId.startsWith('admin') && !adminDashboardData) void loadAdminDashboard();
-      if (isPortalRoute()) updatePortalUrl(pageId);
+      if (pageId === 'adminLookupSources') void loadAdminLookupSources();
+      if (isPortalRoute() && updateUrl) updatePortalUrl(pageId);
     }
 
     function updatePortalUrl(pageId) {
@@ -680,6 +804,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         userTransactions: 'payments',
         adminDashboard: 'dashboard',
         adminInvoices: 'invoices',
+        adminLookupSources: 'lookup',
         adminUsers: 'users',
         adminSettings: 'settings'
       })[pageId] || 'dashboard';
@@ -875,19 +1000,46 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         ['Nạp ví', revenue.wallet_topup]
       ].map(([label, value]) => `<div class="portal-card"><small>${label}</small><strong>${formatVnd(value || 0)}</strong></div>`).join('');
 
-      const plan = (data.plans || []).find(item => item.id === 'chatbox_ai') || data.plans?.[0];
-      if (plan) {
-        document.getElementById('adminPlanPrice').value = plan.price_vnd;
-        document.getElementById('adminPlanCredits').value = plan.ai_credit_amount || plan.daily_ai_limit || 30;
-        document.getElementById('adminWalletUnitPrice').value = plan.price_vnd || plan.ai_wallet_unit_price_vnd || 1000;
-        document.getElementById('adminTrialDays').value = plan.trial_days || 30;
-        document.getElementById('adminPlanLimit').value = plan.daily_ai_limit;
-        document.getElementById('adminPlanName').textContent = `${plan.name} (${plan.active ? 'đang hoạt động' : 'đã tắt'})`;
-        document.getElementById('adminLimitSummary').textContent = `${plan.ai_credit_amount || plan.daily_ai_limit || 30} lượt/gói · Số dư tự gia hạn khi đủ ${formatVnd(plan.price_vnd || 0)} · Trial ${plan.daily_ai_limit} lượt/ngày trong ${plan.trial_days || 30} ngày`;
-      }
+      syncTrialPolicyForm(data.products || []);
       renderAdminServicePlans();
       renderPortalTables();
       renderPortalCharts();
+    }
+
+    function syncTrialPolicyForm(products = adminDashboardData?.products || []) {
+      const chatProduct = products.find(item => item.code === 'chatbox_ai');
+      const reviewProduct = products.find(item => item.code === 'magazine_ai_review');
+      const trialDays = Number(chatProduct?.trial_days ?? 14);
+      const trialEnabled = trialDays > 0;
+      const enabledInput = document.getElementById('trialPolicyEnabled');
+      const daysInput = document.getElementById('adminTrialDays');
+      const chatLimitInput = document.getElementById('adminChatTrialLimit');
+      const reviewLimitInput = document.getElementById('adminReviewTrialLimit');
+      const preview = document.getElementById('trialPolicyDaysPreview');
+      if (enabledInput) enabledInput.checked = trialEnabled;
+      if (daysInput) {
+        daysInput.value = trialDays;
+        daysInput.disabled = !trialEnabled;
+      }
+      if (chatLimitInput) {
+        chatLimitInput.value = Number(chatProduct?.trial_daily_limit ?? 30);
+        chatLimitInput.disabled = !trialEnabled;
+      }
+      if (reviewLimitInput) {
+        reviewLimitInput.value = Number(reviewProduct?.trial_daily_limit ?? 5);
+        reviewLimitInput.disabled = !trialEnabled;
+      }
+      if (preview) preview.textContent = trialEnabled ? trialDays : 0;
+    }
+
+    function handleTrialPolicyToggle() {
+      const enabled = document.getElementById('trialPolicyEnabled')?.checked !== false;
+      document.querySelectorAll('#adminTrialDays, #adminChatTrialLimit, #adminReviewTrialLimit').forEach(input => {
+        input.disabled = !enabled;
+      });
+      const preview = document.getElementById('trialPolicyDaysPreview');
+      const days = Number(document.getElementById('adminTrialDays')?.value || 0);
+      if (preview) preview.textContent = enabled ? days : 0;
     }
 
     const adminPlanLabels = { chatbox_ai: 'Chatbox AI', magazine_export: 'Xuất Word/PDF', magazine_ai_review: 'AI Review' };
@@ -994,10 +1146,274 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       }
     }
 
+    function setLookupSourceMessage(message = '', type = '') {
+      const element = document.getElementById('lookupSourceMessage');
+      if (!element) return;
+      element.textContent = message;
+      element.className = `vip-message ${type}`.trim();
+    }
+
+    function stripVietnameseMarks(value = '') {
+      return String(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D');
+    }
+
+    function keywordVariants(keyword = '') {
+      const clean = String(keyword).trim();
+      if (!clean) return [];
+      const variants = new Set([
+        clean,
+        encodeURIComponent(clean),
+        encodeURIComponent(clean).replace(/%20/g, '+'),
+        clean.replace(/\s+/g, '+'),
+        clean.replace(/\s+/g, '%20'),
+        stripVietnameseMarks(clean),
+        encodeURIComponent(stripVietnameseMarks(clean)),
+        encodeURIComponent(stripVietnameseMarks(clean)).replace(/%20/g, '+')
+      ]);
+      return [...variants].filter(Boolean).sort((a, b) => b.length - a.length);
+    }
+
+    function showLookupDetect(template = '', matched = '') {
+      const element = document.getElementById('lookupDetectMessage');
+      if (!element) return;
+      if (!matched) {
+        element.hidden = false;
+        element.className = 'lookup-detect error';
+        element.innerHTML = '<i class="fas fa-circle-exclamation"></i> Chưa nhận ra từ khóa trong link. Kiểm tra lại link và từ khóa bạn đã gõ.';
+        return;
+      }
+      element.hidden = false;
+      element.className = 'lookup-detect success';
+      const preview = template.length > 70 ? `...${template.slice(-70)}` : template;
+      element.innerHTML = `<i class="fas fa-circle-check"></i> Đã nhận ra từ khóa <mark>${escapeHTML(matched)}</mark><span>Link này dùng được để tra cứu tự động.</span>`;
+    }
+
+    function generateLookupTemplate() {
+      const linkInput = document.getElementById('lookupResultUrl');
+      const keywordInput = document.getElementById('lookupSampleKeyword');
+      const templateInput = document.getElementById('lookupUrlTemplate');
+      const link = linkInput?.value.trim() || '';
+      const keyword = keywordInput?.value.trim() || '';
+      if (!link) {
+        setLookupSourceMessage('Bạn dán link kết quả vào trước nha.', 'error');
+        linkInput?.focus();
+        return '';
+      }
+      if (!keyword) {
+        setLookupSourceMessage('Bạn nhập lại đúng từ khóa hoặc ISSN đã gõ khi tìm.', 'error');
+        keywordInput?.focus();
+        return '';
+      }
+      let template = link;
+      const matched = keywordVariants(keyword).find(variant => template.includes(variant));
+      if (matched) {
+        template = template.replaceAll(matched, '{{query}}');
+        if (sourceType) sourceType.value = 'search';
+        setLookupSourceMessage('Xong rồi. Bạn có thể bấm Xem thử để kiểm tra.', 'success');
+      } else {
+        if (sourceType) sourceType.value = 'search';
+        setLookupSourceMessage('Chưa nhận ra từ khóa trong link. Hãy kiểm tra lại link kết quả và từ khóa đã gõ.', 'error');
+      }
+      if (templateInput) templateInput.value = template;
+      showLookupDetect(template, matched || '');
+      return template;
+    }
+
+    function resetLookupSourceForm() {
+      const form = document.getElementById('lookupSourceForm');
+      if (!form) return;
+      form.reset();
+      document.getElementById('lookupSourceId').value = '';
+      document.getElementById('lookupSortOrder').value = String(nextLookupSortOrder());
+      document.getElementById('lookupIsActive').checked = true;
+      const detect = document.getElementById('lookupDetectMessage');
+      if (detect) detect.hidden = true;
+      setLookupSourceMessage();
+    }
+
+    function nextLookupSortOrder() {
+      const maxOrder = adminLookupSources.reduce((max, source) => Math.max(max, Number(source.sort_order || 0)), 0);
+      return maxOrder + 10;
+    }
+
+    function lookupSourcePayload() {
+      const sourceType = document.getElementById('lookupSourceType')?.value || 'search';
+      const existingId = document.getElementById('lookupSourceId')?.value || '';
+      const existingSource = adminLookupSources.find(item => item.id === existingId);
+      const manualSortOrder = Number(document.getElementById('lookupSortOrder')?.value || 0);
+      const sortOrder = Number(existingSource?.sort_order || manualSortOrder || nextLookupSortOrder());
+      return {
+        id: existingId,
+        name: document.getElementById('lookupSourceName')?.value.trim() || '',
+        result_url: document.getElementById('lookupResultUrl')?.value.trim() || '',
+        sample_keyword: document.getElementById('lookupSampleKeyword')?.value.trim() || '',
+        url_template: document.getElementById('lookupUrlTemplate')?.value.trim() || '',
+        source_type: sourceType,
+        display_mode: document.getElementById('lookupDisplayMode')?.value || 'both',
+        is_active: document.getElementById('lookupIsActive')?.checked !== false,
+        sort_order: sortOrder
+      };
+    }
+
+    async function loadAdminLookupSources() {
+      if (!isAdminAccount()) return;
+      const host = document.getElementById('lookupSourceList');
+      if (backendUnavailable) {
+        if (host) host.innerHTML = `<p class="portal-panel-note">${escapeHTML(backendUnavailableReason || 'Backend local chưa sẵn sàng. Bạn vẫn đăng nhập được, nhưng phần lưu nguồn tra cứu cần API hoạt động.')}</p>`;
+        return;
+      }
+      if (host) host.innerHTML = '<p class="portal-panel-note">Đang tải nguồn tra cứu...</p>';
+      try {
+        const result = await apiFetch('/api/admin/lookup-sources');
+        adminLookupSources = result.sources || [];
+        renderAdminLookupSources();
+      } catch (error) {
+        if (host) host.innerHTML = `<p class="portal-panel-note">${escapeHTML(error.message || 'Không tải được nguồn tra cứu.')}</p>`;
+      }
+    }
+
+    function renderAdminLookupSources() {
+      const host = document.getElementById('lookupSourceList');
+      if (!host) return;
+      if (!adminLookupSources.length) {
+        host.innerHTML = '<p class="portal-panel-note">Chưa có nguồn tra cứu nào.</p>';
+        return;
+      }
+      const modeLabels = { iframe: 'Chỉ iframe', link: 'Chỉ liên kết ngoài', both: 'Iframe + liên kết ngoài' };
+      host.innerHTML = adminLookupSources.map(source => `
+        <article class="lookup-source-card">
+          <div>
+            <strong>${escapeHTML(source.name)}</strong>
+            <small>${escapeHTML(modeLabels[source.display_mode] || source.display_mode || 'Iframe + liên kết ngoài')}</small>
+            <code>${escapeHTML(source.url_template || '')}</code>
+          </div>
+          <div class="lookup-source-card-actions">
+            <span class="portal-pill ${source.is_active ? 'green' : 'orange'}">${source.is_active ? 'Đang bật' : 'Đã tắt'}</span>
+            <button class="portal-btn" type="button" data-edit-lookup-source="${escapeHTML(source.id)}"><i class="fas fa-pen"></i> Sửa</button>
+            <button class="portal-btn" type="button" data-toggle-lookup-source="${escapeHTML(source.id)}">${source.is_active ? 'Tắt' : 'Bật'}</button>
+            <button class="portal-btn danger" type="button" data-delete-lookup-source="${escapeHTML(source.id)}"><i class="fas fa-trash"></i></button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function editLookupSource(id) {
+      const source = adminLookupSources.find(item => item.id === id);
+      if (!source) return;
+      document.getElementById('lookupSourceId').value = source.id;
+      document.getElementById('lookupSourceName').value = source.name || '';
+      document.getElementById('lookupResultUrl').value = source.result_url || '';
+      document.getElementById('lookupSampleKeyword').value = source.sample_keyword || '';
+      document.getElementById('lookupUrlTemplate').value = source.url_template || '';
+      document.getElementById('lookupSourceType').value = source.source_type || 'search';
+      document.getElementById('lookupDisplayMode').value = source.display_mode || 'both';
+      document.getElementById('lookupSortOrder').value = Number(source.sort_order || nextLookupSortOrder());
+      document.getElementById('lookupIsActive').checked = source.is_active !== false;
+      setLookupSourceMessage(`Bạn đang sửa: ${source.name}.`, 'success');
+      document.getElementById('lookupSourceName')?.focus();
+    }
+
+    async function submitLookupSource(event) {
+      event.preventDefault();
+      let payload = lookupSourcePayload();
+      if (payload.source_type === 'search' && !payload.url_template.includes('{{query}}')) {
+        generateLookupTemplate();
+        payload = lookupSourcePayload();
+      }
+      if (payload.source_type === 'search' && !payload.url_template.includes('{{query}}')) {
+        setLookupSourceMessage('Link này chưa dùng được để tự tra cứu. Bấm “Tự nhận link” hoặc kiểm tra lại từ khóa.', 'error');
+        return;
+      }
+      setLookupSourceMessage('Đang lưu...');
+      try {
+        const method = payload.id ? 'PATCH' : 'POST';
+        const result = await apiFetch('/api/admin/lookup-sources', { method, body: JSON.stringify(payload) });
+        const saved = result.source;
+        const index = adminLookupSources.findIndex(item => item.id === saved.id);
+        if (index >= 0) adminLookupSources[index] = saved;
+        else adminLookupSources.push(saved);
+        adminLookupSources.sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+        renderAdminLookupSources();
+        resetLookupSourceForm();
+        setLookupSourceMessage('Đã lưu. Người dùng sẽ thấy nguồn này trên trang tra cứu.', 'success');
+      } catch (error) {
+        setLookupSourceMessage(error.message || 'Chưa lưu được. Bạn thử lại giúp mình nha.', 'error');
+      }
+    }
+
+    function previewLookupSource() {
+      let payload = lookupSourcePayload();
+      if (payload.source_type === 'search' && !payload.url_template.includes('{{query}}')) {
+        generateLookupTemplate();
+        payload = lookupSourcePayload();
+      }
+      const keyword = payload.sample_keyword || 'iatreia';
+      const encoded = encodeURIComponent(keyword).replace(/%20/g, '+');
+      const url = payload.source_type === 'fixed'
+        ? payload.url_template || payload.result_url
+        : payload.url_template.replaceAll('{{query}}', encoded);
+      if (!url) {
+        setLookupSourceMessage('Chưa có link để xem thử.', 'error');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    async function toggleLookupSource(id) {
+      const source = adminLookupSources.find(item => item.id === id);
+      if (!source) return;
+      try {
+        const result = await apiFetch('/api/admin/lookup-sources', {
+          method: 'PATCH',
+          body: JSON.stringify({ ...source, is_active: !source.is_active })
+        });
+        Object.assign(source, result.source);
+        renderAdminLookupSources();
+      } catch (error) {
+        setLookupSourceMessage(error.message || 'Chưa đổi được trạng thái. Bạn thử lại giúp mình nha.', 'error');
+      }
+    }
+
+    async function deleteLookupSource(id) {
+      if (!confirm('Bạn muốn xóa nguồn tra cứu này?')) return;
+      try {
+        await apiFetch(`/api/admin/lookup-sources/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        adminLookupSources = adminLookupSources.filter(item => item.id !== id);
+        renderAdminLookupSources();
+      } catch (error) {
+        setLookupSourceMessage(error.message || 'Chưa xóa được. Bạn thử lại giúp mình nha.', 'error');
+      }
+    }
+
+    async function copyLookupFieldValue(inputId) {
+      const input = document.getElementById(inputId);
+      const value = input?.value || '';
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        setLookupSourceMessage('Đã sao chép.', 'success');
+      } catch (_) {
+        input.select();
+        document.execCommand('copy');
+        setLookupSourceMessage('Đã sao chép.', 'success');
+      }
+    }
+
     async function loadAdminDashboard() {
       if (!isAdminAccount()) return;
       if (adminDashboardPromise) return adminDashboardPromise;
       const status = document.getElementById('adminServicePlansStatus');
+      if (backendUnavailable) {
+        if (status) {
+          status.textContent = backendUnavailableReason || 'Backend local chưa sẵn sàng. Dashboard admin sẽ tải lại khi API hoạt động.';
+          status.className = 'vip-message';
+        }
+        return null;
+      }
       if (status) {
         status.textContent = 'Đang tải dữ liệu...';
         status.className = 'vip-message';
@@ -1019,10 +1435,11 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             break;
           }
         }
-        console.error('Không thể tải dashboard admin:', lastError?.message);
+        backendUnavailable = Boolean(!lastError?.status || lastError.status >= 500);
+        backendUnavailableReason = lastError?.message || 'Backend đang tạm thời chưa sẵn sàng';
         if (status) {
-          status.textContent = `Không thể tải dữ liệu: ${lastError?.message || 'Lỗi không xác định'}.`;
-          status.className = 'vip-message error';
+          status.textContent = backendUnavailableReason;
+          status.className = 'vip-message';
         }
         return null;
       })().finally(() => {
@@ -1110,6 +1527,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => scheduleAdminRealtimeRefresh())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleAdminRealtimeRefresh())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'service_usage' }, () => scheduleAdminRealtimeRefresh())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'service_products' }, () => scheduleAdminRealtimeRefresh())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'service_plans' }, () => scheduleAdminRealtimeRefresh())
             .subscribe(status => {
               if (status === 'CHANNEL_ERROR') scheduleAdminRealtimeRefresh(1500);
@@ -1126,25 +1544,23 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     async function saveAdminSettings() {
       const message = document.getElementById('adminSettingsMessage');
       try {
-        const plan = (adminDashboardData?.plans || []).find(item => item.id === 'chatbox_ai') || adminDashboardData?.plans?.[0];
+        const trialEnabled = document.getElementById('trialPolicyEnabled')?.checked !== false;
         const result = await apiFetch('/api/admin/settings', {
           method: 'PATCH',
           body: JSON.stringify({
-            id: plan?.id || 'chatbox_ai',
-            price_vnd: Number(document.getElementById('adminPlanPrice').value),
-            ai_credit_amount: Number(document.getElementById('adminPlanCredits').value),
-            ai_wallet_unit_price_vnd: Number(document.getElementById('adminPlanPrice').value),
-            trial_days: Number(document.getElementById('adminTrialDays').value),
-            daily_ai_limit: Number(document.getElementById('adminPlanLimit').value)
+            trial_enabled: trialEnabled,
+            trial_days: trialEnabled ? Number(document.getElementById('adminTrialDays').value) : 0,
+            chat_daily_limit: trialEnabled ? Number(document.getElementById('adminChatTrialLimit').value) : 0,
+            review_daily_limit: trialEnabled ? Number(document.getElementById('adminReviewTrialLimit').value) : 0
           })
         });
-        const index = adminDashboardData.plans.findIndex(item => item.id === result.plan.id);
-        if (index >= 0) adminDashboardData.plans[index] = result.plan;
+        adminDashboardData.products = result.products || adminDashboardData.products || [];
+        syncTrialPolicyForm(adminDashboardData.products);
         renderAdminDashboard(adminDashboardData);
-        message.textContent = `Đã lưu cấu hình và đồng bộ ${Number(result.synced_trials || 0)} tài khoản trial.`;
+        message.textContent = `Đã cập nhật chính sách dùng thử cho ${Number(result.synced_trials || 0)} tài khoản đang dùng thử.`;
         message.className = 'vip-message success';
       } catch (error) {
-        message.textContent = error.message || 'Không thể lưu cấu hình.';
+        message.textContent = error.message || 'Chưa lưu được. Vui lòng kiểm tra lại số ngày và hạn mức.';
         message.className = 'vip-message error';
       }
     }
@@ -1432,10 +1848,10 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
 
       accountRefreshPromise = (async () => {
         try {
-          const [account, services] = await Promise.all([
-            apiFetch('/api/account'),
-            apiFetch('/api/services')
-          ]);
+          const account = await apiFetch('/api/account');
+          const services = await apiFetch('/api/services');
+          backendUnavailable = false;
+          backendUnavailableReason = '';
           const chatService = services.products?.find(product => product.code === 'chatbox_ai');
           const chatEntitlement = chatService?.entitlement || {};
           const chatTrialActive = chatEntitlement.trial_ends_at && new Date(chatEntitlement.trial_ends_at) > new Date();
@@ -1459,14 +1875,22 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
             renderPortalCharts();
             if (isAdminAccount(currentAccount)) {
               const activePage = document.querySelector('.portal-page.active')?.id;
-              if (!activePage || activePage === 'userOverview') switchPortalPage('adminDashboard');
+              const requestedPage = isPortalRoute() ? resolvePortalPage(getRequestedPortalPage(), true) : '';
+              if (requestedPage && activePage !== requestedPage) {
+                switchPortalPage(requestedPage, { updateUrl: false });
+              } else if (!activePage || activePage === 'userOverview') {
+                switchPortalPage(requestedPage || 'adminDashboard', { updateUrl: false });
+              }
               void loadAdminDashboard();
             }
           }
           return currentAccount;
         } catch (error) {
-          if (error.status !== 401) setUserMessage(error.message, 'error');
-          return null;
+          if (error.status === 401) {
+            setUserMessage(error.message, 'error');
+            return null;
+          }
+          return await buildFallbackAccount(error);
         } finally {
           accountRefreshPromise = null;
         }
@@ -1783,6 +2207,7 @@ export function initAccountEvents() {
     await createVipOrder()
     openUserModal(true)
   }
+  document.addEventListener('click', handlePortalLinkClick, true)
 
   on('#accountButton', 'click', () => {
     if (!currentSession) setAuthMode('login');
@@ -1861,6 +2286,12 @@ export function initAccountEvents() {
   on('[data-action="export-admin-invoices"]', 'click', exportAdminInvoices)
   on('[data-action="export-admin-invoices-pdf"]', 'click', exportAdminInvoicesPDF)
   on('[data-action="save-admin-settings"]', 'click', saveAdminSettings)
+  on('#trialPolicyEnabled', 'change', handleTrialPolicyToggle)
+  on('#adminTrialDays', 'input', handleTrialPolicyToggle)
+  on('#lookupSourceForm', 'submit', submitLookupSource)
+  on('#lookupGenerateTemplate', 'click', generateLookupTemplate)
+  on('#lookupPreviewButton', 'click', previewLookupSource)
+  on('#lookupResetButton', 'click', resetLookupSourceForm)
   on('#adminServicePlanForm', 'submit', createAdminServicePlan)
   on('#servicePlanBilling', 'change', syncServicePlanDurationField)
   on('#randomServicePlanId', 'click', () => {
@@ -1874,6 +2305,26 @@ export function initAccountEvents() {
   })
   syncServicePlanDurationField()
   document.addEventListener('click', event => {
+    const copyButton = event.target.closest('[data-copy-from]')
+    if (copyButton) {
+      void copyLookupFieldValue(copyButton.dataset.copyFrom)
+      return
+    }
+    const editLookupButton = event.target.closest('[data-edit-lookup-source]')
+    if (editLookupButton) {
+      editLookupSource(editLookupButton.dataset.editLookupSource)
+      return
+    }
+    const toggleLookupButton = event.target.closest('[data-toggle-lookup-source]')
+    if (toggleLookupButton) {
+      void toggleLookupSource(toggleLookupButton.dataset.toggleLookupSource)
+      return
+    }
+    const deleteLookupButton = event.target.closest('[data-delete-lookup-source]')
+    if (deleteLookupButton) {
+      void deleteLookupSource(deleteLookupButton.dataset.deleteLookupSource)
+      return
+    }
     const button = event.target.closest('[data-toggle-service-plan]')
     if (button) {
       void toggleAdminServicePlan(button)

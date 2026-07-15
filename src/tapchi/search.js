@@ -1,5 +1,13 @@
-import { currentIframeUrls, initAuth, loadPublicConfig, publicDb } from './account.js'
+import { initAuth, loadPublicConfig, publicDb } from './account.js'
 import { escapeHTML, formatISSN } from './format.js'
+import {
+  getIframeLookupSources,
+  loadLookupSources,
+  renderLookupExternalLinks,
+  renderLookupIntegrations,
+  syncRenderedLookupFrames,
+  updateLookupUrls
+} from './lookup-sources.js'
 function updateLoadingStatus(msg, success = false, error = false) {
       // Cập nhật trạng thái trên splash screen
       const splashStatus = document.getElementById("splashStatus");
@@ -49,10 +57,14 @@ function hideSplash() {
     }
 
 export function updateIframeSources() {
+      const iframeSources = getIframeLookupSources();
+      syncRenderedLookupFrames();
+      if (!iframeSources.length) {
+        document.getElementById('iframeInlineSection').style.display = 'none';
+        document.getElementById('iframeLinksSection').style.display = 'none';
+        return;
+      }
       if (window.innerWidth >= 1024) {
-        document.getElementById('noapcFrame').src = currentIframeUrls.noapc;
-        document.getElementById('resurchifyFrame').src = currentIframeUrls.resurchify;
-        document.getElementById('wosFrame').src = currentIframeUrls.wos;
         document.getElementById('iframeInlineSection').style.display = 'block';
         document.getElementById('iframeLinksSection').style.display = 'none';
       } else {
@@ -89,6 +101,11 @@ export async function initApp() {
       await loadPublicConfig();
       finishTask('Đang kiểm tra các nguồn dữ liệu...');
 
+      await loadLookupSources();
+      renderLookupIntegrations();
+      updateLookupUrls('');
+      renderLookupExternalLinks();
+
       setSplashStep('step-jcr', 'active');
       setSplashStep('step-hdgsnn', 'active');
       setSplashStep('step-scopus', 'active');
@@ -123,10 +140,6 @@ export async function initApp() {
       await new Promise(resolve => setTimeout(resolve, 400));
       hideSplash();
 
-      // Mặc định nạp URL ban đầu cho các iframe
-      currentIframeUrls.noapc = 'https://noapc.com/no-apc-scopus-indexed-journals-publish-without-publication-fee/';
-      currentIframeUrls.resurchify = 'https://www.resurchify.com/';
-      currentIframeUrls.wos = 'https://wos-journal.info/';
       updateIframeSources();
 
 
@@ -202,9 +215,8 @@ export async function search() {
           document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encoded}`;
           document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
           document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encoded}`;
-          currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encoded}`;
-          currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${query.replace(/-/g, '')}#search_results`;
-          currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encoded}`;
+          updateLookupUrls(query);
+          renderLookupExternalLinks();
           updateIframeSources();
 
           if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: 0 });
@@ -304,9 +316,8 @@ export async function search() {
         document.getElementById('clarivateLink').href = `https://mjl.clarivate.com/search-results?issn=${encodedIssn}`;
         document.getElementById('scopusLink').href = `https://www.scopus.com/sources.uri`;
         document.getElementById('scimagoLink').href = `https://www.scimagojr.com/journalsearch.php?q=${encodedIssn}`;
-        currentIframeUrls.noapc = `https://noapc.com/journal.php?q=${encodedName}`;
-        currentIframeUrls.resurchify = `https://www.resurchify.com/find/?query=${encodeURIComponent(firstMatchIssnRaw)}#search_results`;
-        currentIframeUrls.wos = `https://wos-journal.info/?jsearch=${encodedIssn}`;
+        updateLookupUrls(firstMatchIssnRaw || firstMatchName || query);
+        renderLookupExternalLinks();
         updateIframeSources();
 
         if (typeof gtag === 'function') gtag('event', 'search', { search_term: query, results_count: hdgsnnMatches.length + jcrMatches.length + scopusMatches.length });
