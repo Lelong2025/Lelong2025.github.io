@@ -759,6 +759,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
 
     window.addEventListener('hashchange', handlePortalRouting);
     window.addEventListener('mixing:portal-route', handlePortalRouting);
+    window.__MIXING_ROUTE_PORTAL__ = () => void handlePortalRouting();
 
     function togglePortalNav(force) {
       const portal = document.getElementById('accountPortal');
@@ -796,6 +797,104 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
       if (pageId.startsWith('admin') && !adminDashboardData) void loadAdminDashboard();
       if (pageId === 'adminLookupSources') void loadAdminLookupSources();
       if (isPortalRoute() && updateUrl) updatePortalUrl(pageId);
+    }
+
+    function ensureLookupConfirmModal() {
+      let modal = document.getElementById('lookupConfirmModal');
+      if (modal) return modal;
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="lookupConfirmModal" class="lookup-admin-modal" aria-hidden="true">
+          <section class="lookup-admin-card lookup-confirm-card" role="dialog" aria-modal="true" aria-labelledby="lookupConfirmTitle">
+            <div class="lookup-modal-icon danger"><i class="fas fa-trash"></i></div>
+            <h3 id="lookupConfirmTitle">Xóa nguồn tra cứu?</h3>
+            <p id="lookupConfirmText">Nguồn này sẽ không còn hiển thị cho người dùng.</p>
+            <div class="lookup-modal-actions">
+              <button class="portal-btn" type="button" data-lookup-confirm="cancel">Giữ lại</button>
+              <button class="portal-btn danger" type="button" data-lookup-confirm="ok"><i class="fas fa-trash"></i> Xóa</button>
+            </div>
+          </section>
+        </div>
+      `);
+      modal = document.getElementById('lookupConfirmModal');
+      modal.addEventListener('click', event => {
+        if (event.target === modal || event.target.closest('[data-lookup-confirm="cancel"]')) {
+          closeLookupConfirm(false);
+        } else if (event.target.closest('[data-lookup-confirm="ok"]')) {
+          closeLookupConfirm(true);
+        }
+      });
+      return modal;
+    }
+
+    function closeLookupConfirm(confirmed) {
+      const modal = document.getElementById('lookupConfirmModal');
+      const resolver = modal?._resolver;
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
+      if (resolver) {
+        modal._resolver = null;
+        resolver(Boolean(confirmed));
+      }
+    }
+
+    function showLookupConfirm(source) {
+      const modal = ensureLookupConfirmModal();
+      const text = document.getElementById('lookupConfirmText');
+      if (text) text.textContent = source?.name
+        ? `Bạn muốn xóa "${source.name}" khỏi danh sách nguồn tra cứu?`
+        : 'Nguồn này sẽ không còn hiển thị cho người dùng.';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      return new Promise(resolve => {
+        modal._resolver = resolve;
+      });
+    }
+
+    function ensureLookupPreviewModal() {
+      let modal = document.getElementById('lookupPreviewModal');
+      if (modal) return modal;
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="lookupPreviewModal" class="lookup-admin-modal lookup-preview-modal" aria-hidden="true">
+          <section class="lookup-admin-card lookup-preview-card" role="dialog" aria-modal="true" aria-labelledby="lookupPreviewTitle">
+            <header class="lookup-preview-head">
+              <div>
+                <h3 id="lookupPreviewTitle">Preview nguồn tra cứu</h3>
+                <p id="lookupPreviewUrl"></p>
+              </div>
+              <div class="lookup-preview-actions">
+                <a id="lookupPreviewOpen" class="portal-btn" href="#" target="_blank" rel="noopener noreferrer"><i class="fas fa-up-right-from-square"></i> Mở ngoài</a>
+                <button class="portal-btn" type="button" data-close-lookup-preview aria-label="Đóng preview"><i class="fas fa-xmark"></i></button>
+              </div>
+            </header>
+            <iframe id="lookupPreviewFrame" title="Preview nguồn tra cứu" loading="lazy" sandbox="allow-scripts allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+          </section>
+        </div>
+      `);
+      modal = document.getElementById('lookupPreviewModal');
+      modal.addEventListener('click', event => {
+        if (event.target === modal || event.target.closest('[data-close-lookup-preview]')) closeLookupPreview();
+      });
+      return modal;
+    }
+
+    function closeLookupPreview() {
+      const modal = document.getElementById('lookupPreviewModal');
+      const frame = document.getElementById('lookupPreviewFrame');
+      if (frame) frame.src = 'about:blank';
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
+    }
+
+    function openLookupPreview(url) {
+      const modal = ensureLookupPreviewModal();
+      const frame = document.getElementById('lookupPreviewFrame');
+      const urlText = document.getElementById('lookupPreviewUrl');
+      const openLink = document.getElementById('lookupPreviewOpen');
+      if (urlText) urlText.textContent = url;
+      if (openLink) openLink.href = url;
+      if (frame) frame.src = url;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
     }
 
     function updatePortalUrl(pageId) {
@@ -1361,7 +1460,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         setLookupSourceMessage('Chưa có link để xem thử.', 'error');
         return;
       }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openLookupPreview(url);
     }
 
     async function toggleLookupSource(id) {
@@ -1380,7 +1479,8 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     async function deleteLookupSource(id) {
-      if (!confirm('Bạn muốn xóa nguồn tra cứu này?')) return;
+      const source = adminLookupSources.find(item => item.id === id);
+      if (!await showLookupConfirm(source)) return;
       try {
         await apiFetch(`/api/admin/lookup-sources/${encodeURIComponent(id)}`, { method: 'DELETE' });
         adminLookupSources = adminLookupSources.filter(item => item.id !== id);

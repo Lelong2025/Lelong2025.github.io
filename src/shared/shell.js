@@ -245,6 +245,7 @@ async function handleShellClick(event) {
       history.pushState(history.state, '', `${target.pathname}${target.search}${target.hash}`)
       updateShellActiveNavFromUrl()
       window.dispatchEvent(new CustomEvent('mixing:portal-route'))
+      window.__MIXING_ROUTE_PORTAL__?.()
       closeSidebarDrawer()
       return
     }
