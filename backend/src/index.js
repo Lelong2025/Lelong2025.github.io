@@ -98,42 +98,66 @@ async function withUserAuth(request, env, cors, handler) {
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return jsonResponse({ error: "Authentication required" }, 401, cors.headers);
 
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
     console.error("Supabase user authentication configuration is missing");
-    return jsonResponse({ error: "Authentication service unavailable" }, 503, cors.headers);
+    return jsonResponse({
+      error: "Backend local thiếu cấu hình Supabase. Kiểm tra SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY và SUPABASE_SECRET_KEY trong backend/.env.",
+      code: "backend_env_missing"
+    }, 503, cors.headers);
   }
 
+  const token = match[1].trim();
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  });
+
+  let user;
   try {
-    const token = match[1].trim();
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-    });
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
       console.warn("User token rejected by Supabase Auth", error?.message || "User missing");
       return jsonResponse({ error: "Invalid or expired session" }, 401, cors.headers);
     }
+    user = data.user;
+  } catch (error) {
+    console.error("Supabase auth getUser failed", error.message);
+    return jsonResponse({
+      error: "Backend local chưa gọi được Supabase Auth. Kiểm tra mạng hoặc SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY trong backend/.env.",
+      code: "supabase_auth_unavailable",
+      detail: error?.message || "unknown"
+    }, 503, cors.headers);
+  }
 
-    const supabaseAdmin = getAdminClient(env);
-    let role = user.app_metadata?.role || "user";
-    if (role !== "admin" && user.email) {
+  const supabaseAdmin = getAdminClient(env);
+  let role = user.app_metadata?.role || user.user_metadata?.role || "user";
+  if (role !== "admin" && user.email) {
+    try {
       const { data: adminUser, error: adminError } = await supabaseAdmin.from("admin_users")
         .select("email")
         .ilike("email", user.email)
         .maybeSingle();
       if (adminError) console.error("Admin role lookup failed", adminError.message);
       if (adminUser) role = "admin";
+    } catch (error) {
+      console.error("Admin role lookup crashed", error.message);
     }
+  }
 
-    return handler(request, {
+  try {
+    return await handler(request, {
       userClaims: { id: user.id, email: user.email, role },
       supabase,
       supabaseAdmin
     });
   } catch (error) {
-    console.error("User authentication error", error.message);
-    return jsonResponse({ error: "Authentication service unavailable" }, 503, cors.headers);
+    console.error("Authenticated API handler error", error.message);
+    if (isDatabaseMigrationError(error)) return databaseMigrationResponse(cors);
+    return jsonResponse({
+      error: "Backend xử lý API chưa được. Xem terminal backend để biết lỗi chi tiết.",
+      code: "api_handler_unavailable",
+      detail: error?.message || "unknown"
+    }, 503, cors.headers);
   }
 }
 
@@ -142,8 +166,9 @@ async function handleChat(request, env, ctx) {
     (env.ALLOWED_ORIGINS || "")
       .split(",").map(value => value.trim()).filter(Boolean)
   );
+  addLocalDevOrigins(allowedOrigins);
   const origin = request.headers.get("Origin");
-  const originAllowed = origin && allowedOrigins.has(origin);
+  const originAllowed = Boolean(origin && (allowedOrigins.has(origin) || isLocalDevOrigin(origin)));
   const corsHeaders = {
     ...(originAllowed ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -449,8 +474,9 @@ function buildCorsHeaders(request, env) {
     (env.ALLOWED_ORIGINS || "")
       .split(",").map(value => value.trim()).filter(Boolean)
   );
+  addLocalDevOrigins(allowedOrigins);
   const origin = request.headers.get("Origin");
-  const originAllowed = Boolean(origin && allowedOrigins.has(origin));
+  const originAllowed = Boolean(origin && (allowedOrigins.has(origin) || isLocalDevOrigin(origin)));
   return {
     originAllowed,
     headers: {
@@ -470,6 +496,19 @@ function buildCorsHeaders(request, env) {
   };
 }
 
+function addLocalDevOrigins(allowedOrigins) {
+  [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ].forEach(origin => allowedOrigins.add(origin));
+}
+
+function isLocalDevOrigin(origin = "") {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -487,7 +526,7 @@ function getAdminClient(env) {
 
 function isDatabaseMigrationError(error) {
   const text = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
-  return (text.includes("column") || text.includes("function") || text.includes("schema cache"))
+  return (text.includes("column") || text.includes("function") || text.includes("schema cache") || text.includes("relation") || text.includes("table"))
     && (text.includes("does not exist")
       || text.includes("could not find")
       || text.includes("wallet_balance_vnd")
@@ -496,12 +535,19 @@ function isDatabaseMigrationError(error) {
       || text.includes("ai_wallet_unit_price_vnd")
       || text.includes("ai_credits_remaining")
       || text.includes("credits_granted")
-      || text.includes("activate_free_trial"));
+      || text.includes("activate_free_trial")
+      || text.includes("service_products")
+      || text.includes("service_plans")
+      || text.includes("user_entitlements")
+      || text.includes("user_wallets")
+      || text.includes("auto_renew_preferences")
+      || text.includes("service_daily_usage")
+      || text.includes("service_usage"));
 }
 
 function databaseMigrationResponse(cors) {
   return jsonResponse({
-    error: "Database chưa cập nhật. Hãy chạy database/free-trial.sql và database/vip-credits.sql trên Supabase rồi thử lại.",
+    error: "Database chưa cập nhật. Hãy chạy Database/migrate_multi_service_billing.sql trên Supabase, sau đó chạy thêm Database/migrate_lookup_sources.sql nếu dùng trang Nguồn tra cứu.",
     code: "migration_required"
   }, 503, cors.headers);
 }

@@ -1,4 +1,4 @@
-const rawApiBase = import.meta.env.VITE_API_URL || ''
+const rawApiBase = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '')
 
 export const appConfig = {
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '',

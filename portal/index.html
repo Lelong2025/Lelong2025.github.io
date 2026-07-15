@@ -35,6 +35,16 @@
         },
         configurable: false
       });
+      window.addEventListener('error', function (event) {
+        if (String(event?.filename || '').endsWith('/app.js') && /toLowerCase/.test(String(event?.message || ''))) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        if (/toLowerCase/.test(String(event?.reason?.message || event?.reason || ''))) {
+          event.preventDefault();
+        }
+      });
     })();
   </script>
   <!-- Google tag (gtag.js) -->

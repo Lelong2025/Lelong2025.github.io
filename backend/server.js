@@ -40,10 +40,17 @@ const server = createServer(async (incoming, outgoing) => {
     outgoing.end(Buffer.from(await response.arrayBuffer()));
   } catch (error) {
     console.error("Unhandled request error", error);
+    const corsHeaders = localCorsHeaders(incoming);
     if (!outgoing.headersSent) {
-      outgoing.writeHead(error.statusCode || 500, { "Content-Type": "application/json; charset=utf-8" });
+      outgoing.writeHead(error.statusCode || 500, {
+        "Content-Type": "application/json; charset=utf-8",
+        ...corsHeaders
+      });
     }
-    outgoing.end(JSON.stringify({ error: error.statusCode === 413 ? "Request too large" : "Internal server error" }));
+    outgoing.end(JSON.stringify({
+      error: error.statusCode === 413 ? "Request too large" : "Internal server error",
+      detail: error?.message || "unknown"
+    }));
   }
 });
 
@@ -93,6 +100,25 @@ function createRateLimiter(max, windowMs) {
       return { success: current.count <= max };
     }
   };
+}
+
+function localCorsHeaders(incoming) {
+  const origin = incoming.headers.origin;
+  const allowedOrigins = new Set([
+    ...String(process.env.ALLOWED_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean),
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ]);
+  return origin && (allowedOrigins.has(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin))
+    ? {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Vary": "Origin"
+      }
+    : {};
 }
 
 function validateEnvironment() {
