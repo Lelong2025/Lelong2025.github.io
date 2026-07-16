@@ -58,6 +58,39 @@ export function xmlEscape(value) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
+export function parseAuthorMarkers(value) {
+    const text = String(value || '');
+    const pattern = /\^\{([^}]+)\}|\^([0-9]+(?:\s*,\s*[0-9]+)*(?:\*)?|\*)/g;
+    const parts = [];
+    let cursor = 0;
+    let match;
+    while ((match = pattern.exec(text))) {
+        if (match.index > cursor) parts.push({ type: 'text', value: text.slice(cursor, match.index) });
+        parts.push({ type: 'sup', value: String(match[1] || match[2] || '').replace(/\s*,\s*/g, ',') });
+        cursor = pattern.lastIndex;
+    }
+    if (cursor < text.length) parts.push({ type: 'text', value: text.slice(cursor) });
+    return parts.length ? parts : [{ type: 'text', value: text }];
+}
+
+export function authorTextToHtml(value, fallback = '') {
+    const source = value || fallback;
+    return parseAuthorMarkers(source).map(part =>
+        part.type === 'sup'
+            ? `<sup>${xmlEscape(part.value)}</sup>`
+            : xmlEscape(part.value)
+    ).join('');
+}
+
+export function authorTextToWordRuns(value, options = {}, fallback = '') {
+    const source = value || fallback;
+    return parseAuthorMarkers(source).map(part =>
+        wordRun(part.value, part.type === 'sup'
+            ? { ...options, superscript: true, size: options.superscriptSize || Math.max(12, (options.size || 20) - 4) }
+            : options)
+    ).join('');
+}
+
 export function wordRun(text, options = {}) {
     if (!text) return '';
     const font = options.font || 'Times New Roman';
@@ -68,6 +101,8 @@ export function wordRun(text, options = {}) {
         options.underline ? '<w:u w:val="single"/>' : '',
         options.strike ? '<w:strike/>' : '',
         options.color ? `<w:color w:val="${options.color}"/>` : '',
+        options.superscript ? '<w:vertAlign w:val="superscript"/>' : '',
+        options.subscript ? '<w:vertAlign w:val="subscript"/>' : '',
         options.size ? `<w:sz w:val="${options.size}"/><w:szCs w:val="${options.size}"/>` : '',
         options.shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${options.shading}"/>` : ''
     ].join('');
@@ -345,8 +380,8 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 headerBorder: node.dataset.header === 'true',
                 autofit: 'fixed'
             }));
-        } else if (node.tagName === 'IMG' || node.querySelector(':scope > img')) {
-            const image = node.tagName === 'IMG' ? node : node.querySelector(':scope > img');
+        } else if (node.tagName === 'IMG' || node.querySelector('img')) {
+            const image = node.tagName === 'IMG' ? node : node.querySelector('img');
             const imageInfo = imageMap.get(image.getAttribute('src'));
             blocks.push(imageInfo
                 ? wordParagraph(imageDrawingRun(imageInfo.relationshipId, imageInfo.width, imageInfo.height, imageInfo.id), { align: 'center', after: 100 })

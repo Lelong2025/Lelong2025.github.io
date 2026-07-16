@@ -183,10 +183,54 @@ export function normalizeClipboardTable(table, clipboardRoot) {
     return clone;
 }
 
+function cellTextLength(cell) {
+    return (cell.textContent || '').replace(/\s+/g, ' ').trim().length;
+}
+
+function hasVisibleTableBorders(table) {
+    const borderAttr = parseFloat(table.getAttribute('border') || '0');
+    if (borderAttr > 0) return true;
+    return Array.from(table.querySelectorAll('td,th')).some(cell => {
+        const style = cell.style;
+        return ['Top', 'Right', 'Bottom', 'Left'].some(side => {
+            const width = parseFloat(style[`border${side}Width`] || '0');
+            const borderStyle = style[`border${side}Style`];
+            return width > 0 && borderStyle && borderStyle !== 'none';
+        });
+    });
+}
+
+function isLikelyLayoutClipboardTable(table) {
+    const cells = Array.from(table.querySelectorAll('td,th'));
+    if (!cells.length) return true;
+    if (hasVisibleTableBorders(table)) return false;
+
+    const rows = Array.from(table.rows || []);
+    const columnCounts = rows.map(row => Array.from(row.cells).reduce((sum, cell) => sum + (cell.colSpan || 1), 0));
+    const maxColumns = Math.max(1, ...columnCounts);
+    const longProseCells = cells.filter(cell => cellTextLength(cell) > 240).length;
+    const paragraphLikeCells = cells.filter(cell => cell.querySelector('p,div,h1,h2,h3,ol,ul') || cellTextLength(cell) > 120).length;
+
+    return longProseCells > 0 || (maxColumns <= 2 && paragraphLikeCells >= Math.max(1, Math.floor(cells.length / 2)));
+}
+
+function extractPasteableClipboardTables(root) {
+    return Array.from(root.querySelectorAll('table'))
+        .filter(table => !isLikelyLayoutClipboardTable(table))
+        .map(table => normalizeClipboardTable(table, root));
+}
+
 export function tableFromClipboardText(text) {
     if (!text.includes('\t')) return null;
     const rows = text.replace(/\r/g, '').split('\n').filter((line, index, all) => line || index < all.length - 1);
     if (!rows.length) return null;
+    const tabbedRows = rows.filter(line => line.includes('\t'));
+    const consistentTabularRows = tabbedRows.filter(line => {
+        const cells = line.split('\t').map(value => value.trim());
+        return cells.length > 1 && cells.some(Boolean);
+    });
+    if (consistentTabularRows.length < 2 && rows.length > 1) return null;
+    if (consistentTabularRows.length < rows.filter(line => line.trim()).length / 2) return null;
     const table = document.createElement('table');
     const body = document.createElement('tbody');
     rows.forEach(line => {
@@ -213,8 +257,9 @@ export function pasteClipboardTablesIntoQuill(event) {
     const html = clipboard.getData('text/html');
     const root = document.createElement('div');
     if (html) root.innerHTML = html;
-    let tables = html ? Array.from(root.querySelectorAll('table')).map(table => normalizeClipboardTable(table, root)) : [];
-    if (!tables.length) {
+    const clipboardHadHtmlTables = Boolean(html && root.querySelector('table'));
+    let tables = html ? extractPasteableClipboardTables(root) : [];
+    if (!tables.length && !clipboardHadHtmlTables) {
         const textTable = tableFromClipboardText(clipboard.getData('text/plain') || '');
         if (textTable) tables = [textTable];
     }

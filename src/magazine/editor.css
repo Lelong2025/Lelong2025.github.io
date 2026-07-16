@@ -77,6 +77,14 @@
     text-align: right;
 }
 
+#pv-authors-vn sup,
+#pv-authors-en sup,
+.article-running-header sup {
+    font-size: 70%;
+    line-height: 0;
+    vertical-align: super;
+}
+
 .article-page-content {
     column-count: 2;
     column-gap: 10mm;

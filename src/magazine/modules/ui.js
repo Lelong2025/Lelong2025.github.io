@@ -1,5 +1,5 @@
 import { state, saveToLocalStorage, saveToSupabase } from './state.js';
-import { showToast, removeVietnameseDiacritics, toTitleCase } from './utils.js';
+import { showToast, removeVietnameseDiacritics, toTitleCase, authorTextToHtml } from './utils.js';
 import { renderAiReviewPanel } from './ai.js';
 import { getQuillInstance, getQuillArticleId, setQuillArticleId, getLoadingQuillContent, setLoadingQuillContent, syncWorkspacePreview } from './editor.js';
 import { isClient, normalizeClientPages, applyRoleUi, escapeHtml } from './cloud.js';
@@ -635,9 +635,8 @@ export function createArticlePage(pageNumber, art) {
 
     const header = document.createElement('div');
     header.className = `article-running-header ${displayPageNumber % 2 ? 'odd' : 'even'}`;
-    header.textContent = displayPageNumber % 2
-        ? (art.authors || 'Tác giả')
-        : runningHeaderTitle(art);
+    if (displayPageNumber % 2) header.innerHTML = authorTextToHtml(art.authors, 'Tác giả');
+    else header.textContent = runningHeaderTitle(art);
     page.appendChild(header);
 
     const content = document.createElement('div');
@@ -760,8 +759,8 @@ export function renderSingleArticlePreview(art) {
 
     if (pvTitleVn) pvTitleVn.textContent = art.titleVn || 'TIÊU ĐỀ BÀI BÁO (TIẾNG VIỆT)';
     if (pvTitleEn) pvTitleEn.textContent = art.titleEn || 'ARTICLE TITLE IN ENGLISH';
-    if (pvAuthorsVn) pvAuthorsVn.textContent = art.authors || 'Tên các tác giả';
-    if (pvAuthorsEn) pvAuthorsEn.textContent = removeVietnameseDiacritics(art.authors) || 'Authors Name';
+    if (pvAuthorsVn) pvAuthorsVn.innerHTML = authorTextToHtml(art.authors, 'Tên các tác giả');
+    if (pvAuthorsEn) pvAuthorsEn.innerHTML = authorTextToHtml(removeVietnameseDiacritics(art.authors), 'Authors Name');
     if (pvContactEmail) pvContactEmail.textContent = art.email || 'email@domain.com';
     if (pvContactEmailEn) pvContactEmailEn.textContent = art.email || 'email@domain.com';
 

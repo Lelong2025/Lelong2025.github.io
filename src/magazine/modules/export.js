@@ -2,7 +2,7 @@ import { state, saveToLocalStorage } from './state.js';
 import {
     showToast, toTitleCase, removeVietnameseDiacritics,
     quillHtmlToWordXml, wordParagraph, wordRun, wordTable, sectionProperties,
-    imageDrawingRun
+    imageDrawingRun, authorTextToWordRuns, parseAuthorMarkers
 } from './utils.js';
 import {
     activeArticle, footerDateText, headerMetaText, articleIssueYear,
@@ -17,6 +17,50 @@ export function safeExportName(art, extension) {
 
 export function journalMetaTemplateText(art) {
     return `${articleIssueYear(art)}, ${articleIssueNumber(art)}, ${articlePageRangeText(art)}`;
+}
+
+async function imageSourceToDocxImage(src) {
+    const inlineMatch = String(src || '').match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
+    if (inlineMatch) {
+        return {
+            extension: inlineMatch[1].toLowerCase().replace('jpeg', 'jpg'),
+            data: inlineMatch[2],
+            options: { base64: true }
+        };
+    }
+
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`Không tải được ảnh: ${response.status}`);
+    const blob = await response.blob();
+    const type = blob.type || response.headers.get('content-type') || '';
+    if (type.includes('png') || type.includes('jpeg') || type.includes('jpg')) {
+        return {
+            extension: type.includes('jpeg') || type.includes('jpg') ? 'jpg' : 'png',
+            data: await blob.arrayBuffer(),
+            options: {}
+        };
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+        const image = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = objectUrl;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth || image.width || 1;
+        canvas.height = image.naturalHeight || image.height || 1;
+        canvas.getContext('2d').drawImage(image, 0, 0);
+        return {
+            extension: 'png',
+            data: canvas.toDataURL('image/png').split(',')[1],
+            options: { base64: true }
+        };
+    } finally {
+        URL.revokeObjectURL(objectUrl);
+    }
 }
 
 export function currentExportData() {
@@ -59,21 +103,7 @@ export async function prepareContentImages(zip, html) {
         const src = images[index].getAttribute('src');
         if (!src || map.has(src)) continue;
         try {
-            let extension = 'png';
-            let data;
-            let options = {};
-            const match = src.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
-            if (match) {
-                extension = match[1].toLowerCase().replace('jpeg', 'jpg');
-                data = match[2];
-                options = { base64: true };
-            } else {
-                const response = await fetch(src);
-                if (!response.ok) continue;
-                const type = response.headers.get('content-type') || '';
-                extension = type.includes('jpeg') ? 'jpg' : 'png';
-                data = await response.arrayBuffer();
-            }
+            const { extension, data, options } = await imageSourceToDocxImage(src);
             const number = map.size + 1;
             const relationshipId = `rIdContentImage${number}`;
             const fileName = `content-${number}.${extension}`;
@@ -94,21 +124,7 @@ export async function prepareAuthorProfileImages(zip, profiles, prefix = 'author
         const src = profiles[index]?.photoUrl;
         if (!src || map.has(src)) continue;
         try {
-            let extension = 'png';
-            let data;
-            let options = {};
-            const match = src.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
-            if (match) {
-                extension = match[1].toLowerCase().replace('jpeg', 'jpg');
-                data = match[2];
-                options = { base64: true };
-            } else {
-                const response = await fetch(src);
-                if (!response.ok) continue;
-                const type = response.headers.get('content-type') || '';
-                extension = type.includes('jpeg') ? 'jpg' : 'png';
-                data = await response.arrayBuffer();
-            }
+            const { extension, data, options } = await imageSourceToDocxImage(src);
             const number = map.size + 1;
             const relationshipId = `rIdAuthorProfileImage${number}`;
             const fileName = `${prefix}-${number}.${extension}`;
@@ -145,9 +161,12 @@ export function authorProfilesToWordXml(profiles = [], imageMap = new Map()) {
     }).join('');
 }
 
-export function headerXml(text, alignment) {
+export function headerXml(text, alignment, options = {}) {
     const singleLineText = String(text || '').replace(/\s+/g, ' ').trim();
-    const paragraph = wordParagraph(wordRun(singleLineText, { italic: true, size: 16 }), {
+    const runs = options.authorMarkers
+        ? authorTextToWordRuns(singleLineText, { italic: true, size: 16, superscriptSize: 12 })
+        : wordRun(singleLineText, { italic: true, size: 16 });
+    const paragraph = wordParagraph(runs, {
         align: alignment,
         after: 0,
         line: 190
@@ -214,11 +233,11 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
         wordParagraph(wordRun('Available online at: ' + (data.link_doi || ''), { size: 20 }), { align: 'left', after: 80, line: 220, bottomBorder: true });
     return '' +
         wordParagraph(wordRun(data.title || 'TIÊU ĐỀ BÀI BÁO', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 100 }) +
-        wordParagraph(wordRun(data.authors || 'Tác giả', { size: 24 }), { align: 'right', after: 40 }) +
+        wordParagraph(authorTextToWordRuns(data.authors, { size: 24 }, 'Tác giả'), { align: 'right', after: 40 }) +
         wordParagraph(wordRun('Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng Nai, Vietnam', { italic: true, size: 20 }), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('*Tác giả liên hệ: ' + data.contact, { size: 20 }), { align: 'right', after: 120 }) + viInfo +
         wordParagraph(wordRun(data.title_en || 'ARTICLE TITLE', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 80 }) +
-        wordParagraph(wordRun(data.authors_en || 'Authors', { size: 24 }), { align: 'right', after: 30 }) +
+        wordParagraph(authorTextToWordRuns(data.authors_en, { size: 24 }, 'Authors'), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('Lac Hong University, Bien Hoa, Dong Nai Province, Vietnam', { italic: true, size: 20 }), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('*Corresponding Author: ' + data.contact, { size: 20 }), { align: 'right', after: 100 }) + enInfo + doiInfo;
 }
@@ -277,7 +296,7 @@ export async function buildDefaultDocx(data) {
     const word = zip.folder('word');
     word.file('document.xml', documentXml).file('styles.xml', styles)
         .file('settings.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:evenAndOddHeaders/><w:updateFields w:val="true"/><w:compat/></w:settings>')
-        .file('header-odd.xml', headerXml(data.authors || 'Tác giả', 'right'))
+        .file('header-odd.xml', headerXml(data.authors || 'Tác giả', 'right', { authorMarkers: true }))
         .file('header-even.xml', headerXml(data.headerTitle || data.title || data.title_en || 'TIÊU ĐỀ BÀI BÁO', 'left'))
         .file('header-first.xml', coverXml(data, logoLoaded ? imageDrawingRun('rIdLogo', 410000, 406525, 1) : '', true))
         .file('footer-odd.xml', footerXml(data.date, false)).file('footer-even.xml', footerXml(data.date, true));
@@ -541,6 +560,42 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
         });
     };
 
+    const appendTextToRun = (run, value) => {
+        String(value ?? '').split('\n').forEach((part, index) => {
+            if (index) run.appendChild(doc.createElementNS(WORD_NS, 'w:br'));
+            const text = doc.createElementNS(WORD_NS, 'w:t');
+            text.setAttribute('xml:space', 'preserve');
+            text.textContent = part;
+            run.appendChild(text);
+        });
+    };
+
+    const setParagraphAuthorText = (paragraph, baseTextNode, value) => {
+        const baseRun = baseTextNode?.parentNode;
+        const baseRunPr = Array.from(baseRun?.childNodes || []).find(node => node.nodeName === 'w:rPr');
+        const paragraphProperties = Array.from(paragraph.childNodes).find(node => node.nodeName === 'w:pPr');
+        Array.from(paragraph.childNodes).forEach(child => {
+            if (child !== paragraphProperties) child.remove();
+        });
+
+        parseAuthorMarkers(value).forEach(part => {
+            if (!part.value) return;
+            const run = doc.createElementNS(WORD_NS, 'w:r');
+            const runPr = baseRunPr ? baseRunPr.cloneNode(true) : doc.createElementNS(WORD_NS, 'w:rPr');
+            Array.from(runPr.childNodes).forEach(child => {
+                if (child.nodeName === 'w:vertAlign') child.remove();
+            });
+            if (part.type === 'sup') {
+                const verticalAlign = doc.createElementNS(WORD_NS, 'w:vertAlign');
+                verticalAlign.setAttribute('w:val', 'superscript');
+                runPr.appendChild(verticalAlign);
+            }
+            run.appendChild(runPr);
+            appendTextToRun(run, part.value);
+            paragraph.appendChild(run);
+        });
+    };
+
     replaceInlineJournalMeta();
 
     const placeholders = [
@@ -572,6 +627,7 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
             continue;
         }
 
+        let shouldRenderAuthorMarkers = false;
         placeholders.forEach(ph => {
             const key = `{${ph}}`;
             if (fullText.includes(key)) {
@@ -579,9 +635,18 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                 if (ph === 'title') val = data.title;
                 else if (ph === 'headerTitle') val = data.headerTitle || data.title || data.title_en;
                 else if (ph === 'title_en') val = data.title_en || data.title;
-                else if (ph === 'authors_vi') val = data.authors;
-                else if (ph === 'authors_en') val = data.authors_en;
-                else if (ph === 'authors') val = data.authors;
+                else if (ph === 'authors_vi') {
+                    val = data.authors;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'authors_en') {
+                    val = data.authors_en;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'authors') {
+                    val = data.authors;
+                    shouldRenderAuthorMarkers = true;
+                }
                 else if (ph === 'contact') val = data.contact;
                 else if (ph === 'abstract') val = data.abstract;
                 else if (ph === 'abstract_en') val = data.abstract_en;
@@ -601,9 +666,13 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
             }
         });
 
-        setRunTextWithBreaks(tNodes[0], fullText);
-        for (let i = 1; i < tNodes.length; i++) {
-            tNodes[i].textContent = '';
+        if (shouldRenderAuthorMarkers) {
+            setParagraphAuthorText(p, tNodes[0], fullText);
+        } else {
+            setRunTextWithBreaks(tNodes[0], fullText);
+            for (let i = 1; i < tNodes.length; i++) {
+                tNodes[i].textContent = '';
+            }
         }
     }
 
@@ -768,21 +837,7 @@ export async function prepareAllContentImages(zip, articles) {
             if (articleMap.has(src)) continue;
 
             try {
-                let extension = 'png';
-                let data;
-                let options = {};
-                const match = src.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
-                if (match) {
-                    extension = match[1].toLowerCase().replace('jpeg', 'jpg');
-                    data = match[2];
-                    options = { base64: true };
-                } else {
-                    const response = await fetch(src);
-                    if (!response.ok) continue;
-                    const type = response.headers.get('content-type') || '';
-                    extension = type.includes('jpeg') ? 'jpg' : 'png';
-                    data = await response.arrayBuffer();
-                }
+                const { extension, data, options } = await imageSourceToDocxImage(src);
 
                 imageCounter++;
                 const relationshipId = `rIdContentImage${imageCounter}`;
