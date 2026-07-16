@@ -59,3 +59,6 @@ repomix-output.xml
 # Local database schema inspection exports
 supabase-schema-inventory.csv
 supabase-public-schema.sql
+
+# Local project specific ignores
+design/

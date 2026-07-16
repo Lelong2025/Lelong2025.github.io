@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="dark">
+<html lang="vi" data-theme="light">
 
 <head>
   <script>
     (function applyInitialTheme() {
       try {
-        var theme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || document.documentElement.dataset.theme || 'dark';
-        theme = theme === 'light' || theme === 'dark' ? theme : 'dark';
+        var theme = localStorage.getItem('mixing-theme') || localStorage.getItem('theme') || document.documentElement.dataset.theme || 'light';
+        theme = theme === 'light' || theme === 'dark' ? theme : 'light';
         document.documentElement.dataset.theme = theme;
       } catch (_) {
-        document.documentElement.dataset.theme = document.documentElement.dataset.theme || 'dark';
+        document.documentElement.dataset.theme = document.documentElement.dataset.theme || 'light';
       }
     })();
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LeLong2025 — Hệ thống Tạp chí & LHU Journal</title>
+  <title>LHU Journal Hub — Tra cứu & Soạn thảo khoa học</title>
   <meta name="description" content="Cổng chung cho hệ thống tra cứu tạp chí khoa học và soạn thảo LHU Journal." />
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -26,109 +26,175 @@
 <body>
   <main class="landing-page">
     <section class="landing-hero">
-      <div class="landing-brand">
-        <img src="/logo.png" alt="" />
-        <span>LeLong2025</span>
-      </div>
-      <h1>Hệ thống tra cứu & biên tập tạp chí</h1>
-      <p>Chọn không gian làm việc, dùng chung một tài khoản Supabase cho toàn hệ thống.</p>
+      <div class="landing-hero-copy">
+        <div class="landing-brand">
+          <img src="/logo.png" alt="" />
+          <span>LHU Journal Hub</span>
+        </div>
+        <div class="landing-kicker">
+          <i class="fa-solid fa-sparkles"></i>
+          <span>Nền tảng học thuật dành cho tra cứu, soạn thảo và quản trị tạp chí</span>
+        </div>
+        <h1>Không gian tra cứu và biên tập tạp chí khoa học</h1>
+        <p>Tra cứu HĐGSNN, JCR, Scopus, dùng AI hỗ trợ học thuật và quản lý quy trình soạn thảo trong một cổng làm việc thống nhất.</p>
 
-      <div class="landing-grid" aria-label="Chọn ứng dụng">
-        <a class="landing-card landing-card--tapchi" href="/tapchi/">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <strong>Tra cứu Tạp chí</strong>
-          <span>HĐGSNN 2025, JCR, Scopus, AI chat, VIP và tài khoản.</span>
-        </a>
-        <a class="landing-card landing-card--magazine" href="/magazine/">
-          <i class="fa-solid fa-newspaper"></i>
-          <strong>LHU Journal</strong>
-          <span>Soạn bài, quản lý số báo, preview A4, AI review và xuất bản.</span>
-        </a>
+        <div class="landing-actions">
+          <a class="landing-button landing-button--primary" href="/tapchi/">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            Tra cứu ngay
+          </a>
+          <button class="landing-button" id="open-auth-login" type="button">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            Đăng nhập
+          </button>
+          <button class="landing-button landing-button--ghost" id="open-auth-register" type="button">
+            <i class="fa-solid fa-user-plus"></i>
+            Đăng ký
+          </button>
+        </div>
+
+        <div class="landing-trust-row" aria-label="Thông tin hệ thống">
+          <span><strong>22k+</strong> JCR</span>
+          <span><strong>48k+</strong> Scopus</span>
+          <span><strong>2025</strong> HĐGSNN</span>
+        </div>
+        <div class="landing-source-line" aria-label="Nguồn dữ liệu hỗ trợ">
+          <span>HĐGSNN</span>
+          <span>Journal Citation Reports</span>
+          <span>Scopus</span>
+          <span>SCImago</span>
+          <span>Resurchify</span>
+        </div>
       </div>
 
+      <div class="landing-preview" aria-label="Minh họa giao diện LHU Journal Hub">
+        <div class="landing-illustration-card">
+          <img src="/Newsletter-rafiki.svg" alt="Minh họa biên tập và gửi bản tin khoa học" loading="eager" />
+        </div>
+        <div class="preview-floating-card preview-floating-card--top">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <div><strong>AI gợi ý</strong><span>Đọc nhanh thông tin tạp chí</span></div>
+        </div>
+        <div class="preview-window">
+          <div class="preview-topbar">
+            <span></span><span></span><span></span>
+            <strong>Journal Intelligence</strong>
+          </div>
+          <div class="preview-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Nhập ISSN hoặc tên tạp chí...</span>
+            <button>Tìm</button>
+          </div>
+          <div class="preview-result">
+            <div>
+              <small>Kết quả phù hợp</small>
+              <strong>Lac Hong University Journal of Science</strong>
+              <p>ISSN 2525-2186 · HĐGSNN · Scopus check · AI gợi ý</p>
+            </div>
+            <span class="preview-badge">Đã đối chiếu</span>
+          </div>
+          <div class="preview-grid">
+            <div><small>HĐGSNN</small><strong>0.75</strong></div>
+            <div><small>JCR</small><strong>Q2</strong></div>
+            <div><small>Scopus</small><strong>Active</strong></div>
+          </div>
+          <div class="preview-workbench">
+            <div><i class="fa-solid fa-link"></i><span>Liên kết nguồn ngoài</span></div>
+            <div><i class="fa-solid fa-file-lines"></i><span>Chuẩn bị bản thảo</span></div>
+          </div>
+        </div>
+        <div class="preview-floating-card preview-floating-card--bottom">
+          <strong>14 ngày</strong>
+          <span>Dùng thử tự động</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-strip" aria-label="Các chức năng chính">
+      <a class="landing-card" href="/tapchi/">
+        <i class="fa-solid fa-magnifying-glass-chart"></i>
+        <small>Research lookup</small>
+        <strong>Tra cứu tạp chí</strong>
+        <span>Kiểm tra ISSN, tên tạp chí, điểm HĐGSNN, JCR, Scopus và nguồn ngoài.</span>
+      </a>
+      <a class="landing-card" href="/magazine/">
+        <i class="fa-solid fa-newspaper"></i>
+        <small>Editorial desk</small>
+        <strong>LHU Journal</strong>
+        <span>Soạn bài, quản lý số báo, preview A4, AI review và xuất bản.</span>
+      </a>
+      <a class="landing-card" href="/portal/?page=dashboard">
+        <i class="fa-solid fa-chart-line"></i>
+        <small>Admin portal</small>
+        <strong>Tài khoản & gói dùng</strong>
+        <span>Theo dõi lượt dùng thử, lịch sử thanh toán và các gói dịch vụ.</span>
+      </a>
+    </section>
+
+    <section class="landing-section landing-workflow">
+      <div class="landing-workflow-head">
+        <div class="landing-section-head">
+          <span>Quy trình gọn</span>
+          <h2>Từ tra cứu đến chuẩn bị bản thảo trong vài bước</h2>
+        </div>
+        <div class="workflow-illustration">
+          <img src="/Newsletter-rafiki.svg" alt="" loading="lazy" />
+        </div>
+      </div>
+      <div class="workflow-grid">
+        <article>
+          <b>01</b>
+          <h3>Tìm tạp chí</h3>
+          <p>Nhập ISSN hoặc tên tạp chí để hệ thống gom dữ liệu liên quan.</p>
+        </article>
+        <article>
+          <b>02</b>
+          <h3>Đối chiếu nguồn</h3>
+          <p>Xem nhanh HĐGSNN, JCR, Scopus và các nguồn tra cứu ngoài.</p>
+        </article>
+        <article>
+          <b>03</b>
+          <h3>Soạn và review</h3>
+          <p>Chuyển sang LHU Journal để chuẩn hóa bản thảo và dùng AI hỗ trợ.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="landing-section landing-dashboard">
+      <div class="dashboard-copy">
+        <span>Quản trị dễ dùng</span>
+        <h2>Một nơi để quản lý người dùng, hóa đơn và nguồn tra cứu</h2>
+        <p>Admin có thể thêm nguồn tra cứu, đổi link iframe, bật link ngoài cho website không cho nhúng và điều chỉnh chính sách dùng thử.</p>
+        <button class="landing-button landing-button--primary" id="open-auth-login-admin" type="button">
+          <i class="fa-solid fa-shield-halved"></i>
+          Vào trang quản trị
+        </button>
+      </div>
+      <div class="dashboard-panel">
+        <div class="dashboard-panel-head">
+          <span>Admin overview</span>
+          <strong>Hoạt động hệ thống</strong>
+        </div>
+        <div class="dashboard-metric"><small>Người dùng</small><strong>1,248</strong><span>+12% tháng này</span></div>
+        <div class="dashboard-metric"><small>Nguồn tra cứu</small><strong>08</strong><span>Iframe + liên kết ngoài</span></div>
+        <div class="dashboard-metric"><small>Dùng thử</small><strong>14 ngày</strong><span>Chat 30 · Review 5</span></div>
+        <div class="dashboard-chart"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </section>
+
+    <section class="landing-cta">
+      <div>
+        <span>Bắt đầu làm việc</span>
+        <h2>Sẵn sàng tra cứu tạp chí khoa học nhanh hơn?</h2>
+      </div>
       <div class="landing-actions">
-        <button class="landing-button landing-button--primary" id="open-auth-login" type="button">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          Đăng nhập
-        </button>
-        <button class="landing-button" id="open-auth-register" type="button">
-          <i class="fa-solid fa-user-plus"></i>
-          Đăng ký
-        </button>
+        <a class="landing-button landing-button--primary" href="/tapchi/">Mở trang tra cứu</a>
+        <a class="landing-button" href="/magazine/">Mở LHU Journal</a>
       </div>
     </section>
   </main>
 
-  <div class="vip-modal" id="auth-modal" aria-hidden="true">
-    <section class="vip-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-      <div class="vip-card-head">
-        <h2><i class="fas fa-crown"></i> Chatbox AI VIP</h2>
-        <button class="vip-close" id="auth-close" type="button" aria-label="Đóng">&times;</button>
-      </div>
-
-      <div class="auth-welcome">
-        <div class="auth-welcome-icon"><i class="fas fa-robot"></i></div>
-        <h3 id="auth-title">Chào mừng trở lại</h3>
-        <p id="auth-lead">Đăng nhập để dùng các chức năng tài khoản trong hệ thống.</p>
-      </div>
-
-      <div class="vip-tabs" role="tablist">
-        <button id="auth-login-tab" class="active" type="button"><i class="fas fa-sign-in-alt"></i>&nbsp; Đăng nhập</button>
-        <button id="auth-register-tab" type="button"><i class="fas fa-user-plus"></i>&nbsp; Đăng ký</button>
-      </div>
-
-      <form class="vip-form" id="auth-form">
-        <div class="auth-field" id="auth-name-field" style="display:none">
-          <label for="auth-name">Tên hiển thị</label>
-          <div class="auth-input-wrap"><i class="fas fa-user"></i><input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Tên của bạn" /></div>
-        </div>
-        <div class="auth-field">
-          <label for="auth-email">Địa chỉ email</label>
-          <div class="auth-input-wrap"><i class="fas fa-envelope"></i><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required /></div>
-        </div>
-        <div class="auth-field">
-          <label for="auth-password">Mật khẩu</label>
-          <div class="auth-input-wrap">
-            <i class="fas fa-lock"></i>
-            <input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="Ít nhất 8 ký tự" required />
-            <button class="password-toggle" id="auth-password-toggle" type="button" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
-          </div>
-        </div>
-        <p class="vip-message" id="auth-message" role="alert"></p>
-        <button class="vip-primary auth-submit" id="auth-submit" type="submit">
-          <i class="fas fa-arrow-right"></i>&nbsp;<span id="auth-submit-label">Đăng nhập</span>
-        </button>
-        <div class="auth-form-footer">
-          <button class="vip-link" id="auth-password-reset-request" type="button">Quên mật khẩu?</button>
-        </div>
-      </form>
-
-      <form class="vip-form" id="reset-form" style="display:none">
-        <div class="auth-field">
-          <label for="reset-password">Mật khẩu mới</label>
-          <div class="auth-input-wrap">
-            <i class="fas fa-lock"></i>
-            <input id="reset-password" type="password" autocomplete="new-password" minlength="8" placeholder="Ít nhất 8 ký tự" required />
-            <button class="password-toggle" id="reset-password-toggle" type="button" aria-label="Hiện mật khẩu"><i class="fas fa-eye"></i></button>
-          </div>
-        </div>
-        <div class="auth-field">
-          <label for="reset-confirm-password">Xác nhận mật khẩu mới</label>
-          <div class="auth-input-wrap">
-            <i class="fas fa-shield-halved"></i>
-            <input id="reset-confirm-password" type="password" autocomplete="new-password" minlength="8" placeholder="Nhập lại mật khẩu" required />
-          </div>
-        </div>
-        <p class="vip-message" id="reset-message" role="alert"></p>
-        <button class="vip-primary auth-submit" id="reset-submit" type="submit">
-          <i class="fas fa-floppy-disk"></i>&nbsp;<span id="reset-submit-label">Lưu mật khẩu mới</span>
-        </button>
-        <div class="auth-form-footer">
-          <button class="vip-link" id="reset-back-login" type="button">Quay lại đăng nhập</button>
-        </div>
-      </form>
-    </section>
-  </div>
+  <div class="vip-modal" id="auth-modal" aria-hidden="true"></div>
 </body>
 
 </html>

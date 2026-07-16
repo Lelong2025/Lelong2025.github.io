@@ -35,6 +35,16 @@
         },
         configurable: false
       });
+      window.addEventListener('error', function (event) {
+        if (String(event?.filename || '').endsWith('/app.js') && /toLowerCase/.test(String(event?.message || ''))) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        if (/toLowerCase/.test(String(event?.reason?.message || event?.reason || ''))) {
+          event.preventDefault();
+        }
+      });
     })();
   </script>
   <!-- Google tag (gtag.js) -->
@@ -53,7 +63,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://*.supabase.co wss://*.supabase.co %VITE_API_URL% https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://journalcheckertool.org; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://journalcheckertool.org; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn https://journalcheckertool.org; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://journalcheckertool.org https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://*.supabase.co wss://*.supabase.co %VITE_API_URL% https://lelong2025-github-io.onrender.com; frame-src https:; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -202,6 +212,8 @@
             class="fas fa-users"></i><span>Người dùng</span></button>
         <button id="adminInvoicesNav" type="button" data-admin-only data-page="adminInvoices"
           data-portal-page="adminInvoices"><i class="fas fa-file-invoice-dollar"></i><span>Hóa đơn</span></button>
+        <button type="button" data-admin-only data-page="adminLookupSources"
+          data-portal-page="adminLookupSources"><i class="fas fa-window-maximize"></i><span>Nguồn tra cứu</span></button>
         <button type="button" data-admin-only data-page="adminSettings" data-portal-page="adminSettings"><i
             class="fas fa-gears"></i><span>Cài đặt</span></button>
       </nav>
@@ -418,6 +430,130 @@
         </section>
       </section>
 
+      <section id="adminLookupSources" class="portal-page">
+        <div class="lookup-admin-grid">
+          <aside class="portal-panel lookup-visual-guide">
+            <div class="lookup-guide-inner">
+              <h3>Thêm trang tra cứu mới</h3>
+              <div class="lookup-guide-step">
+                <span class="lookup-step-number">1</span>
+                <span class="lookup-step-icon"><i class="fas fa-magnifying-glass"></i></span>
+                <div>
+                  <strong>Tìm mẫu</strong>
+                  <p>Mở trang cần thêm và tìm thử một tạp chí hoặc ISSN</p>
+                </div>
+              </div>
+              <div class="lookup-guide-line"></div>
+              <div class="lookup-guide-step">
+                <span class="lookup-step-number">2</span>
+                <span class="lookup-step-icon"><i class="fas fa-link"></i></span>
+                <div>
+                  <strong>Sao chép link</strong>
+                  <p>Copy đường dẫn trên thanh địa chỉ sau khi thấy kết quả</p>
+                </div>
+              </div>
+              <div class="lookup-guide-line"></div>
+              <div class="lookup-guide-step">
+                <span class="lookup-step-number">3</span>
+                <span class="lookup-step-icon"><i class="fas fa-circle-check"></i></span>
+                <div>
+                  <strong>Dán vào đây</strong>
+                  <p>Dán link và nhập đúng từ khóa vừa tìm, hệ thống sẽ tự làm phần còn lại</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="portal-panel lookup-builder-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3>Thêm nguồn tra cứu</h3>
+                <p>Chỉ cần dán link kết quả và nhập từ khóa vừa tìm. Không cần biết kỹ thuật.</p>
+              </div>
+            </div>
+            <form id="lookupSourceForm" class="portal-form lookup-source-form">
+              <input id="lookupSourceId" type="hidden">
+              <div class="portal-field">
+                <label for="lookupSourceName">Tên nguồn</label>
+                <div class="lookup-icon-field">
+                  <i class="fas fa-building-columns"></i>
+                  <input id="lookupSourceName" required maxlength="120" placeholder="Tra cứu thông tin Resurchify">
+                </div>
+              </div>
+              <div class="portal-field">
+                <label for="lookupResultUrl">Link sau khi tìm thấy kết quả</label>
+                <div class="lookup-icon-field with-action">
+                  <i class="fas fa-link"></i>
+                  <input id="lookupResultUrl" type="url" required placeholder="https://www.resurchify.com/.../?query=2773+0123">
+                  <button class="lookup-copy-btn" type="button" data-copy-from="lookupResultUrl" title="Copy link kết quả" aria-label="Copy link kết quả">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="lookup-form-row">
+                <div class="portal-field">
+                <label for="lookupSampleKeyword">Từ khóa/ISSN bạn đã gõ</label>
+                  <div class="lookup-icon-field">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input id="lookupSampleKeyword" required placeholder="2773 0123">
+                  </div>
+                </div>
+                <button id="lookupGenerateTemplate" class="portal-btn lookup-generate-btn" type="button">
+                  <i class="fas fa-wand-magic-sparkles"></i> Tự nhận link
+                </button>
+              </div>
+              <p id="lookupDetectMessage" class="lookup-detect" hidden></p>
+              <div class="portal-field">
+                <label for="lookupUrlTemplate">Link dùng để tra cứu</label>
+                <div class="lookup-icon-field with-action">
+                  <input id="lookupUrlTemplate" required placeholder="https://www.resurchify.com/.../?query={{query}}">
+                  <button class="lookup-copy-btn" type="button" data-copy-from="lookupUrlTemplate" title="Copy link mẫu" aria-label="Copy link mẫu">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="lookup-options-row">
+                <div class="portal-field">
+                  <label for="lookupSourceType">Kiểu trang</label>
+                  <select id="lookupSourceType">
+                    <option value="search">Trang có tìm kiếm</option>
+                    <option value="fixed">Chỉ mở một link</option>
+                  </select>
+                </div>
+                <div class="portal-field">
+                  <label for="lookupDisplayMode">Hiển thị ở trang tra cứu</label>
+                  <select id="lookupDisplayMode">
+                    <option value="both">Hiện trong trang + nút mở ngoài</option>
+                    <option value="iframe">Chỉ hiện trong trang</option>
+                    <option value="link">Chỉ có nút mở ngoài</option>
+                  </select>
+                </div>
+                <input id="lookupSortOrder" type="hidden" value="100">
+              </div>
+              <label class="lookup-active-toggle">
+                <input id="lookupIsActive" type="checkbox" checked>
+                <span>Cho người dùng thấy nguồn này</span>
+              </label>
+              <p id="lookupSourceMessage" class="vip-message" style="margin:0;"></p>
+              <div class="lookup-actions">
+                <button id="lookupResetButton" class="portal-btn" type="button">Làm mới</button>
+                <button id="lookupPreviewButton" class="portal-btn" type="button"><i class="fas fa-eye"></i> Xem thử</button>
+                <button class="portal-btn primary" type="submit"><i class="fas fa-floppy-disk"></i> Lưu</button>
+              </div>
+            </form>
+          </section>
+        </div>
+        <section class="portal-panel lookup-list-panel">
+          <div class="portal-panel-head">
+            <div>
+              <h3>Nguồn đang có</h3>
+              <p>Bấm “Sửa” để đổi link. Nếu trang không hiện được bên trong hệ thống, chọn “Chỉ có nút mở ngoài”.</p>
+            </div>
+          </div>
+          <div id="lookupSourceList" class="lookup-source-list"></div>
+        </section>
+      </section>
+
       <section id="adminSettings" class="portal-page">
         <div class="portal-settings">
           <div class="portal-grid">
@@ -445,11 +581,42 @@
             <section class="portal-panel">
               <div class="portal-panel-head">
                 <div>
-                  <h3>Trial mặc định</h3>
-                  <p>Ba dịch vụ được khởi tạo 14 ngày, 30 lượt/ngày cho tài khoản mới.</p>
+                  <h3><i class="fas fa-clock-rotate-left" style="color:#2f6df6;"></i> Chính sách dùng thử</h3>
+                  <p>Áp dụng cho tài khoản mới và các tài khoản đang trong thời gian dùng thử.</p>
                 </div>
               </div>
-              <p class="portal-panel-note">Admin có quyền sử dụng không giới hạn và không trừ lượt.</p>
+              <form class="portal-form trial-policy-form">
+                <div class="trial-policy-hero">
+                  <span class="trial-policy-icon"><i class="fas fa-gift"></i></span>
+                  <div>
+                    <small>Thời gian dùng thử</small>
+                    <strong><span id="trialPolicyDaysPreview">14</span> ngày</strong>
+                  </div>
+                  <label class="trial-policy-switch" aria-label="Bật dùng thử">
+                    <input id="trialPolicyEnabled" type="checkbox" checked>
+                    <span></span>
+                  </label>
+                </div>
+                <div class="portal-settings-row">
+                  <div class="portal-field">
+                    <label for="adminTrialDays">Số ngày dùng thử</label>
+                    <input id="adminTrialDays" type="number" min="0" max="365" value="14" inputmode="numeric">
+                  </div>
+                  <div class="portal-field">
+                    <label for="adminChatTrialLimit">Hạn mức Chat/ngày</label>
+                    <input id="adminChatTrialLimit" type="number" min="0" max="9999" value="30" inputmode="numeric">
+                  </div>
+                  <div class="portal-field">
+                    <label for="adminReviewTrialLimit">Hạn mức Review/ngày</label>
+                    <input id="adminReviewTrialLimit" type="number" min="0" max="9999" value="5" inputmode="numeric">
+                  </div>
+                </div>
+                <button class="portal-btn primary trial-policy-submit" type="button" data-action="save-admin-settings">
+                  <i class="fas fa-floppy-disk"></i> Cập nhật chính sách
+                </button>
+                <p id="adminSettingsMessage" class="vip-message" style="margin:0;"></p>
+              </form>
+              <p class="portal-panel-note">Admin vẫn được dùng không giới hạn và không trừ lượt.</p>
             </section>
           </div>
           <div class="portal-grid">
@@ -514,6 +681,7 @@
           target="_blank" rel="noopener noreferrer">Danh sách Non-APC</a>
         <a id="scopusLink" href="#" target="_blank" rel="noopener noreferrer">Scopus Preview</a>
         <a id="scimagoLink" href="#" target="_blank" rel="noopener noreferrer">SCImago Journal & Country Rank</a>
+        <span id="lookupExternalLinks" class="lookup-external-links"></span>
       </div>
     </div>
 
@@ -522,7 +690,7 @@
       <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color);">
         <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
       </strong>
-      <div class="iframe-buttons-grid">
+      <div id="lookupIframeButtons" class="iframe-buttons-grid">
         <button data-iframe-type="noapc" class="iframe-btn noapc-btn">
           <i class="fas fa-file-invoice-dollar"></i> Xem Non-APC
         </button>

@@ -16,7 +16,7 @@ export function openIframeInModal(type) {
   const title = document.getElementById('modalTitle')
   const url = window.currentIframeUrls?.[type]
 
-  const labels = {
+  const labels = window.lookupSourceLabels || {
     noapc: '<i class="fas fa-file-invoice-dollar"></i> Non-APC',
     resurchify: '<i class="fas fa-chart-line"></i> Resurchify',
     wos: '<i class="fas fa-globe"></i> Web Of Science',
@@ -45,8 +45,9 @@ export function closeIframeModal() {
 
 export function initTapchiUi() {
   document.getElementById('themeToggleBtn')?.addEventListener('click', toggleTheme)
-  document.querySelectorAll('[data-iframe-type]').forEach(button => {
-    button.addEventListener('click', () => openIframeInModal(button.dataset.iframeType))
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-iframe-type]')
+    if (button) openIframeInModal(button.dataset.iframeType)
   })
   document.querySelectorAll('[data-action="close-iframe-modal"]').forEach(button => {
     button.addEventListener('click', closeIframeModal)

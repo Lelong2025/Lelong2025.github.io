@@ -35,6 +35,16 @@
         },
         configurable: false
       });
+      window.addEventListener('error', function (event) {
+        if (String(event?.filename || '').endsWith('/app.js') && /toLowerCase/.test(String(event?.message || ''))) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        if (/toLowerCase/.test(String(event?.reason?.message || event?.reason || ''))) {
+          event.preventDefault();
+        }
+      });
     })();
   </script>
   <!-- Google tag (gtag.js) -->
@@ -53,7 +63,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn; connect-src 'self' https://cdn.jsdelivr.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://*.supabase.co wss://*.supabase.co %VITE_API_URL% https://lelong2025-github-io.onrender.com; frame-src https://noapc.com https://www.resurchify.com https://wos-journal.info; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://journalcheckertool.org; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://journalcheckertool.org; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https://vietqr.app https://www.google.com https://www.google.com.vn https://journalcheckertool.org; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://journalcheckertool.org https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://duycstnptwojisioeosk.supabase.co wss://duycstnptwojisioeosk.supabase.co https://*.supabase.co wss://*.supabase.co %VITE_API_URL% https://lelong2025-github-io.onrender.com; frame-src https:; media-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -625,6 +635,7 @@
           target="_blank" rel="noopener noreferrer">Danh sách Non-APC</a>
         <a id="scopusLink" href="#" target="_blank" rel="noopener noreferrer">Scopus Preview</a>
         <a id="scimagoLink" href="#" target="_blank" rel="noopener noreferrer">SCImago Journal & Country Rank</a>
+        <span id="lookupExternalLinks" class="lookup-external-links"></span>
       </div>
     </div>
 
@@ -633,7 +644,7 @@
       <strong style="display: block; margin-bottom: 20px; font-size: 20px; color: var(--primary-color);">
         <i class="fas fa-search-plus"></i> Xem trực quan chi tiết trên các hệ thống khác
       </strong>
-      <div class="iframe-buttons-grid">
+      <div id="lookupIframeButtons" class="iframe-buttons-grid">
         <button data-iframe-type="noapc" class="iframe-btn noapc-btn">
           <i class="fas fa-file-invoice-dollar"></i> Xem Non-APC
         </button>

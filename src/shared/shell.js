@@ -13,6 +13,7 @@ const ADMIN_NAV_ITEMS = [
     ? [{ id: 'publishing', label: 'Quản lý xuất bản', href: '/magazine/publishing.html' }]
     : []),
   { id: 'invoices', label: 'Quản lý hóa đơn', href: '/portal/?page=invoices' },
+  { id: 'lookup', label: 'Nguồn tra cứu', href: '/portal/?page=lookup' },
   { id: 'users', label: 'Người dùng', href: '/portal/?page=users' },
   { id: 'settings', label: 'Cài đặt', href: '/portal/?page=settings' },
 ]
@@ -134,41 +135,51 @@ async function updateShellUser(header, options = {}) {
   const accountEl = header.querySelector('#mixing-shell-account')
   const navEl = document.getElementById('mixing-shell-nav')
   const user = await auth.getUser()
+  const preliminaryRole = getUserRole(user, null)
+  const preliminaryIsAdmin = preliminaryRole === 'admin'
+  const preliminaryActive = window.location.pathname.startsWith('/portal') ? inferActiveRoute() : (options.active || inferActiveRoute())
+  const preliminaryNavItems = user ? (preliminaryIsAdmin ? ADMIN_NAV_ITEMS : CLIENT_NAV_ITEMS) : GUEST_NAV_ITEMS
+  const preliminaryVisibleItems = preliminaryNavItems.filter(item => options.showEditor !== false || item.id !== 'editor')
+  header.querySelector('.mixing-shell__credits')?.toggleAttribute('hidden', !user)
+  renderShellNav(navEl, preliminaryVisibleItems, { active: preliminaryActive, showEditor: options.showEditor })
+  renderShellAccount(accountEl, user, null, preliminaryIsAdmin)
+
   const account = user ? await loadAccount() : null
   const role = getUserRole(user, account)
   const isAdmin = role === 'admin'
-  const active = options.active || inferActiveRoute()
+  const active = window.location.pathname.startsWith('/portal') ? inferActiveRoute() : (options.active || inferActiveRoute())
   const navItems = user ? (isAdmin ? ADMIN_NAV_ITEMS : CLIENT_NAV_ITEMS) : GUEST_NAV_ITEMS
   const visibleItems = navItems.filter(item => options.showEditor !== false || item.id !== 'editor')
-  header.querySelector('.mixing-shell__credits')?.toggleAttribute('hidden', !user)
 
   renderShellNav(navEl, visibleItems, { active, showEditor: options.showEditor })
+  renderShellAccount(accountEl, user, account, isAdmin)
+}
 
+function renderShellAccount(accountEl, user, account, isAdmin = false) {
+  if (!accountEl) return
   if (user) {
     const name = getUserName(user)
     const subtitle = isAdmin ? 'System Administrator' : 'Thành viên'
     const avatar = getAvatarUrl(user)
-    if (accountEl) {
-      accountEl.innerHTML = `
-        <button class="mixing-shell__profile" id="mixing-shell-profile" type="button" aria-haspopup="menu" aria-expanded="false">
-          <span class="mixing-shell__identity">
-            <strong>${escapeHTML(name)}</strong>
-            <small>${escapeHTML(subtitle)}</small>
-          </span>
-          <span class="mixing-shell__avatar">
-            ${avatar ? `<img src="${escapeHTML(avatar)}" alt="" />` : `<span>${escapeHTML(getInitial(name))}</span>`}
-          </span>
-          <i class="fa-solid fa-caret-down"></i>
+    accountEl.innerHTML = `
+      <button class="mixing-shell__profile" id="mixing-shell-profile" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="mixing-shell__identity">
+          <strong>${escapeHTML(name)}</strong>
+          <small>${escapeHTML(subtitle)}</small>
+        </span>
+        <span class="mixing-shell__avatar">
+          ${avatar ? `<img src="${escapeHTML(avatar)}" alt="" />` : `<span>${escapeHTML(getInitial(name))}</span>`}
+        </span>
+        <i class="fa-solid fa-caret-down"></i>
+      </button>
+      <div class="mixing-shell__menu" id="mixing-shell-menu" role="menu">
+        <button type="button" role="menuitem" data-shell-action="logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Đăng xuất</span>
         </button>
-        <div class="mixing-shell__menu" id="mixing-shell-menu" role="menu">
-          <button type="button" role="menuitem" data-shell-action="logout">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Đăng xuất</span>
-          </button>
-        </div>
-      `
-    }
-  } else if (accountEl) {
+      </div>
+    `
+  } else {
     accountEl.innerHTML = `
       <button class="mixing-shell__login" type="button" data-shell-action="login">
         <i class="fa-solid fa-right-to-bracket"></i>
@@ -198,7 +209,18 @@ async function loadAccount() {
     try {
       const user = await auth.getUser()
       if (!user || !supabase) return null
-      const { data } = await supabase.from('profiles').select('role, display_name, email').eq('user_id', user.id).maybeSingle()
+      if (user.app_metadata?.role === 'admin' || user.user_metadata?.role === 'admin') {
+        return { role: 'admin', display_name: user.user_metadata?.display_name, email: user.email }
+      }
+      try {
+        const { data, error } = await supabase.rpc('is_magazine_admin')
+        if (!error && data === true) return { role: 'admin', display_name: user.user_metadata?.display_name, email: user.email }
+      } catch (_) { }
+      try {
+        const { data } = await supabase.from('admin_users').select('email').ilike('email', user.email || '').maybeSingle()
+        if (data) return { role: 'admin', display_name: user.user_metadata?.display_name, email: user.email }
+      } catch (_) { }
+      const { data } = await supabase.from('profiles').select('role, display_name, email').or(`user_id.eq.${user.id},id.eq.${user.id}`).maybeSingle()
       return data
     } catch (_) {
       return null
@@ -216,6 +238,17 @@ async function handleShellClick(event) {
 
   const navLink = event.target.closest('.mixing-shell__link')
   if (navLink) {
+    const target = new URL(navLink.href, window.location.href)
+    const current = new URL(window.location.href)
+    if (target.origin === current.origin && target.pathname.startsWith('/portal') && current.pathname.startsWith('/portal')) {
+      event.preventDefault()
+      history.pushState(history.state, '', `${target.pathname}${target.search}${target.hash}`)
+      updateShellActiveNavFromUrl()
+      window.dispatchEvent(new CustomEvent('mixing:portal-route'))
+      window.__MIXING_ROUTE_PORTAL__?.()
+      closeSidebarDrawer()
+      return
+    }
     maybeShowNavigationLoader(event, navLink)
     closeSidebarDrawer()
   }
@@ -530,6 +563,7 @@ function getNavIcon(id) {
     editor: 'fa-pen-nib',
     publishing: 'fa-layer-group',
     invoices: 'fa-file-invoice-dollar',
+    lookup: 'fa-window-maximize',
     users: 'fa-users',
     settings: 'fa-gear',
     payments: 'fa-clock-rotate-left',
@@ -618,8 +652,17 @@ function inferActiveRoute() {
 function inferPortalActiveRoute() {
   const page = new URLSearchParams(window.location.search).get('page')
   if (page === 'invoices') return 'invoices'
+  if (page === 'lookup' || page === 'sources') return 'lookup'
   if (page === 'users') return 'users'
   if (page === 'settings') return 'settings'
   if (page === 'payments') return 'payments'
   return 'dashboard'
+}
+
+function updateShellActiveNavFromUrl() {
+  const active = inferActiveRoute()
+  document.querySelectorAll('[data-shell-nav]').forEach(link => {
+    const selected = link.dataset.shellNav === active
+    link.setAttribute('aria-current', selected ? 'page' : 'false')
+  })
 }
