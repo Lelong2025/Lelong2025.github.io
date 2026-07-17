@@ -33,7 +33,7 @@ import { SERVICE_CODES, withServiceUsage } from '../shared/service-access.js';
 import {
     loadProfile, ensureClientWorkspace, applyRoleUi, loadSubmissions, renderSubmissionsList,
     openLhjLogin, openMediaLibrary, closeMediaLibrary, handleMediaUpload,
-    uploadAuthorPhotoFromInput, submitCurrentArticle, renderSubmissionCard, isClient
+    uploadAuthorPhotoFromInput, submitCurrentArticle, renderSubmissionCard, isClient, isAdmin
 } from './modules/cloud.js';
 
 // Expose states to global window scope for inline scripts
@@ -50,28 +50,32 @@ const denyService = message => {
     }
 };
 
-const exportCurrentArticleWord = () => withServiceUsage({
+const withMagazineAccess = (config, operation) => isAdmin()
+    ? operation({ allowed: true, unlimited: true, source: 'admin' })
+    : withServiceUsage(config, operation);
+
+const exportCurrentArticleWord = () => withMagazineAccess({
     productCode: SERVICE_CODES.MAGAZINE_EXPORT,
     action: 'article_word',
     metadata: { article_id: state.appState.currentArticleId },
     onDenied: denyService
 }, exportCurrentArticleWordRaw);
 
-const exportVectorPdf = () => withServiceUsage({
+const exportVectorPdf = () => withMagazineAccess({
     productCode: SERVICE_CODES.MAGAZINE_EXPORT,
     action: 'article_pdf',
     metadata: { article_id: state.appState.currentArticleId },
     onDenied: denyService
 }, exportVectorPdfRaw);
 
-const exportIssueWord = () => withServiceUsage({
+const exportIssueWord = () => withMagazineAccess({
     productCode: SERVICE_CODES.MAGAZINE_EXPORT,
     action: 'issue_word',
     metadata: { issue_id: state.appState.currentIssueId },
     onDenied: denyService
 }, exportIssueWordRaw);
 
-const runAiReview = () => withServiceUsage({
+const runAiReview = () => withMagazineAccess({
     productCode: SERVICE_CODES.MAGAZINE_AI_REVIEW,
     action: 'full_review',
     metadata: { article_id: state.appState.currentArticleId },

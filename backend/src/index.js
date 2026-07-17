@@ -402,6 +402,7 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
 
 async function handleMagazineReview(request, env, ctx, cors) {
   let reservationId = null;
+  let externallyManagedReservation = false;
   try {
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
@@ -409,18 +410,22 @@ async function handleMagazineReview(request, env, ctx, cors) {
       return jsonResponse({ error: "Nội dung review không hợp lệ" }, 400, cors.headers);
     }
 
-    if (ctx.userClaims.role === "admin") {
-      const { data, error } = await ctx.supabaseAdmin.from("service_usage").insert({
-        user_id: ctx.userClaims.id,
-        product_code: "magazine_ai_review",
-        action: "article_review",
-        units: 1,
-        source: "admin",
-        status: "reserved",
-        idempotency_key: `review-${crypto.randomUUID()}`
-      }).select("id").single();
+    const suppliedReservationId = typeof body.usage_reservation_id === "string" ? body.usage_reservation_id.trim() : "";
+    if (suppliedReservationId) {
+      const { data, error } = await ctx.supabaseAdmin.from("service_usage")
+        .select("id")
+        .eq("id", suppliedReservationId)
+        .eq("user_id", ctx.userClaims.id)
+        .eq("product_code", "magazine_ai_review")
+        .eq("status", "reserved")
+        .maybeSingle();
       if (error) throw error;
+      if (!data?.id) return jsonResponse({ error: "Lượt AI Review không hợp lệ hoặc đã kết thúc" }, 403, cors.headers);
       reservationId = data.id;
+      externallyManagedReservation = true;
+    } else if (ctx.userClaims.role === "admin") {
+      // Admin is permanently unlimited. Usage logging must never block the operation.
+      externallyManagedReservation = true;
     } else {
       const { data, error } = await ctx.supabaseAdmin.rpc("reserve_service_usage", {
         p_user_id: ctx.userClaims.id,
@@ -456,12 +461,12 @@ async function handleMagazineReview(request, env, ctx, cors) {
     const content = payload?.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim()) throw new Error("AI response is empty");
 
-    if (reservationId) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+    if (reservationId && !externallyManagedReservation) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
       p_user_id: ctx.userClaims.id, p_reservation_id: reservationId, p_success: true
     });
     return jsonResponse({ content }, 200, cors.headers);
   } catch (error) {
-    if (reservationId) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
+    if (reservationId && !externallyManagedReservation) await ctx.supabaseAdmin.rpc("finalize_service_usage", {
       p_user_id: ctx.userClaims.id, p_reservation_id: reservationId, p_success: false
     }).catch(() => {});
     console.error("Magazine AI review error", error.message);
