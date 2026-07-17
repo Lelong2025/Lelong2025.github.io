@@ -27,15 +27,19 @@ function escapeHtml(value) {
 
 function currentAiMode() {
     const select = document.getElementById('ai-review-mode');
-    return select?.value === 'suggestion' ? 'suggestion' : 'spelling';
+    return ['spelling', 'suggestion', 'full'].includes(select?.value) ? select.value : 'spelling';
 }
 
 export function syncAiModeControls(mode = currentAiMode()) {
-    state.appState.aiReviewMode = mode === 'suggestion' ? 'suggestion' : 'spelling';
+    state.appState.aiReviewMode = ['spelling', 'suggestion', 'full'].includes(mode) ? mode : 'spelling';
     const select = document.getElementById('ai-review-mode');
     const label = document.getElementById('ai-run-button-label');
     if (select) select.value = state.appState.aiReviewMode;
-    if (label) label.textContent = state.appState.aiReviewMode === 'spelling' ? 'Chạy kiểm chính tả' : 'Chạy gợi ý metadata';
+    if (label) label.textContent = {
+        spelling: 'Chạy kiểm chính tả',
+        suggestion: 'Chạy gợi ý metadata',
+        full: 'Chạy review toàn bài'
+    }[state.appState.aiReviewMode];
 }
 
 export function switchAiReviewMode(mode) {
@@ -83,13 +87,16 @@ export function renderAiReviewPanel(art) {
     syncAiModeControls(suggestions.mode || 'spelling');
     setAiStatusBadge(
         statusBadge,
-        suggestions.mode === 'spelling' ? 'Đã kiểm' : 'Đã gợi ý',
+        suggestions.mode === 'spelling' ? 'Đã kiểm' : suggestions.mode === 'full' ? 'Đã review' : 'Đã gợi ý',
         'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 animate-pulse'
     );
     applyBtn.disabled = false;
     container.innerHTML = '';
 
-    if (suggestions.mode === 'spelling') {
+    if (suggestions.mode === 'full') {
+        applyBtn.disabled = true;
+        renderFullReview(container, suggestions);
+    } else if (suggestions.mode === 'spelling') {
         if (!suggestions.corrections?.length) {
             container.innerHTML = '<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300">AI chưa phát hiện lỗi chính tả trong metadata.</div>';
         } else {
@@ -220,22 +227,128 @@ export function clearPreviewHighlights() {
     });
 }
 
-export async function callLlamaAI(userPrompt, timeoutMs = 75000) {
+export async function callLlamaAI(userPrompt, timeoutMs = 75000, usageReservationId = null) {
     const { apiFetch } = await import('../../shared/utils/api.js');
-    const invocation = apiFetch('/api/magazine/review', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: userPrompt })
-    });
-    const timeout = new Promise((_, reject) => setTimeout(() => {
-        const error = new Error(`Quá thời gian chờ ${Math.round(timeoutMs / 1000)} giây.`);
-        error.code = 408;
-        reject(error);
-    }, timeoutMs));
-    const data = await Promise.race([invocation, timeout]);
-    if (typeof data?.content !== 'string' || !data.content.trim()) {
-        throw new Error('AI không trả về nội dung hợp lệ.');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const data = await apiFetch('/api/magazine/review', {
+            method: 'POST',
+            body: JSON.stringify({ prompt: userPrompt, usage_reservation_id: usageReservationId || undefined }),
+            signal: controller.signal
+        });
+        if (typeof data?.content !== 'string' || !data.content.trim()) {
+            throw new Error('AI không trả về nội dung hợp lệ.');
+        }
+        return data.content;
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            const timeoutError = new Error(`Quá thời gian chờ ${Math.round(timeoutMs / 1000)} giây.`);
+            timeoutError.code = 408;
+            throw timeoutError;
+        }
+        throw error;
+    } finally {
+        clearTimeout(timer);
     }
-    return data.content;
+}
+
+function articlePlainText(art) {
+    const holder = document.createElement('div');
+    holder.innerHTML = String(art?.bodyContent || '');
+    holder.querySelectorAll('script, style, img, svg').forEach(node => node.remove());
+    return (holder.innerText || holder.textContent || '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function splitArticleText(text, maxChars = 11000) {
+    const paragraphs = String(text || '').split(/\n{2,}/).map(value => value.trim()).filter(Boolean);
+    const chunks = [];
+    let current = '';
+    for (const paragraph of paragraphs) {
+        if (current && current.length + paragraph.length + 2 > maxChars) {
+            chunks.push(current);
+            current = '';
+        }
+        if (paragraph.length <= maxChars) {
+            current += `${current ? '\n\n' : ''}${paragraph}`;
+        } else {
+            if (current) chunks.push(current);
+            for (let start = 0; start < paragraph.length; start += maxChars) {
+                chunks.push(paragraph.slice(start, start + maxChars));
+            }
+            current = '';
+        }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
+function buildArticleContextPrompt(art, bodyText) {
+    return `Bạn đang tạo bộ nhớ nội bộ để các lượt review sau hiểu toàn bộ bài báo. Chưa nhận xét hoặc sửa bài. Giữ chính xác số liệu và không suy diễn. Chỉ trả JSON hợp lệ, không Markdown.
+
+Schema: {"topic":"...","objectives":["..."],"methods":["..."],"main_results":["..."],"conclusions":["..."],"important_terms":["..."],"important_numbers":["..."],"consistency_checks":["..."]}
+
+METADATA: ${JSON.stringify(metadataPayload(art))}
+ARTICLE_BODY:
+${bodyText}`;
+}
+
+function buildSectionReviewPrompt(context, sectionText, index, total) {
+    return `Bạn là phản biện bài báo khoa học. Review phần ${index + 1}/${total} trong quan hệ với hồ sơ toàn bài. Không viết lại toàn bộ nội dung, không bịa dữ liệu. Chỉ nêu vấn đề có căn cứ. Chỉ trả JSON hợp lệ, không Markdown.
+
+Schema: {"section_label":"...","summary":"...","issues":[{"category":"logic|method|result|consistency|clarity|citation|language","severity":"high|medium|low","quote":"trích đoạn ngắn hoặc để trống","feedback":"nhận xét và hướng xử lý cụ thể"}]}
+
+ARTICLE_CONTEXT: ${JSON.stringify(context)}
+SECTION_CONTENT:
+${sectionText}`;
+}
+
+async function runFullArticleReview(art, updateProgress, usageReservationId = null) {
+    const bodyText = articlePlainText(art);
+    if (bodyText.length < 100) throw new Error('Nội dung bài quá ngắn để review toàn bài.');
+    if (bodyText.length > 44000) {
+        throw new Error('Bản thử hiện hỗ trợ tối đa khoảng 44.000 ký tự nội dung thuần.');
+    }
+    updateProgress('Đang tạo hồ sơ toàn bài...');
+    const context = parseJsonObject(await callLlamaAI(buildArticleContextPrompt(art, bodyText), 90000, usageReservationId));
+    const chunks = splitArticleText(bodyText);
+    const sections = [];
+    for (let index = 0; index < chunks.length; index += 1) {
+        updateProgress(`Đang review phần ${index + 1}/${chunks.length}...`);
+        sections.push(parseJsonObject(await callLlamaAI(
+            buildSectionReviewPrompt(context, chunks[index], index, chunks.length),
+            90000,
+            usageReservationId
+        )));
+    }
+    return { mode: 'full', context, sections, reviewedAt: new Date().toISOString() };
+}
+
+function renderFullReview(container, suggestions) {
+    const issues = (suggestions.sections || []).flatMap(section =>
+        (Array.isArray(section.issues) ? section.issues : []).map(issue => ({ ...issue, section: section.section_label }))
+    );
+    const severityClass = {
+        high: 'border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300',
+        medium: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300',
+        low: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-300'
+    };
+    container.innerHTML = `
+        <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/20 dark:text-indigo-300">
+            <strong>AI đã đọc toàn bài:</strong> ${escapeHtml(suggestions.context?.topic || 'Đã tạo hồ sơ nội bộ')} · ${issues.length} nhận xét
+        </div>
+        ${issues.length ? issues.map(issue => `
+            <article class="rounded-lg border p-3 text-xs ${severityClass[issue.severity] || severityClass.low}">
+                <div class="mb-1 font-bold">${escapeHtml(issue.section || 'Nội dung')} · ${escapeHtml(issue.category || 'review')}</div>
+                ${issue.quote ? `<blockquote class="mb-2 border-l-2 border-current pl-2 opacity-80">${escapeHtml(issue.quote)}</blockquote>` : ''}
+                <p>${escapeHtml(issue.feedback)}</p>
+            </article>
+        `).join('') : '<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">AI chưa phát hiện vấn đề đáng kể.</div>'}
+    `;
 }
 
 export function buildReviewPrompt(art, mode = currentAiMode()) {
@@ -320,7 +433,7 @@ export function parseAiReviewResult(raw, mode = currentAiMode()) {
     return result;
 }
 
-export async function runAiReview() {
+export async function runAiReview(usageReservation = null) {
     const art = activeArticle();
     if (!art) {
         showToast('Vui lòng chọn bài viết trước khi chạy AI.');
@@ -333,14 +446,20 @@ export async function runAiReview() {
     if (statusBadge) {
         setAiStatusBadge(statusBadge, 'Đang chạy...', 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-bounce');
     }
-    showToast(mode === 'spelling' ? 'Đang kiểm chính tả metadata...' : 'Đang gợi ý metadata...');
+    showToast(mode === 'spelling' ? 'Đang kiểm chính tả metadata...' : mode === 'full' ? 'Đang tạo hồ sơ toàn bài...' : 'Đang gợi ý metadata...');
 
     try {
-        const rawResult = await callLlamaAI(buildReviewPrompt(art, mode));
-        art.aiReviewSuggestions = parseAiReviewResult(rawResult, mode);
+        if (mode === 'full') {
+            art.aiReviewSuggestions = await runFullArticleReview(art, text => {
+                if (statusBadge) setAiStatusBadge(statusBadge, text, 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-pulse');
+            }, usageReservation?.reservation_id);
+        } else {
+            const rawResult = await callLlamaAI(buildReviewPrompt(art, mode), 75000, usageReservation?.reservation_id);
+            art.aiReviewSuggestions = parseAiReviewResult(rawResult, mode);
+        }
         saveToLocalStorage();
         renderAiReviewPanel(art);
-        showToast(mode === 'spelling' ? 'Đã kiểm chính tả metadata.' : 'Đã tạo gợi ý metadata.');
+        showToast(mode === 'spelling' ? 'Đã kiểm chính tả metadata.' : mode === 'full' ? 'Đã review toàn bài.' : 'Đã tạo gợi ý metadata.');
         return true;
     } catch (error) {
         console.error(error);

@@ -49,7 +49,7 @@ export async function withServiceUsage({ productCode, action, metadata = {}, onD
 
   let result
   try {
-    result = await operation()
+    result = await operation(reservation)
   } catch (error) {
     await apiFetch('/api/usage/finalize', {
       method: 'POST',
