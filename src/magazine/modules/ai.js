@@ -19,6 +19,47 @@ function setAiStatusBadge(statusBadge, text, className) {
     statusBadge.classList.toggle('hidden', state.appState.reviewPanelTab === 'issue');
 }
 
+function setAiReviewBusy(busy, message = 'AI đang phân tích bài viết...') {
+    const container = document.getElementById('ai-suggestions-container');
+    const runButton = document.querySelector('button[onclick="runAiReview()"]');
+    const modeSelect = document.getElementById('ai-review-mode');
+    const applyButton = document.getElementById('apply-ai-btn');
+
+    if (runButton) {
+        runButton.disabled = busy;
+        runButton.classList.toggle('cursor-not-allowed', busy);
+        runButton.classList.toggle('opacity-60', busy);
+        runButton.setAttribute('aria-busy', String(busy));
+    }
+    if (modeSelect) modeSelect.disabled = busy;
+    if (applyButton) applyButton.disabled = busy || applyButton.disabled;
+    if (!container) return;
+
+    container.setAttribute('aria-busy', String(busy));
+    if (busy) {
+        container.innerHTML = `
+            <div class="flex min-h-[280px] flex-col items-center justify-center px-5 text-center" role="status" aria-live="polite">
+                <div class="relative mb-5 h-16 w-16">
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-200/30 dark:border-indigo-900/50"></div>
+                    <div class="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-indigo-500 border-r-rose-500"></div>
+                    <i class="fa-solid fa-wand-magic-sparkles absolute inset-0 flex items-center justify-center text-xl text-indigo-400 animate-pulse"></i>
+                </div>
+                <p id="ai-loading-message" class="text-xs font-bold text-indigo-600 dark:text-indigo-300">${escapeHtml(message)}</p>
+                <div class="mt-3 flex items-center gap-1.5" aria-hidden="true">
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-400"></span>
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400 [animation-delay:150ms]"></span>
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-400 [animation-delay:300ms]"></span>
+                </div>
+                <p class="mt-4 max-w-[260px] text-[10px] leading-relaxed text-slate-400">Vui lòng giữ trang này mở. Kết quả sẽ xuất hiện tự động khi hoàn tất.</p>
+            </div>`;
+    }
+}
+
+function updateAiLoadingMessage(message) {
+    const element = document.getElementById('ai-loading-message');
+    if (element) element.textContent = message;
+}
+
 function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -453,12 +494,14 @@ export async function runAiReview(usageReservation = null) {
     if (statusBadge) {
         setAiStatusBadge(statusBadge, 'Đang chạy...', 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-bounce');
     }
+    setAiReviewBusy(true, mode === 'full' ? 'Đang đọc và lập hồ sơ toàn bài...' : 'AI đang phân tích metadata...');
     showToast(mode === 'spelling' ? 'Đang kiểm chính tả metadata...' : mode === 'full' ? 'Đang tạo hồ sơ toàn bài...' : 'Đang gợi ý metadata...');
 
     try {
         if (mode === 'full') {
             art.aiReviewSuggestions = await runFullArticleReview(art, text => {
                 if (statusBadge) setAiStatusBadge(statusBadge, text, 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-pulse');
+                updateAiLoadingMessage(text);
             }, usageReservation?.reservation_id);
         } else {
             const rawResult = await callLlamaAI(buildReviewPrompt(art, mode), 75000, usageReservation?.reservation_id);
@@ -471,8 +514,12 @@ export async function runAiReview(usageReservation = null) {
     } catch (error) {
         console.error(error);
         if (statusBadge) setAiStatusBadge(statusBadge, 'Lỗi AI', 'bg-red-100 text-red-700');
+        const container = document.getElementById('ai-suggestions-container');
+        if (container) container.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300"><i class="fa-solid fa-circle-exclamation mb-2 block text-xl"></i>${escapeHtml(error.message || 'Không thể hoàn tất AI Review.')}</div>`;
         showToast(error.message || 'Không thể hoàn tất AI Review.');
         return false;
+    } finally {
+        setAiReviewBusy(false);
     }
 }
 
