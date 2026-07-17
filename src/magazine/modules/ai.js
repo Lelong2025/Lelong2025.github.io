@@ -298,9 +298,15 @@ ${bodyText}`;
 }
 
 function buildSectionReviewPrompt(context, sectionText, index, total) {
-    return `Bạn là phản biện bài báo khoa học. Review phần ${index + 1}/${total} trong quan hệ với hồ sơ toàn bài. Không viết lại toàn bộ nội dung, không bịa dữ liệu. Chỉ nêu vấn đề có căn cứ. Chỉ trả JSON hợp lệ, không Markdown.
+    return `Bạn là phản biện kiêm biên tập viên bài báo khoa học. Review phần ${index + 1}/${total} trong quan hệ với hồ sơ toàn bài. Mỗi vấn đề phải kèm một gợi ý xử lý cụ thể; nếu phù hợp, đưa ra câu hoặc đoạn thay thế ngắn nhưng không được bịa dữ liệu. Không viết lại toàn bộ nội dung. Chỉ nêu vấn đề có căn cứ. Chỉ trả JSON hợp lệ, không Markdown.
 
-Schema: {"section_label":"...","summary":"...","issues":[{"category":"logic|method|result|consistency|clarity|citation|language","severity":"high|medium|low","quote":"trích đoạn ngắn hoặc để trống","feedback":"nhận xét và hướng xử lý cụ thể"}]}
+Schema: {"section_label":"...","summary":"...","issues":[{"category":"logic|method|result|consistency|clarity|citation|language","severity":"high|medium|low","quote":"trích đoạn ngắn hoặc để trống","feedback":"vấn đề được phát hiện và lý do","suggestion":"cách xử lý cụ thể hoặc câu thay thế ngắn"}]}
+
+Quy tắc gợi ý:
+- Với lỗi logic/phương pháp/kết quả: nêu thông tin cần bổ sung hoặc cách đối chiếu, không tự tạo số liệu.
+- Với lỗi diễn đạt/ngôn ngữ: có thể đề xuất câu thay thế hoàn chỉnh, giữ nguyên ý và thuật ngữ khoa học.
+- Với trích dẫn: chỉ yêu cầu kiểm tra/bổ sung nguồn; không bịa tên tài liệu, DOI hoặc tác giả.
+- Nếu chưa đủ căn cứ để viết câu thay thế, suggestion phải là một hành động kiểm tra cụ thể.
 
 ARTICLE_CONTEXT: ${JSON.stringify(context)}
 SECTION_CONTENT:
@@ -346,6 +352,7 @@ function renderFullReview(container, suggestions) {
                 <div class="mb-1 font-bold">${escapeHtml(issue.section || 'Nội dung')} · ${escapeHtml(issue.category || 'review')}</div>
                 ${issue.quote ? `<blockquote class="mb-2 border-l-2 border-current pl-2 opacity-80">${escapeHtml(issue.quote)}</blockquote>` : ''}
                 <p>${escapeHtml(issue.feedback)}</p>
+                ${issue.suggestion ? `<div class="mt-2 rounded-md border border-current/20 bg-white/60 p-2 text-slate-700 dark:bg-slate-900/40 dark:text-slate-200"><strong>Gợi ý xử lý:</strong> ${escapeHtml(issue.suggestion)}</div>` : ''}
             </article>
         `).join('') : '<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">AI chưa phát hiện vấn đề đáng kể.</div>'}
     `;
