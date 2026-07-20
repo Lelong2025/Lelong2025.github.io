@@ -794,6 +794,10 @@ export function paginateContent(html, art) {
         stateObj.content.appendChild(clone);
         if (!pageHasOverflow(stateObj.content)) return;
         clone.remove();
+        if (/^(P|BLOCKQUOTE)$/i.test(node.tagName) && node.textContent.trim()) {
+            appendTextBlockAcrossPages(node, stateObj, art);
+            return;
+        }
         if (stateObj.content.childElementCount) {
             stateObj.pageNumber += 1;
             stateObj.content = createArticlePage(stateObj.pageNumber, art);
@@ -801,11 +805,7 @@ export function paginateContent(html, art) {
             if (!pageHasOverflow(stateObj.content)) return;
             clone.remove();
         }
-        if (/^(P|BLOCKQUOTE)$/i.test(node.tagName) && node.textContent.trim()) {
-            appendTextBlockAcrossPages(node, stateObj, art);
-        } else {
-            stateObj.content.appendChild(clone);
-        }
+        stateObj.content.appendChild(clone);
     });
 }
 

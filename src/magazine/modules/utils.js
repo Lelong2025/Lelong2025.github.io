@@ -586,7 +586,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 ? wordParagraph(imageDrawingRun(imageInfo.relationshipId, imageInfo.width, imageInfo.height, imageInfo.id), { align: 'center', after: 100 })
                 : wordParagraph(wordRun('[Hình ảnh trong nội dung]', { italic: true, color: '666666' }), { align: 'center' }));
         } else {
-            blocks.push(wordParagraph(inlineHtmlToWord(node, { size: 20 }), wordParagraphOptions(node, { align, after: 100, line: 260 })));
+            blocks.push(wordParagraph(inlineHtmlToWord(node, { size: 20 }), wordParagraphOptions(node, { align, after: 0, line: 260 })));
         }
     });
     return blocks.join('');

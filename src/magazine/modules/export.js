@@ -10,6 +10,10 @@ import {
 } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
 
+const CONTENT_IMAGE_MAX_WIDTH_EMU = 2700000;
+const CONTENT_IMAGE_FALLBACK_HEIGHT_EMU = 1800000;
+const EMU_PER_PIXEL = 9525;
+
 export function safeExportName(art, extension) {
     const base = (art.titleVn || art.titleEn || 'Ban_thao_bai_bao').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 90);
     return `${base}.${extension}`;
@@ -63,6 +67,55 @@ async function imageSourceToDocxImage(src) {
     }
 }
 
+function readImageElementSize(image) {
+    const pixelValue = value => {
+        const raw = String(value || '').trim();
+        if (!raw || (/[a-z%]+$/i.test(raw) && !raw.endsWith('px'))) return 0;
+        const number = parseFloat(raw);
+        return Number.isFinite(number) ? number : 0;
+    };
+    const attrWidth = pixelValue(image.getAttribute('width'));
+    const attrHeight = pixelValue(image.getAttribute('height'));
+    const styleWidth = pixelValue(image.style?.width);
+    const styleHeight = pixelValue(image.style?.height);
+    return {
+        width: styleWidth || attrWidth,
+        height: styleHeight || attrHeight
+    };
+}
+
+async function loadImageIntrinsicSize(src) {
+    if (!src) return { width: 0, height: 0 };
+    return new Promise(resolve => {
+        const image = new Image();
+        image.onload = () => resolve({
+            width: image.naturalWidth || image.width || 0,
+            height: image.naturalHeight || image.height || 0
+        });
+        image.onerror = () => resolve({ width: 0, height: 0 });
+        image.src = src;
+    });
+}
+
+async function contentImageDrawingSize(image) {
+    const src = image.getAttribute('src') || '';
+    const styled = readImageElementSize(image);
+    const intrinsic = (!styled.width || !styled.height) ? await loadImageIntrinsicSize(src) : { width: 0, height: 0 };
+    const ratio = intrinsic.width && intrinsic.height ? intrinsic.height / intrinsic.width : 0;
+    const widthPx = styled.width || intrinsic.width || 0;
+    const heightPx = styled.height || (styled.width && ratio ? styled.width * ratio : intrinsic.height) || 0;
+    if (!widthPx || !heightPx) {
+        return { width: CONTENT_IMAGE_MAX_WIDTH_EMU, height: CONTENT_IMAGE_FALLBACK_HEIGHT_EMU };
+    }
+    const naturalWidth = Math.round(widthPx * EMU_PER_PIXEL);
+    const naturalHeight = Math.round(heightPx * EMU_PER_PIXEL);
+    const scale = Math.min(1, CONTENT_IMAGE_MAX_WIDTH_EMU / naturalWidth);
+    return {
+        width: Math.max(1, Math.round(naturalWidth * scale)),
+        height: Math.max(1, Math.round(naturalHeight * scale))
+    };
+}
+
 export function currentExportData() {
     const art = activeArticle();
     if (!art) throw new Error('Vui lòng chọn bài báo trước khi xuất.');
@@ -109,7 +162,8 @@ export async function prepareContentImages(zip, html) {
             const fileName = `content-${number}.${extension}`;
             zip.file(`word/media/${fileName}`, data, options);
             relationships.push(`<Relationship Id="${relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${fileName}"/>`);
-            map.set(src, { relationshipId, width: 2700000, height: 1800000, id: number + 1 });
+            const drawingSize = await contentImageDrawingSize(images[index]);
+            map.set(src, { relationshipId, ...drawingSize, id: number + 1 });
         } catch (error) {
             console.warn('Không thể nhúng ảnh nội dung:', error);
         }
@@ -849,7 +903,8 @@ export async function prepareAllContentImages(zip, articles) {
                 zip.file(`word/media/${fileName}`, data, options);
                 rels.push(`<Relationship Id="${relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${fileName}"/>`);
 
-                articleMap.set(src, { relationshipId, width: 2700000, height: 1800000, id: imageCounter + 1 });
+                const drawingSize = await contentImageDrawingSize(images[index]);
+                articleMap.set(src, { relationshipId, ...drawingSize, id: imageCounter + 1 });
             } catch (error) {
                 console.warn('Không thể nhúng ảnh:', error);
             }
