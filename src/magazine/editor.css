@@ -280,6 +280,84 @@ body.magazine-auth-required #toast-box {
     cursor: pointer;
 }
 
+#rich-editor-field .math-formula-embed {
+    position: relative;
+    display: block;
+    margin: 12px 0;
+    padding: 10px 12px;
+    border: 1px dashed #93c5fd;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #111827;
+    text-align: center;
+    cursor: pointer;
+}
+
+#rich-editor-field .math-formula-embed[draggable="true"] {
+    cursor: grab;
+}
+
+#rich-editor-field .ql-editor.formula-drop-active {
+    outline: 2px dashed rgba(37, 99, 235, 0.35);
+    outline-offset: -8px;
+}
+
+#rich-editor-field .math-formula-embed.formula-dragging {
+    opacity: 0.45;
+}
+
+#rich-editor-field .math-formula-embed.formula-drop-before {
+    box-shadow: 0 -3px 0 #2563eb, inset 0 0 0 1px #93c5fd;
+}
+
+#rich-editor-field .math-formula-embed.formula-drop-after {
+    box-shadow: 0 3px 0 #2563eb, inset 0 0 0 1px #93c5fd;
+}
+
+#rich-editor-field .formula-drag-handle {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font: 700 14px/1 Inter, sans-serif;
+    opacity: 0.75;
+    cursor: grab;
+}
+
+#rich-editor-field .formula-render-body {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.dark #rich-editor-field .math-formula-embed {
+    border-color: #1d4ed8;
+    background: #0f1f3d;
+    color: #e2e8f0;
+}
+
+.article-page-content .math-formula-embed,
+.rich-rendered-text .math-formula-embed {
+    display: block;
+    margin: 10px 0;
+    color: #111827;
+    text-align: center;
+}
+
+.formula-chip {
+    border-radius: 8px;
+    border: 1px solid #dbe4f0;
+    background: #f8fafc;
+    padding: 5px 9px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.formula-chip:hover {
+    background: #e0f2fe;
+    color: #075985;
+}
+
 #rich-editor-field .scientific-table-embed,
 #rich-editor-field .scientific-table-embed td,
 #rich-editor-field .scientific-table-embed th {

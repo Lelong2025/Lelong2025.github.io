@@ -10,7 +10,7 @@ import {
     createNewArticle, deleteCurrentArticle, createNewIssue, zoomPreview,
     activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale, applyHeaderTitleCase,
     toggleAiPanel, switchReviewTab, openAuthorDialog, closeAuthorDialog, addAuthorProfile,
-    renderAuthorProfiles, removeAuthorProfile
+    renderAuthorProfiles, removeAuthorProfile, setAdminPageMode, updateAdminArticleStartPage
 } from './modules/ui.js';
 import {
     initQuill, openRichTextWorkspace, closeRichTextWorkspace, formatDoc,
@@ -23,7 +23,8 @@ import {
     insertTableRowBelow, deleteTableRow, addTableColumn, insertTableColumnLeft,
     insertTableColumnRight, deleteTableColumn, formatActiveCell, toggleActiveCellBorder,
     mergeSelectedTableCells, splitSelectedTableCell, applyChangeCase, toggleChangeCaseMenu,
-    chooseChangeCase,
+    chooseChangeCase, openFormulaDialog, closeFormulaDialog, insertFormulaSnippet,
+    insertFormulaAtCursor, updateFormulaPreview,
     updateCurrentArticlePages
 } from './modules/editor.js';
 import {
@@ -129,6 +130,8 @@ Object.assign(window, {
     addAuthorProfile,
     renderAuthorProfiles,
     removeAuthorProfile,
+    setAdminPageMode,
+    updateAdminArticleStartPage,
     openRichTextWorkspace,
     closeRichTextWorkspace,
     formatDoc,
@@ -169,6 +172,11 @@ Object.assign(window, {
     applyChangeCase,
     toggleChangeCaseMenu,
     chooseChangeCase,
+    openFormulaDialog,
+    closeFormulaDialog,
+    insertFormulaSnippet,
+    insertFormulaAtCursor,
+    updateFormulaPreview,
     updateCurrentArticlePages,
     exportCurrentArticleWord,
     exportIssueWord,
@@ -208,6 +216,7 @@ async function boot() {
     localStorage.setItem('theme', theme);
 
     state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
+    state.appState.adminPageMode = state.appState.adminPageMode === 'article' ? 'article' : 'issue';
 
     try {
         state.cloudUser = await window.lhuRequireAuth();
@@ -223,6 +232,7 @@ async function boot() {
         if (data?.state && typeof data.state === 'object') {
             state.appState = data.state;
             state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
+            state.appState.adminPageMode = state.appState.adminPageMode === 'article' ? 'article' : 'issue';
             localStorage.setItem(state.LOCAL_STATE_KEY, JSON.stringify(state.appState));
         }
         ensureClientWorkspace();

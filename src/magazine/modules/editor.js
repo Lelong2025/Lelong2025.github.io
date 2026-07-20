@@ -1,6 +1,6 @@
 import { state, saveToLocalStorage } from './state.js';
 import { showToast } from './utils.js';
-import { loadArticleIntoEditor, recalculateContinuousPages, renderArticlesList, renderLivePreview, updateIssueStatusText } from './ui.js';
+import { loadArticleIntoEditor, recalculateContinuousPages, renderArticlesList, renderLivePreview, updateIssueStatusText, syncArticlePageRangeInputs } from './ui.js';
 import { openMediaLibrary } from './cloud.js';
 
 export let quill = null;
@@ -26,6 +26,10 @@ export let editorDragStart = null;
 export let editorDragging = false;
 let activeTableEmbedNode = null;
 let embeddedTableSyncTimer = null;
+let activeFormulaNode = null;
+let formulaToolbarDelegationBound = false;
+let draggedFormula = null;
+let formulaDropIndex = null;
 
 // Register Quill Custom Table Blot
 let QuillBlockEmbed;
@@ -62,6 +66,22 @@ if (window.Quill) {
     ScientificTableBlot.tagName = 'div';
     ScientificTableBlot.className = 'scientific-table-embed';
     window.Quill.register(ScientificTableBlot);
+
+    class MathFormulaBlot extends QuillBlockEmbed {
+        static create(value) {
+            const node = super.create();
+            const latex = typeof value === 'object' ? value.latex : value;
+            node.setAttribute('contenteditable', 'false');
+            node.dataset.latex = String(latex || '');
+            renderFormulaNode(node);
+            return node;
+        }
+        static value(node) { return node.dataset.latex || node.textContent || ''; }
+    }
+    MathFormulaBlot.blotName = 'mathFormula';
+    MathFormulaBlot.tagName = 'div';
+    MathFormulaBlot.className = 'math-formula-embed';
+    window.Quill.register(MathFormulaBlot);
 }
 
 export function initQuill() {
@@ -101,6 +121,11 @@ export function initQuill() {
     quill.root.addEventListener('paste', pasteGridIntoTable);
     quill.root.addEventListener('paste', pasteClipboardTablesIntoQuill, true);
     quill.root.addEventListener('click', handleTableClick);
+    quill.root.addEventListener('click', handleFormulaClick);
+    quill.root.addEventListener('dragstart', handleFormulaDragStart);
+    quill.root.addEventListener('dragover', handleFormulaDragOver);
+    quill.root.addEventListener('drop', handleFormulaDrop);
+    quill.root.addEventListener('dragend', handleFormulaDragEnd);
     quill.root.addEventListener('input', handleEmbeddedTableInput);
     quill.root.addEventListener('keydown', handleEmbeddedTableKeyDown, true);
     quill.root.addEventListener('beforeinput', handleEmbeddedTableBeforeInput, true);
@@ -112,6 +137,30 @@ export function initQuill() {
             document.getElementById('change-case-options')?.classList.add('hidden');
         }
     });
+    document.getElementById('formula-toolbar-button')?.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        openFormulaDialog();
+    }, true);
+    bindFormulaToolbarDelegation();
+    document.getElementById('formula-latex-input')?.addEventListener('input', updateFormulaPreview);
+}
+
+export function bindFormulaToolbarDelegation() {
+    if (formulaToolbarDelegationBound) return;
+    formulaToolbarDelegationBound = true;
+    document.addEventListener('pointerdown', event => {
+        if (!event.target.closest?.('#formula-toolbar-button')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openFormulaDialog();
+    }, true);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindFormulaToolbarDelegation, { once: true });
+} else {
+    bindFormulaToolbarDelegation();
 }
 
 export function applyChangeCase(mode) {
@@ -181,6 +230,227 @@ export function normalizeClipboardTable(table, clipboardRoot) {
     if (!clone.style.width) clone.style.width = '100%';
     clone.dataset.borderMode = 'custom';
     return clone;
+}
+
+export function renderFormulaNode(node) {
+    if (!node) return;
+    const latex = String(node.dataset.latex || '').trim();
+    node.classList.add('math-formula-embed');
+    node.setAttribute('contenteditable', 'false');
+    const editableFormula = Boolean(node.closest?.('#rich-editor-field'));
+    node.toggleAttribute('draggable', editableFormula);
+    if (editableFormula) node.title = 'Kéo để di chuyển, bấm để sửa công thức';
+    if (!latex) {
+        node.textContent = 'Equation';
+        return;
+    }
+    node.innerHTML = '';
+    const handle = editableFormula ? document.createElement('span') : null;
+    if (handle) {
+        handle.className = 'formula-drag-handle';
+        handle.textContent = '⋮⋮';
+        handle.setAttribute('aria-hidden', 'true');
+        handle.setAttribute('draggable', 'true');
+        node.appendChild(handle);
+    }
+    const body = document.createElement('span');
+    body.className = 'formula-render-body';
+    node.appendChild(body);
+    if (window.katex?.render) {
+        try {
+            window.katex.render(latex, body, { throwOnError: false, displayMode: true });
+            return;
+        } catch (_) {
+            // Fallback to readable source below.
+        }
+    }
+    body.textContent = latex;
+}
+
+export function renderMathFormulas(root = document) {
+    root.querySelectorAll?.('.math-formula-embed').forEach(renderFormulaNode);
+}
+
+export function openFormulaDialog(latex = '') {
+    const dialog = document.getElementById('formula-dialog');
+    const input = document.getElementById('formula-latex-input');
+    if (!dialog || !input) return;
+    const workspace = document.getElementById('rich-text-workspace');
+    if (workspace && !workspace.classList.contains('hidden') && dialog.parentElement !== workspace) {
+        workspace.appendChild(dialog);
+    }
+    closeTableDialog();
+    if (quill) {
+        savedQuillRange = quill.getSelection(true) || savedQuillRange || { index: quill.getLength() - 1, length: 0 };
+    }
+    input.value = latex || activeFormulaNode?.dataset?.latex || '';
+    dialog.classList.remove('hidden');
+    dialog.classList.add('flex');
+    updateFormulaPreview();
+    setTimeout(() => input.focus(), 0);
+}
+
+export function closeFormulaDialog() {
+    const dialog = document.getElementById('formula-dialog');
+    if (dialog) {
+        dialog.classList.add('hidden');
+        dialog.classList.remove('flex');
+    }
+    activeFormulaNode = null;
+}
+
+export function updateFormulaPreview() {
+    const input = document.getElementById('formula-latex-input');
+    const preview = document.getElementById('formula-preview');
+    if (!input || !preview) return;
+    preview.dataset.latex = input.value.trim();
+    renderFormulaNode(preview);
+}
+
+export function insertFormulaSnippet(snippet) {
+    const input = document.getElementById('formula-latex-input');
+    if (!input) return;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.setRangeText(snippet, start, end, 'end');
+    updateFormulaPreview();
+    input.focus();
+}
+
+export function insertFormulaAtCursor() {
+    if (!quill) return;
+    const input = document.getElementById('formula-latex-input');
+    const latex = input?.value.trim() || '';
+    if (!latex) return showToast('Hay nhap cong thuc truoc khi chen.');
+    if (activeFormulaNode) {
+        activeFormulaNode.dataset.latex = latex;
+        renderFormulaNode(activeFormulaNode);
+        syncRichEditorToState();
+        closeFormulaDialog();
+        return;
+    }
+    const range = quill.getSelection(true) || savedQuillRange || { index: quill.getLength() - 1, length: 0 };
+    let index = Math.max(0, Math.min(range.index, quill.getLength() - 1));
+    if (range.length) quill.deleteText(index, range.length, 'user');
+    quill.insertEmbed(index, 'mathFormula', latex, 'user');
+    quill.insertText(index + 1, '\n', 'user');
+    quill.setSelection(index + 2, 0, 'silent');
+    savedQuillRange = { index: index + 2, length: 0 };
+    syncRichEditorToState();
+    closeFormulaDialog();
+}
+
+export function handleFormulaClick(event) {
+    const formula = event.target.closest?.('#rich-editor-field .math-formula-embed');
+    if (!formula) return;
+    if (draggedFormula) return;
+    event.preventDefault();
+    event.stopPropagation();
+    activeFormulaNode = formula;
+    openFormulaDialog(formula.dataset.latex || formula.textContent || '');
+}
+
+export function handleFormulaDragStart(event) {
+    const formula = event.target.closest?.('#rich-editor-field .math-formula-embed');
+    if (!formula || !quill) return;
+    const blot = window.Quill?.find(formula);
+    const index = blot ? quill.getIndex(blot) : -1;
+    if (index < 0) return;
+    draggedFormula = {
+        node: formula,
+        latex: formula.dataset.latex || '',
+        index
+    };
+    formula.classList.add('formula-dragging');
+    quill.root.classList.add('formula-drop-active');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedFormula.latex);
+}
+
+export function handleFormulaDragOver(event) {
+    if (!draggedFormula) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const formula = event.target.closest?.('#rich-editor-field .math-formula-embed');
+    quill.root.querySelectorAll('.formula-drop-before, .formula-drop-after').forEach(node => {
+        node.classList.remove('formula-drop-before', 'formula-drop-after');
+    });
+    if (formula && formula !== draggedFormula.node) {
+        const rect = formula.getBoundingClientRect();
+        formula.classList.add(event.clientY > rect.top + rect.height / 2 ? 'formula-drop-after' : 'formula-drop-before');
+    }
+    formulaDropIndex = quillIndexFromPoint(event.clientX, event.clientY);
+}
+
+export function handleFormulaDrop(event) {
+    if (!draggedFormula || !quill) return;
+    event.preventDefault();
+    const targetFormula = event.target.closest?.('#rich-editor-field .math-formula-embed');
+    let targetIndex = formulaDropIndex ?? quillIndexFromPoint(event.clientX, event.clientY) ?? quill.getLength() - 1;
+    if (targetFormula) {
+        const targetBlot = window.Quill?.find(targetFormula);
+        if (targetBlot) {
+            targetIndex = quill.getIndex(targetBlot);
+            const rect = targetFormula.getBoundingClientRect();
+            if (event.clientY > rect.top + rect.height / 2) targetIndex += 1;
+        }
+    }
+    const sourceIndex = draggedFormula.index;
+    const latex = draggedFormula.latex;
+    quill.deleteText(sourceIndex, 1, 'user');
+    if (sourceIndex < targetIndex) targetIndex -= 1;
+    targetIndex = Math.max(0, Math.min(targetIndex, quill.getLength() - 1));
+    quill.insertEmbed(targetIndex, 'mathFormula', latex, 'user');
+    quill.insertText(targetIndex + 1, '\n', 'user');
+    quill.setSelection(targetIndex + 2, 0, 'silent');
+    handleFormulaDragEnd();
+    syncRichEditorToState();
+}
+
+export function handleFormulaDragEnd() {
+    quill?.root.classList.remove('formula-drop-active');
+    quill?.root.querySelectorAll('.formula-dragging, .formula-drop-before, .formula-drop-after').forEach(node => {
+        node.classList.remove('formula-dragging', 'formula-drop-before', 'formula-drop-after');
+    });
+    draggedFormula = null;
+    formulaDropIndex = null;
+}
+
+export function quillIndexFromPoint(x, y) {
+    if (!quill) return null;
+    let range = null;
+    if (document.caretRangeFromPoint) {
+        range = document.caretRangeFromPoint(x, y);
+    } else if (document.caretPositionFromPoint) {
+        const position = document.caretPositionFromPoint(x, y);
+        if (position) {
+            range = document.createRange();
+            range.setStart(position.offsetNode, position.offset);
+            range.collapse(true);
+        }
+    }
+    if (!range || !quill.root.contains(range.startContainer)) {
+        return null;
+    }
+
+    let node = range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement
+        : range.startContainer;
+    while (node && node !== quill.root && !window.Quill?.find(node)) {
+        node = node.parentElement;
+    }
+    const blot = node ? window.Quill?.find(node) : null;
+    if (!blot) return null;
+
+    const baseIndex = quill.getIndex(blot);
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        return baseIndex + Math.max(0, range.startOffset || 0);
+    }
+    if (node?.classList?.contains('math-formula-embed') || node?.classList?.contains('scientific-table-embed')) {
+        const rect = node.getBoundingClientRect();
+        return baseIndex + (y > rect.top + rect.height / 2 ? 1 : 0);
+    }
+    return baseIndex;
 }
 
 function cellTextLength(cell) {
@@ -298,6 +568,7 @@ export function openRichTextWorkspace() {
     loadingQuillContent = false;
     quill.root.querySelectorAll('.scientific-table-embed').forEach(embed => embed.setAttribute('contenteditable', 'false'));
     quill.root.querySelectorAll('table').forEach(ensureTableResizeHandles);
+    renderMathFormulas(quill.root);
 
     const workspace = document.getElementById('rich-text-workspace');
     if (workspace) {
@@ -494,6 +765,7 @@ export function restoreEditorSelection() {
 }
 
 export function openTableDialog() {
+    closeFormulaDialog();
     rememberEditorSelection();
     activeTableEmbedNode = null;
     const dialog = document.getElementById('table-dialog');
@@ -520,6 +792,7 @@ export function openTableDialog() {
 
 export function openExistingTableEditor(table) {
     if (!table) return;
+    closeFormulaDialog();
     const dialog = document.getElementById('table-dialog');
     const workspace = document.getElementById('rich-text-workspace');
     if (dialog && workspace && !workspace.classList.contains('hidden') && dialog.parentElement !== workspace) {
@@ -1770,6 +2043,7 @@ export function updateCurrentArticlePages(val) {
         recalculateContinuousPages();
         renderArticlesList();
         renderLivePreview(art);
+        syncArticlePageRangeInputs(art);
         saveToLocalStorage();
 
         const calcText = document.getElementById('form-calculated-pages');

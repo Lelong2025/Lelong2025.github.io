@@ -2,7 +2,7 @@ import { state, saveToLocalStorage } from './state.js';
 import {
     showToast, toTitleCase, removeVietnameseDiacritics,
     quillHtmlToWordXml, wordParagraph, wordRun, wordTable, sectionProperties,
-    imageDrawingRun, authorTextToWordRuns, parseAuthorMarkers
+    imageDrawingRun, authorTextToWordRuns, parseAuthorMarkers, stripAuthorMarkers
 } from './utils.js';
 import {
     activeArticle, footerDateText, headerMetaText, articleIssueYear,
@@ -296,7 +296,7 @@ export async function buildDefaultDocx(data) {
     const word = zip.folder('word');
     word.file('document.xml', documentXml).file('styles.xml', styles)
         .file('settings.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:evenAndOddHeaders/><w:updateFields w:val="true"/><w:compat/></w:settings>')
-        .file('header-odd.xml', headerXml(data.authors || 'Tác giả', 'right', { authorMarkers: true }))
+        .file('header-odd.xml', headerXml(stripAuthorMarkers(data.authors) || 'Tác giả', 'right'))
         .file('header-even.xml', headerXml(data.headerTitle || data.title || data.title_en || 'TIÊU ĐỀ BÀI BÁO', 'left'))
         .file('header-first.xml', coverXml(data, logoLoaded ? imageDrawingRun('rIdLogo', 410000, 406525, 1) : '', true))
         .file('footer-odd.xml', footerXml(data.date, false)).file('footer-even.xml', footerXml(data.date, true));
@@ -406,7 +406,10 @@ export async function exportCurrentArticleWordFromTemplate() {
                 let hxml = file.asText();
                 hxml = normalizeAndReplaceDocxXml(hxml, {
                     ...data,
-                    title: data.headerTitle || data.title || data.title_en
+                    title: data.headerTitle || data.title || data.title_en,
+                    authors: stripAuthorMarkers(data.authors),
+                    authors_vi: stripAuthorMarkers(data.authors),
+                    authors_en: removeVietnameseDiacritics(stripAuthorMarkers(data.authors))
                 });
                 zip.file(name, hxml);
             }
@@ -1011,7 +1014,13 @@ export async function exportIssueWord() {
                     if (xmlFile) {
                         let fileXml = xmlFile.asText();
                         const partData = info.originalFilename.includes('header')
-                            ? { ...data, title: data.headerTitle || data.title || data.title_en }
+                            ? {
+                                ...data,
+                                title: data.headerTitle || data.title || data.title_en,
+                                authors: stripAuthorMarkers(data.authors),
+                                authors_vi: stripAuthorMarkers(data.authors),
+                                authors_en: removeVietnameseDiacritics(stripAuthorMarkers(data.authors))
+                            }
                             : data;
                         fileXml = info.originalFilename.includes('footer')
                             ? replaceFooterDatePlaceholdersXml(fileXml, data.date)

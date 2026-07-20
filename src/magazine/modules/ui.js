@@ -1,7 +1,7 @@
 import { state, saveToLocalStorage, saveToSupabase } from './state.js';
-import { showToast, removeVietnameseDiacritics, toTitleCase, authorTextToHtml } from './utils.js';
+import { showToast, removeVietnameseDiacritics, toTitleCase, authorTextToHtml, stripAuthorMarkers } from './utils.js';
 import { renderAiReviewPanel } from './ai.js';
-import { getQuillInstance, getQuillArticleId, setQuillArticleId, getLoadingQuillContent, setLoadingQuillContent, syncWorkspacePreview } from './editor.js';
+import { getQuillInstance, getQuillArticleId, setQuillArticleId, getLoadingQuillContent, setLoadingQuillContent, syncWorkspacePreview, renderMathFormulas } from './editor.js';
 import { isClient, normalizeClientPages, applyRoleUi, escapeHtml } from './cloud.js';
 
 let singleArticlePreviewTemplate = '';
@@ -57,6 +57,7 @@ export function initApp() {
             initApp();
         });
     }
+    updateAdminPageModeControls();
 }
 
 export function issueStatusText(currentIssue = state.appState.issues[state.appState.currentIssueId]) {
@@ -211,6 +212,26 @@ export function recalculateContinuousPages() {
         const globalPage = document.getElementById('global-page-count');
         if (totalArts) totalArts.textContent = currentIssue.articles.length;
         if (globalPage) globalPage.textContent = `${currentIssue.articles.length} bài báo`;
+        return;
+    }
+
+    if (state.appState.adminPageMode === 'article') {
+        let totalPageBudget = 0;
+        currentIssue.articles.forEach((art) => {
+            const count = Math.max(1, parseInt(art.pageCount || 1, 10) || 1);
+            const manualStart = Math.max(1, parseInt(art.manualStartPage || art.startPage || 1, 10) || 1);
+            art.manualStartPage = manualStart;
+            art.startPage = manualStart;
+            art.endPage = manualStart + count - 1;
+            totalPageBudget += count;
+        });
+
+        const totalArts = document.getElementById('sidebar-total-articles');
+        const globalPage = document.getElementById('global-page-count');
+        if (totalArts) totalArts.textContent = currentIssue.articles.length;
+        if (globalPage) globalPage.textContent = `${currentIssue.articles.length} bai bao le (Tong cong ${totalPageBudget} trang thuc te)`;
+        updateIssueStatusText(currentIssue);
+        updateAdminPageModeControls();
         return;
     }
 
@@ -432,6 +453,7 @@ export function loadArticleIntoEditor(id) {
     }
 
     document.getElementById('input-page-count').value = art.pageCount || 5;
+    syncArticlePageRangeInputs(art);
     const issueYearInput = document.getElementById('input-issue-year');
     const issueNumberInput = document.getElementById('input-issue-number');
     if (issueYearInput) issueYearInput.value = art.issueYear || issueYearFallback(art);
@@ -465,6 +487,7 @@ export function loadArticleIntoEditor(id) {
 
 export function clearEditorForm() {
     document.getElementById('input-page-count').value = 1;
+    syncArticlePageRangeInputs(null);
     const issueYearInput = document.getElementById('input-issue-year');
     const issueNumberInput = document.getElementById('input-issue-number');
     if (issueYearInput) issueYearInput.value = '';
@@ -527,6 +550,11 @@ export function syncFormToPreview() {
     const linkDoiInput = document.getElementById('input-link-doi');
     art.doi = doiInput ? doiInput.value : (art.doi || '');
     art.linkDoi = linkDoiInput ? linkDoiInput.value : (art.linkDoi || '');
+    const startPageInput = document.getElementById('input-start-page');
+    if (startPageInput && isAdminArticlePageMode()) {
+        art.manualStartPage = Math.max(1, parseInt(startPageInput.value || 1, 10) || 1);
+        recalculateContinuousPages();
+    }
 
     saveToLocalStorage();
     renderLivePreview(art);
@@ -540,6 +568,65 @@ export function syncFormToPreview() {
     if (activeAuthorText) {
         activeAuthorText.textContent = art.authors || 'Chưa rõ tác giả';
     }
+}
+
+export function isAdminArticlePageMode() {
+    return !isClient() && state.appState.adminPageMode === 'article';
+}
+
+export function syncArticlePageRangeInputs(art = activeArticle()) {
+    const startInput = document.getElementById('input-start-page');
+    const endInput = document.getElementById('input-end-page');
+    if (!startInput && !endInput) return;
+    const count = Math.max(1, parseInt(art?.pageCount || 1, 10) || 1);
+    const start = Math.max(1, parseInt(art?.startPage || art?.manualStartPage || 1, 10) || 1);
+    if (startInput) startInput.value = art ? start : '';
+    if (endInput) endInput.value = art ? start + count - 1 : '';
+}
+
+export function updateAdminPageModeControls() {
+    const articleMode = isAdminArticlePageMode();
+    document.querySelectorAll('[data-admin-page-mode]').forEach(button => {
+        const active = button.dataset.adminPageMode === (articleMode ? 'article' : 'issue');
+        button.classList.toggle('bg-blue-600', active);
+        button.classList.toggle('text-white', active);
+        button.classList.toggle('bg-white', !active);
+        button.classList.toggle('text-slate-600', !active);
+        button.classList.toggle('dark:bg-slate-700', !active);
+        button.classList.toggle('dark:text-slate-200', !active);
+    });
+    document.querySelectorAll('[data-admin-article-mode-only]').forEach(el => el.classList.toggle('hidden', !articleMode));
+    const pageHelp = document.getElementById('page-count-help');
+    if (pageHelp) {
+        pageHelp.textContent = articleMode
+            ? 'trang thực tế; trang kết thúc tự tính theo trang bắt đầu'
+            : 'trang thực tế (Dùng tính toán số trang dồn tự động)';
+    }
+    syncArticlePageRangeInputs();
+}
+
+export function setAdminPageMode(mode) {
+    if (isClient()) return;
+    state.appState.adminPageMode = mode === 'article' ? 'article' : 'issue';
+    if (state.appState.adminPageMode === 'article') state.appState.previewMode = 'single';
+    recalculateContinuousPages();
+    renderArticlesList();
+    const art = activeArticle();
+    if (art) renderLivePreview(art);
+    saveToLocalStorage();
+    updateAdminPageModeControls();
+}
+
+export function updateAdminArticleStartPage(value) {
+    if (!isAdminArticlePageMode()) return;
+    const art = activeArticle();
+    if (!art) return;
+    art.manualStartPage = Math.max(1, parseInt(value || 1, 10) || 1);
+    recalculateContinuousPages();
+    renderArticlesList();
+    renderLivePreview(art);
+    saveToLocalStorage();
+    syncArticlePageRangeInputs(art);
 }
 
 export function issueNumberFallback() {
@@ -635,7 +722,7 @@ export function createArticlePage(pageNumber, art) {
 
     const header = document.createElement('div');
     header.className = `article-running-header ${displayPageNumber % 2 ? 'odd' : 'even'}`;
-    if (displayPageNumber % 2) header.innerHTML = authorTextToHtml(art.authors, 'Tác giả');
+    if (displayPageNumber % 2) header.textContent = stripAuthorMarkers(art.authors) || 'Tác giả';
     else header.textContent = runningHeaderTitle(art);
     page.appendChild(header);
 
@@ -793,6 +880,7 @@ export function renderSingleArticlePreview(art) {
     const footerDate = document.querySelector('#a4-container > .a4-page .footer-date');
     if (footerDate) footerDate.textContent = footerDateText(art);
     paginateContent(art.bodyContent, art);
+    renderMathFormulas(a4Container);
     appendAuthorProfilesToPreview(art);
     syncCurrentArticlePageCountFromPreview(art);
     if (headerMeta) headerMeta.textContent = headerMetaText(art);
@@ -836,6 +924,11 @@ export function appendAuthorProfilesToPreview(art) {
 
 export function togglePreviewMode() {
     if (isClient()) {
+        state.appState.previewMode = 'single';
+        renderLivePreview();
+        return;
+    }
+    if (state.appState.adminPageMode === 'article') {
         state.appState.previewMode = 'single';
         renderLivePreview();
         return;
@@ -918,6 +1011,7 @@ export function createNewArticle() {
         abstractEn: "",
         bodyContent: "",
         pageCount: 1,
+        manualStartPage: 1,
         aiReviewSuggestions: null,
         headerTitle: "",
         authorProfiles: []

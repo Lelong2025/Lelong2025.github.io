@@ -73,6 +73,16 @@ export function parseAuthorMarkers(value) {
     return parts.length ? parts : [{ type: 'text', value: text }];
 }
 
+export function stripAuthorMarkers(value) {
+    return parseAuthorMarkers(value)
+        .filter(part => part.type !== 'sup')
+        .map(part => part.value)
+        .join('')
+        .replace(/\s+([,;])/g, '$1')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
 export function authorTextToHtml(value, fallback = '') {
     const source = value || fallback;
     return parseAuthorMarkers(source).map(part =>
@@ -216,6 +226,192 @@ export function inlineHtmlToWord(node, inherited = {}) {
     return Array.from(node.childNodes).map(child => inlineHtmlToWord(child, next)).join('');
 }
 
+export function formulaTextFromElement(node) {
+    return String(node?.dataset?.latex || node?.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function mathRun(value) {
+    return `<m:r><m:rPr><m:sty m:val="p"/></m:rPr><m:t>${xmlEscape(value)}</m:t></m:r>`;
+}
+
+function mathExpression(children) {
+    return `<m:e>${children || mathRun('')}</m:e>`;
+}
+
+function readLatexGroup(source, cursor) {
+    let index = cursor;
+    while (/\s/.test(source[index] || '')) index += 1;
+    if (source[index] !== '{') return { value: source[index] || '', end: index + 1 };
+    let depth = 1;
+    let body = '';
+    index += 1;
+    while (index < source.length && depth > 0) {
+        const char = source[index];
+        if (char === '{') {
+            depth += 1;
+            body += char;
+        } else if (char === '}') {
+            depth -= 1;
+            if (depth) body += char;
+        } else {
+            body += char;
+        }
+        index += 1;
+    }
+    return { value: body, end: index };
+}
+
+function splitLatexTopLevel(source, separatorPattern) {
+    const parts = [];
+    let depth = 0;
+    let cursor = 0;
+    for (let index = 0; index < source.length; index += 1) {
+        const char = source[index];
+        if (char === '{') depth += 1;
+        else if (char === '}') depth = Math.max(0, depth - 1);
+        if (!depth && separatorPattern(source, index)) {
+            parts.push(source.slice(cursor, index));
+            cursor = index + (source[index] === '\\' && source[index + 1] === '\\' ? 2 : 1);
+        }
+    }
+    parts.push(source.slice(cursor));
+    return parts;
+}
+
+function matrixMathXml(body) {
+    const rows = splitLatexTopLevel(body, (source, index) => source[index] === '\\' && source[index + 1] === '\\')
+        .map(row => splitLatexTopLevel(row, (source, index) => source[index] === '&')
+            .map(cell => `<m:e>${parseLatexMath(cell.trim()).xml || mathRun('')}</m:e>`)
+            .join(''))
+        .map(cells => `<m:mr>${cells}</m:mr>`)
+        .join('');
+    const matrixRows = rows || '<m:mr><m:e/></m:mr>';
+    return `<m:d><m:dPr><m:begChr m:val="["/><m:endChr m:val="]"/></m:dPr><m:e><m:m><m:mPr/>${matrixRows}</m:m></m:e></m:d>`;
+}
+
+const latexGreekMap = {
+    alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', theta: 'θ',
+    lambda: 'λ', mu: 'μ', pi: 'π', sigma: 'σ', omega: 'ω', Delta: 'Δ',
+    Gamma: 'Γ', Omega: 'Ω'
+};
+
+function latexCommandToSymbol(command) {
+    if (command === 'sum') return '∑';
+    if (command === 'int') return '∫';
+    if (command === 'infty') return '∞';
+    if (command === 'cdot' || command === 'times') return command === 'cdot' ? '·' : '×';
+    if (command === 'pm') return '±';
+    if (command === 'leq') return '≤';
+    if (command === 'geq') return '≥';
+    if (command === 'neq') return '≠';
+    return latexGreekMap[command] || command;
+}
+
+function parseLatexMath(source, cursor = 0, stopChar = '') {
+    const parts = [];
+    let index = cursor;
+    const parseScript = () => {
+        while (/\s/.test(source[index] || '')) index += 1;
+        if (source[index] === '{') {
+            const group = readLatexGroup(source, index);
+            index = group.end;
+            return parseLatexMath(group.value).xml;
+        }
+        const atom = parseAtom();
+        return atom.xml;
+    };
+    const applyScripts = (baseXml) => {
+        let subXml = '';
+        let supXml = '';
+        let consumed = true;
+        while (consumed) {
+            consumed = false;
+            while (/\s/.test(source[index] || '')) index += 1;
+            if (source[index] === '_') {
+                index += 1;
+                subXml = parseScript();
+                consumed = true;
+            }
+            while (/\s/.test(source[index] || '')) index += 1;
+            if (source[index] === '^') {
+                index += 1;
+                supXml = parseScript();
+                consumed = true;
+            }
+        }
+        if (subXml && supXml) return `<m:sSubSup><m:e>${baseXml}</m:e><m:sub>${subXml}</m:sub><m:sup>${supXml}</m:sup></m:sSubSup>`;
+        if (supXml) return `<m:sSup><m:e>${baseXml}</m:e><m:sup>${supXml}</m:sup></m:sSup>`;
+        if (subXml) return `<m:sSub><m:e>${baseXml}</m:e><m:sub>${subXml}</m:sub></m:sSub>`;
+        return baseXml;
+    };
+    const parseAtom = () => {
+        if (stopChar && source[index] === stopChar) return { xml: '', end: index };
+        if (source[index] === '\\') {
+            const match = source.slice(index + 1).match(/^([A-Za-z]+|.)/);
+            const command = match?.[1] || '';
+            index += command.length + 1;
+            if (command === 'begin') {
+                const env = readLatexGroup(source, index);
+                index = env.end;
+                if (['matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix'].includes(env.value)) {
+                    const endToken = `\\end{${env.value}}`;
+                    const endIndex = source.indexOf(endToken, index);
+                    const body = endIndex >= 0 ? source.slice(index, endIndex) : source.slice(index);
+                    index = endIndex >= 0 ? endIndex + endToken.length : source.length;
+                    if (env.value === 'pmatrix') {
+                        return { xml: matrixMathXml(body).replace('m:val="["', 'm:val="("').replace('m:val="]"', 'm:val=")"'), end: index };
+                    }
+                    return { xml: matrixMathXml(body), end: index };
+                }
+                return { xml: mathRun(env.value), end: index };
+            }
+            if (command === 'end') {
+                const env = readLatexGroup(source, index);
+                index = env.end;
+                return { xml: mathRun(''), end: index };
+            }
+            if (command === ',' || command === ';') return { xml: mathRun(' '), end: index };
+            if (command === 'frac') {
+                const numerator = readLatexGroup(source, index);
+                index = numerator.end;
+                const denominator = readLatexGroup(source, index);
+                index = denominator.end;
+                return {
+                    xml: `<m:f><m:fPr><m:type m:val="bar"/></m:fPr><m:num>${parseLatexMath(numerator.value).xml}</m:num><m:den>${parseLatexMath(denominator.value).xml}</m:den></m:f>`,
+                    end: index
+                };
+            }
+            if (command === 'sqrt') {
+                const radicand = readLatexGroup(source, index);
+                index = radicand.end;
+                return { xml: `<m:rad><m:radPr/><m:deg/><m:e>${parseLatexMath(radicand.value).xml}</m:e></m:rad>`, end: index };
+            }
+            return { xml: mathRun(latexCommandToSymbol(command)), end: index };
+        }
+        if (source[index] === '{') {
+            const group = readLatexGroup(source, index);
+            index = group.end;
+            return { xml: parseLatexMath(group.value).xml, end: index };
+        }
+        const char = source[index] || '';
+        index += 1;
+        return { xml: mathRun(char), end: index };
+    };
+    while (index < source.length) {
+        if (stopChar && source[index] === stopChar) break;
+        const atom = parseAtom();
+        if (atom.xml) parts.push(applyScripts(atom.xml));
+    }
+    return { xml: parts.join(''), end: index };
+}
+
+export function latexToWordMathXml(latex) {
+    const cleaned = String(latex || '').trim();
+    if (!cleaned) return '';
+    const body = parseLatexMath(cleaned).xml || mathRun(cleaned);
+    return `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="80" w:after="100"/></w:pPr><m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">${body}</m:oMath></w:p>`;
+}
+
 export function wordTable(rows, widths, options = {}) {
     const total = widths.reduce((sum, value) => sum + value, 0);
     const cellMargin = options.cellMargin ?? 100;
@@ -285,6 +481,9 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
             });
         } else if (node.classList.contains('scientific-table-embed') && node.querySelector('table')) {
             blocks.push(quillHtmlToWordXml(node.querySelector('table').outerHTML, imageMap));
+        } else if (node.classList.contains('math-formula-embed')) {
+            const latex = formulaTextFromElement(node);
+            blocks.push(latexToWordMathXml(latex));
         } else if (node.tagName === 'TABLE') {
             const htmlRows = Array.from(node.rows);
             const count = Math.max(1, ...htmlRows.map(row =>

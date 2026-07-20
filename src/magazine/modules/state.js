@@ -8,6 +8,7 @@ export const state = {
         zoomLevel: 100,
         sidebarCollapsed: false,
         previewMode: "single",
+        adminPageMode: "issue",
         mobileTab: "editor"
     },
     LOCAL_STATE_KEY: 'lhu_journal_manager_state_v4',
