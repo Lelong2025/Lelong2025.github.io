@@ -88,7 +88,7 @@ export function authorTextToHtml(value, fallback = '') {
     return parseAuthorMarkers(source).map(part =>
         part.type === 'sup'
             ? `<sup>${xmlEscape(part.value)}</sup>`
-            : xmlEscape(part.value)
+            : xmlEscape(part.value).replace(/\r\n|\r|\n/g, '<br>')
     ).join('');
 }
 

@@ -99,11 +99,18 @@
 .preview-affiliation-line {
     margin-top: 0;
     margin-bottom: 1mm;
-    line-height: 1.08;
+    line-height: 1.16;
 }
 
 .preview-affiliation-line br {
     line-height: 1;
+}
+
+.preview-affiliation-line sup {
+    display: inline;
+    line-height: normal;
+    position: static;
+    vertical-align: super;
 }
 
 .article-page-content {
