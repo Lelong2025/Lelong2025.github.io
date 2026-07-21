@@ -45,7 +45,7 @@ if (window.Quill) {
     });
     const TextIndentStyle = new Parchment.Attributor.Style('textIndent', 'text-indent', {
         scope: Parchment.Scope.BLOCK,
-        whitelist: ['0.5cm', '1cm', '1.27cm', '1.5cm', '2cm']
+        whitelist: ['0.36cm', '0.5cm', '1cm', '1.27cm', '1.5cm', '2cm']
     });
     window.Quill.register(FontSizeStyle, true);
     window.Quill.register(LineHeightStyle, true);
@@ -120,6 +120,7 @@ export function initQuill() {
     quill.root.addEventListener('focusin', rememberEditorSelection);
     quill.root.addEventListener('paste', pasteGridIntoTable);
     quill.root.addEventListener('paste', pasteClipboardTablesIntoQuill, true);
+    quill.root.addEventListener('paste', normalizeEditorPasteFormatting);
     quill.root.addEventListener('click', handleTableClick);
     quill.root.addEventListener('click', handleFormulaClick);
     quill.root.addEventListener('dragstart', handleFormulaDragStart);
@@ -228,8 +229,95 @@ export function normalizeClipboardTable(table, clipboardRoot) {
     });
     clone.style.borderCollapse = 'collapse';
     if (!clone.style.width) clone.style.width = '100%';
-    clone.dataset.borderMode = 'custom';
-    return clone;
+    return applyApaTableBorders(clone);
+}
+
+function getTableCellPlacements(table) {
+    const occupied = [];
+    const placements = [];
+    Array.from(table.rows).forEach((row, rowIndex) => {
+        occupied[rowIndex] ||= [];
+        let columnIndex = 0;
+        Array.from(row.cells).forEach(cell => {
+            while (occupied[rowIndex][columnIndex]) columnIndex += 1;
+            const colSpan = Math.max(1, cell.colSpan || 1);
+            const rowSpan = Math.max(1, cell.rowSpan || 1);
+            const placement = {
+                cell,
+                row: rowIndex,
+                column: columnIndex,
+                maxRow: rowIndex + rowSpan - 1,
+                maxColumn: columnIndex + colSpan - 1,
+                rowSpan,
+                colSpan
+            };
+            placements.push(placement);
+            for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+                occupied[rowIndex + rowOffset] ||= [];
+                for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
+                    occupied[rowIndex + rowOffset][columnIndex + colOffset] = cell;
+                }
+            }
+            columnIndex += colSpan;
+        });
+    });
+    return placements;
+}
+
+function inferApaHeaderDepth(table, placements) {
+    const rows = Array.from(table.rows);
+    if (!rows.length) return 0;
+    const theadRowCount = table.tHead?.rows?.length || 0;
+    if (theadRowCount) {
+        const headerBottom = Math.max(theadRowCount - 1, ...placements
+            .filter(item => item.row < theadRowCount)
+            .map(item => item.maxRow));
+        return Math.min(rows.length, headerBottom + 1);
+    }
+    const firstRowCells = Array.from(rows[0].cells);
+    const firstRowHasGroupedHeader = firstRowCells.some(cell =>
+        Math.max(1, cell.colSpan || 1) > 1 || Math.max(1, cell.rowSpan || 1) > 1);
+    const firstRowMaxSpan = Math.max(1, ...firstRowCells.map(cell => Math.max(1, cell.rowSpan || 1)));
+    return Math.min(rows.length, Math.max(firstRowMaxSpan, firstRowHasGroupedHeader && rows.length > 1 ? 2 : 1));
+}
+
+export function applyApaTableBorders(table) {
+    if (!table) return table;
+    const border = '1px solid #000';
+    table.style.borderCollapse = 'collapse';
+    table.style.borderTop = border;
+    table.style.borderBottom = border;
+    table.style.borderLeft = 'none';
+    table.style.borderRight = 'none';
+    if (!table.style.width) table.style.width = '100%';
+    table.dataset.borderMode = 'custom';
+    table.dataset.top = 'true';
+    table.dataset.bottom = 'true';
+    table.dataset.left = 'false';
+    table.dataset.right = 'false';
+    table.dataset.insideH = 'false';
+    table.dataset.insideV = 'false';
+    delete table.dataset.header;
+
+    const placements = getTableCellPlacements(table);
+    placements.forEach(({ cell }) => {
+        cell.style.border = 'none';
+        cell.style.borderTop = 'none';
+        cell.style.borderBottom = 'none';
+        cell.style.borderLeft = 'none';
+        cell.style.borderRight = 'none';
+        if (!cell.style.padding) cell.style.padding = '4px';
+    });
+
+    const headerDepth = inferApaHeaderDepth(table, placements);
+    if (headerDepth) {
+        const headerBottomRow = headerDepth - 1;
+        placements
+            .filter(item => item.row < headerDepth && item.maxRow === headerBottomRow)
+            .forEach(({ cell }) => { cell.style.borderBottom = border; });
+    }
+
+    return table;
 }
 
 export function renderFormulaNode(node) {
@@ -562,7 +650,6 @@ export function tableFromClipboardText(text) {
         line.split('\t').forEach(value => {
             const cell = document.createElement('td');
             cell.textContent = value;
-            cell.style.border = '1px solid #000';
             cell.style.padding = '4px';
             row.appendChild(cell);
         });
@@ -571,8 +658,7 @@ export function tableFromClipboardText(text) {
     table.appendChild(body);
     table.style.width = '100%';
     table.style.borderCollapse = 'collapse';
-    table.dataset.borderMode = 'custom';
-    return table;
+    return applyApaTableBorders(table);
 }
 
 export function pasteClipboardTablesIntoQuill(event) {
@@ -608,7 +694,7 @@ export function pasteClipboardTablesIntoQuill(event) {
     quill.setSelection(index, 0, 'silent');
     savedQuillRange = { index, length: 0 };
     syncRichEditorToState();
-    showToast(`Đã dán ${tables.length} bảng và giữ định dạng.`);
+    showToast(`Đã dán ${tables.length} bảng và áp dụng border APA.`);
 }
 
 export function openRichTextWorkspace() {
@@ -694,6 +780,17 @@ export function formatDoc(cmd, value = null) {
     else if (commandMap[cmd]) quill.format(commandMap[cmd][0], commandMap[cmd][1], 'user');
 }
 
+function normalizeEditorPasteFormatting() {
+    window.setTimeout(() => {
+        if (!quill) return;
+        quill.root.querySelectorAll('p, blockquote, li').forEach(node => {
+            node.style.lineHeight = '1';
+            if (!node.style.textIndent) node.style.textIndent = '0.36cm';
+        });
+        syncRichEditorToState();
+    }, 0);
+}
+
 export function getCleanRichEditorHtml() {
     const clone = quill.root.cloneNode(true);
     const sourceTables = Array.from(quill.root.querySelectorAll('.scientific-table-embed table'));
@@ -708,6 +805,9 @@ export function getCleanRichEditorHtml() {
     clone.querySelectorAll('.scientific-table-embed, td, th').forEach(node => {
         node.removeAttribute('contenteditable');
         node.removeAttribute('data-resize-bound');
+    });
+    clone.querySelectorAll('p, blockquote, li').forEach(node => {
+        if (node.style.lineHeight && node.style.lineHeight !== '1') node.style.lineHeight = '1';
     });
     return clone.innerHTML;
 }

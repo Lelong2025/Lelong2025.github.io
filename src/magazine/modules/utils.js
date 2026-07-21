@@ -165,6 +165,7 @@ export function cssColorToHex(value) {
 }
 
 const ARTICLE_COLUMN_WIDTH_TWIPS = 4510;
+const DEFAULT_BODY_FIRST_LINE_TWIPS = 204;
 
 export function cssTableWidthToTwips(value, totalWidth = ARTICLE_COLUMN_WIDTH_TWIPS) {
     const raw = String(value || '').trim();
@@ -195,18 +196,38 @@ export function cssFontSizeToHalfPoints(value) {
 export function wordParagraphOptions(node, base = {}) {
     const style = node.style || {};
     const lineHeight = parseFloat(style.lineHeight);
+    const explicitFirstLine = cssLengthToTwips(style.textIndent);
     const classIndent = Array.from(node.classList || []).map(name => name.match(/^ql-indent-(\d+)$/))
         .find(Boolean);
     const toolbarIndent = classIndent ? Number(classIndent[1]) * 567 : 0;
+    const useDefaultFirstLine = base.defaultFirstLine !== false
+        && /^(P|BLOCKQUOTE)$/i.test(node.tagName || '')
+        && !explicitFirstLine
+        && !toolbarIndent;
     return {
         ...base,
-        firstLine: cssLengthToTwips(style.textIndent),
+        firstLine: explicitFirstLine || (useDefaultFirstLine ? DEFAULT_BODY_FIRST_LINE_TWIPS : 0),
         left: cssLengthToTwips(style.marginLeft) + toolbarIndent,
         right: cssLengthToTwips(style.marginRight),
         before: style.marginTop ? cssLengthToTwips(style.marginTop) : (base.before || 0),
         after: style.marginBottom ? cssLengthToTwips(style.marginBottom) : (base.after ?? 100),
-        line: Number.isFinite(lineHeight) ? Math.round(lineHeight * 240) : (base.line || 260)
+        line: Number.isFinite(lineHeight) ? Math.round(lineHeight * 240) : (base.line || 240)
     };
+}
+
+function stripLeadingIndentWhitespace(node) {
+    const clone = node.cloneNode(true);
+    if (!cssLengthToTwips(clone.style?.textIndent || '')) return clone;
+    const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+    let textNode = walker.nextNode();
+    while (textNode) {
+        if (textNode.nodeValue) {
+            textNode.nodeValue = textNode.nodeValue.replace(/^[\t \u00a0]+/, '');
+            break;
+        }
+        textNode = walker.nextNode();
+    }
+    return clone;
 }
 
 export function inlineHtmlToWord(node, inherited = {}) {
@@ -536,6 +557,13 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                             color: cssColorToHex(cellStyle[`${borderName}Color`])
                         };
                     });
+                    const borderWith = (source, overrides = {}) => {
+                        const next = { ...source };
+                        Object.entries(overrides).forEach(([side, enabled]) => {
+                            next[side] = { ...(source[side] || {}), enabled };
+                        });
+                        return next;
+                    };
                     matrix[rowIndex][columnIndex] = {
                         content: wordParagraph(inlineHtmlToWord(cell, { ...inherited, size: inherited.size || 20 }), { align: cellAlign, after: 40 }),
                         gridSpan: columnSpan,
@@ -543,7 +571,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                         width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
                         verticalAlign: cellVerticalAlign,
                         shading: shadingColor,
-                        borders
+                        borders: rowSpan > 1 ? borderWith(borders, { bottom: false }) : borders
                     };
                     for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex][columnIndex + x] = { skip: true };
                     for (let y = 1; y < rowSpan && rowIndex + y < htmlRows.length; y += 1) {
@@ -552,7 +580,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                             width: widths.slice(columnIndex, columnIndex + columnSpan).reduce((sum, width) => sum + width, 0),
                             verticalAlign: cellVerticalAlign,
                             shading: shadingColor,
-                            borders
+                            borders: borderWith(borders, { top: false, bottom: y === rowSpan - 1 && borders.bottom?.enabled })
                         };
                         for (let x = 1; x < columnSpan; x += 1) matrix[rowIndex + y][columnIndex + x] = { skip: true };
                     }
@@ -586,7 +614,7 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 ? wordParagraph(imageDrawingRun(imageInfo.relationshipId, imageInfo.width, imageInfo.height, imageInfo.id), { align: 'center', after: 100 })
                 : wordParagraph(wordRun('[Hình ảnh trong nội dung]', { italic: true, color: '666666' }), { align: 'center' }));
         } else {
-            blocks.push(wordParagraph(inlineHtmlToWord(node, { size: 20 }), wordParagraphOptions(node, { align, after: 0, line: 260 })));
+            blocks.push(wordParagraph(inlineHtmlToWord(stripLeadingIndentWhitespace(node), { size: 20 }), wordParagraphOptions(node, { align, after: 0, line: 260 })));
         }
     });
     return blocks.join('');
