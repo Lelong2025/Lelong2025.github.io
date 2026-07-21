@@ -7,7 +7,7 @@ import {
 import {
     activeArticle, footerDateText, headerMetaText, articleIssueYear,
     articleIssueNumber, articlePageRangeText, preparePreviewForOutput, formatKeywords,
-    articleAddressVi, articleAddressEn
+    articleAddressVi, articleAddressEn, articleOnlineUrl, formatEnglishDate, formatVietnameseDate
 } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
 
@@ -137,11 +137,20 @@ export function currentExportData() {
         address_vi: articleAddressVi(art), address_en: articleAddressEn(art),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
-        doi: art.doi || '', link_doi: art.linkDoi || '',
+        doi: art.doi || '', link_doi: articleOnlineUrl(art),
+        date_received_vi: formatVietnameseDate(art.dateReceived || ''),
+        date_revised_vi: formatVietnameseDate(art.dateRevised || ''),
+        date_accepted_vi: formatVietnameseDate(art.dateAccepted || ''),
+        date_published_vi: formatVietnameseDate(art.datePublished || ''),
+        date_received_en: formatEnglishDate(art.dateReceived || ''),
+        date_revised_en: formatEnglishDate(art.dateRevised || ''),
+        date_accepted_en: formatEnglishDate(art.dateAccepted || ''),
+        date_published_en: formatEnglishDate(art.datePublished || ''),
         date: footerDateText(art),
         journal_meta: journalMetaTemplateText(art),
         journal_meta_full: headerMetaText(art),
         publishDate: art.datePublished || '',
+        publishDateEn: formatEnglishDate(art.datePublished || ''),
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim(),
         authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []
@@ -279,7 +288,7 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
     ]], [3100, 6538], { borders: false, topBorder: true });
     const enInfo = wordTable([[
         wordParagraph(wordRun('ARTICLE INFORMATION', { bold: true, size: 18 }), { align: 'left', bottomBorder: true, after: 70 }) +
-        wordParagraph(wordRun('Received:\nRevised:\nAccepted:\nPublished: ' + data.publishDate, { size: 20 }), { align: 'left', after: 90, line: 250 }) +
+        wordParagraph(authorTextToWordRuns('Received:\nRevised:\nAccepted:\nPublished: ' + (data.publishDateEn || data.publishDate), { size: 20 }), { align: 'left', after: 90, line: 250 }) +
         wordParagraph(wordRun('KEYWORDS', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 60 }) +
         wordParagraph(wordRun(formatKeywords(data.keywords_en, ''), { size: 20 }), { align: 'left', after: 0, line: 250 }),
         wordParagraph(wordRun('ABSTRACT', { bold: true, size: 20 }), { align: 'left', bottomBorder: true, after: 70 }) +
@@ -290,11 +299,11 @@ export function coverXml(data, logoRun = '', headerOnly = false) {
     return '' +
         wordParagraph(wordRun(data.title || 'TIÊU ĐỀ BÀI BÁO', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 100 }) +
         wordParagraph(authorTextToWordRuns(data.authors, { size: 24 }, 'Tác giả'), { align: 'right', after: 40 }) +
-        wordParagraph(wordRun('Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng Nai, Vietnam', { italic: true, size: 20 }), { align: 'right', after: 30 }) +
+        wordParagraph(authorTextToWordRuns(data.address_vi, { italic: true, size: 20 }), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('*Tác giả liên hệ: ' + data.contact, { size: 20 }), { align: 'right', after: 120 }) + viInfo +
         wordParagraph(wordRun(data.title_en || 'ARTICLE TITLE', { bold: true, color: '2A4E8A', size: 30 }), { align: 'center', before: 160, after: 80 }) +
         wordParagraph(authorTextToWordRuns(data.authors_en, { size: 24 }, 'Authors'), { align: 'right', after: 30 }) +
-        wordParagraph(wordRun('Lac Hong University, Bien Hoa, Dong Nai Province, Vietnam', { italic: true, size: 20 }), { align: 'right', after: 30 }) +
+        wordParagraph(authorTextToWordRuns(data.address_en, { italic: true, size: 20 }), { align: 'right', after: 30 }) +
         wordParagraph(wordRun('*Corresponding Author: ' + data.contact, { size: 20 }), { align: 'right', after: 100 }) + enInfo + doiInfo;
 }
 
@@ -660,7 +669,10 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
     const placeholders = [
         'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
         'address_vi', 'address_en', 'contact', 'abstract', 'abstract_en',
-        'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'content'
+        'keywords', 'keywords_en', 'doi', 'link_doi', 'date_received_vi',
+        'date_revised_vi', 'date_accepted_vi', 'date_published_vi',
+        'date_received_en', 'date_revised_en', 'date_accepted_en',
+        'date_published_en', 'date', 'content'
     ];
     let dateReplacementUsed = false;
 
@@ -722,6 +734,26 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                 else if (ph === 'keywords_en') val = formatKeywords(data.keywords_en, '');
                 else if (ph === 'doi') val = data.doi;
                 else if (ph === 'link_doi') val = data.link_doi;
+                else if (ph === 'date_received_vi') val = data.date_received_vi;
+                else if (ph === 'date_revised_vi') val = data.date_revised_vi;
+                else if (ph === 'date_accepted_vi') val = data.date_accepted_vi;
+                else if (ph === 'date_published_vi') val = data.date_published_vi;
+                else if (ph === 'date_received_en') {
+                    val = data.date_received_en;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'date_revised_en') {
+                    val = data.date_revised_en;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'date_accepted_en') {
+                    val = data.date_accepted_en;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'date_published_en') {
+                    val = data.date_published_en;
+                    shouldRenderAuthorMarkers = true;
+                }
                 else if (ph === 'date') {
                     val = data.date;
                     if (options.singleDatePlaceholder) {
@@ -874,11 +906,20 @@ export function getArticleExportData(art) {
         address_vi: articleAddressVi(art), address_en: articleAddressEn(art),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
-        doi: art.doi || '', link_doi: art.linkDoi || '',
+        doi: art.doi || '', link_doi: articleOnlineUrl(art),
+        date_received_vi: formatVietnameseDate(art.dateReceived || ''),
+        date_revised_vi: formatVietnameseDate(art.dateRevised || ''),
+        date_accepted_vi: formatVietnameseDate(art.dateAccepted || ''),
+        date_published_vi: formatVietnameseDate(art.datePublished || ''),
+        date_received_en: formatEnglishDate(art.dateReceived || ''),
+        date_revised_en: formatEnglishDate(art.dateRevised || ''),
+        date_accepted_en: formatEnglishDate(art.dateAccepted || ''),
+        date_published_en: formatEnglishDate(art.datePublished || ''),
         date: footerDateText(art),
         journal_meta: journalMetaTemplateText(art),
         journal_meta_full: headerMetaText(art),
         publishDate: art.datePublished || '',
+        publishDateEn: formatEnglishDate(art.datePublished || ''),
         startPage: parseInt(art.startPage || 1),
         contentHtml, contentText: contentHolder.textContent.trim(),
         authorProfiles: Array.isArray(art.authorProfiles) ? art.authorProfiles : []

@@ -706,15 +706,39 @@ export function footerDateText(art) {
     return `JSLHU, Issue ${articleIssueNumber(art)}, ${articleIssueYear(art)}`;
 }
 
+export function articleOnlineUrl(art) {
+    return String(art?.linkDoi || '').trim() || 'https://lhj.vn';
+}
+
 export function formatKeywords(value, fallback) {
     const keywords = String(value || '')
-        .split(/[;,]/)
+        .split(/[;,\n\r]+/)
         .map(item => item.trim())
         .filter(Boolean);
     if (!keywords.length) return fallback;
     return keywords
         .map((keyword, index) => keyword + (index < keywords.length - 1 ? ';' : ''))
         .join('\n');
+}
+
+export function formatEnglishDate(dtStr) {
+    if (!dtStr) return '--';
+    const parts = String(dtStr).split('-').map(Number);
+    if (parts.length !== 3 || parts.some(part => !Number.isFinite(part))) return dtStr;
+    const [year, month, day] = parts;
+    const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
+    if (!monthName || day < 1 || day > 31) return dtStr;
+    const suffix = day % 100 >= 11 && day % 100 <= 13
+        ? 'th'
+        : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
+    return `${monthName} ${day}^{${suffix}}, ${year}`;
+}
+
+export function formatVietnameseDate(dtStr) {
+    if (!dtStr) return '--/--/----';
+    const parts = String(dtStr).split('-');
+    if (parts.length !== 3) return dtStr;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
 export function articleDisplayPageNumber(art, articlePageNumber) {
@@ -843,6 +867,13 @@ export function paginateContent(html, art) {
         }
         stateObj.content.appendChild(clone);
     });
+    pages.querySelectorAll('.article-page-content').forEach(content => {
+        content.classList.remove('article-page-content-balanced');
+    });
+    const lastContentPage = pages.querySelector('.article-page:last-child .article-page-content');
+    if (lastContentPage && lastContentPage.childElementCount > 0) {
+        lastContentPage.classList.add('article-page-content-balanced');
+    }
 }
 
 export function renderSingleArticlePreview(art) {
@@ -850,12 +881,6 @@ export function renderSingleArticlePreview(art) {
     const a4Container = document.getElementById('a4-container');
     if (!a4Container) return;
     a4Container.innerHTML = template;
-
-    const formatVnDate = (dtStr) => {
-        if (!dtStr) return '--/--/----';
-        const parts = dtStr.split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    };
 
     const headerMeta = document.getElementById('preview-header-meta');
     if (headerMeta) headerMeta.textContent = headerMetaText(art);
@@ -891,20 +916,20 @@ export function renderSingleArticlePreview(art) {
     if (pvContactEmail) pvContactEmail.textContent = art.email || 'email@domain.com';
     if (pvContactEmailEn) pvContactEmailEn.textContent = art.email || 'email@domain.com';
 
-    if (pvDateReceived) pvDateReceived.textContent = formatVnDate(art.dateReceived);
-    if (pvDateRevised) pvDateRevised.textContent = formatVnDate(art.dateRevised);
-    if (pvDateAccepted) pvDateAccepted.textContent = formatVnDate(art.dateAccepted);
-    if (pvDatePublished) pvDatePublished.textContent = formatVnDate(art.datePublished);
+    if (pvDateReceived) pvDateReceived.textContent = formatVietnameseDate(art.dateReceived);
+    if (pvDateRevised) pvDateRevised.textContent = formatVietnameseDate(art.dateRevised);
+    if (pvDateAccepted) pvDateAccepted.textContent = formatVietnameseDate(art.dateAccepted);
+    if (pvDatePublished) pvDatePublished.textContent = formatVietnameseDate(art.datePublished);
 
-    if (pvDateReceivedEn) pvDateReceivedEn.textContent = formatVnDate(art.dateReceived);
-    if (pvDateRevisedEn) pvDateRevisedEn.textContent = formatVnDate(art.dateRevised);
-    if (pvDateAcceptedEn) pvDateAcceptedEn.textContent = formatVnDate(art.dateAccepted);
-    if (pvDatePublishedEn) pvDatePublishedEn.textContent = formatVnDate(art.datePublished);
+    if (pvDateReceivedEn) pvDateReceivedEn.innerHTML = authorTextToHtml(formatEnglishDate(art.dateReceived));
+    if (pvDateRevisedEn) pvDateRevisedEn.innerHTML = authorTextToHtml(formatEnglishDate(art.dateRevised));
+    if (pvDateAcceptedEn) pvDateAcceptedEn.innerHTML = authorTextToHtml(formatEnglishDate(art.dateAccepted));
+    if (pvDatePublishedEn) pvDatePublishedEn.innerHTML = authorTextToHtml(formatEnglishDate(art.datePublished));
 
     if (pvKeywordsVn) pvKeywordsVn.textContent = formatKeywords(art.keywordsVn, 'Nhập từ khóa...');
     if (pvKeywordsEn) pvKeywordsEn.textContent = formatKeywords(art.keywordsEn, 'Keywords...');
     if (pvDoi) pvDoi.textContent = art.doi || '';
-    if (pvLinkDoi) pvLinkDoi.textContent = art.linkDoi || '';
+    if (pvLinkDoi) pvLinkDoi.textContent = articleOnlineUrl(art);
 
     if (pvAbstractVn) pvAbstractVn.textContent = art.abstractVn || 'Nhập tóm tắt tiếng Việt...';
     if (pvAbstractEn) pvAbstractEn.textContent = art.abstractEn || 'Enter English abstract...';

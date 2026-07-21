@@ -79,10 +79,31 @@
 
 #pv-authors-vn sup,
 #pv-authors-en sup,
+#pv-address-vi sup,
+#pv-address-en sup,
+#pv-date-received-en sup,
+#pv-date-revised-en sup,
+#pv-date-accepted-en sup,
+#pv-date-published-en sup,
 .article-running-header sup {
     font-size: 70%;
     line-height: 0;
     vertical-align: super;
+}
+
+.preview-author-line {
+    margin-bottom: 0.4mm;
+    line-height: 1.12;
+}
+
+.preview-affiliation-line {
+    margin-top: 0;
+    margin-bottom: 1mm;
+    line-height: 1.08;
+}
+
+.preview-affiliation-line br {
+    line-height: 1;
 }
 
 .article-page-content {
@@ -93,6 +114,10 @@
     font: 10pt/1.55 "Times New Roman", serif;
     text-align: justify;
     hyphens: auto;
+}
+
+.article-page-content.article-page-content-balanced {
+    column-fill: balance;
 }
 
 .article-page-content h1,
