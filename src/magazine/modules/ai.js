@@ -1,6 +1,7 @@
 import { state, saveToLocalStorage } from './state.js';
 import { showToast } from './utils.js';
 import { renderArticlesList, renderLivePreview } from './ui.js';
+import { getQuillInstance, savedQuillRange, syncRichEditorToState } from './editor.js';
 
 const STATUS_BASE = 'px-2 py-0.5 rounded-full text-[9px] font-bold';
 
@@ -68,19 +69,23 @@ function escapeHtml(value) {
 
 function currentAiMode() {
     const select = document.getElementById('ai-review-mode');
-    return ['spelling', 'suggestion', 'full'].includes(select?.value) ? select.value : 'spelling';
+    return ['spelling', 'selection-spelling', 'suggestion', 'full'].includes(select?.value) ? select.value : 'spelling';
 }
 
 export function syncAiModeControls(mode = currentAiMode()) {
-    state.appState.aiReviewMode = ['spelling', 'suggestion', 'full'].includes(mode) ? mode : 'spelling';
+    state.appState.aiReviewMode = ['spelling', 'selection-spelling', 'suggestion', 'full'].includes(mode) ? mode : 'spelling';
     const select = document.getElementById('ai-review-mode');
     const label = document.getElementById('ai-run-button-label');
     if (select) select.value = state.appState.aiReviewMode;
-    if (label) label.textContent = {
-        spelling: 'Chạy kiểm chính tả',
-        suggestion: 'Chạy gợi ý metadata',
-        full: 'Chạy review toàn bài'
-    }[state.appState.aiReviewMode];
+    if (label) {
+        const labels = {
+            spelling: 'Chạy kiểm chính tả',
+            'selection-spelling': 'Kiểm đoạn đang chọn',
+            suggestion: 'Chạy gợi ý metadata',
+            full: 'Chạy review toàn bài'
+        };
+        label.textContent = labels[state.appState.aiReviewMode] || labels.spelling;
+    }
 }
 
 export function switchAiReviewMode(mode) {
@@ -101,6 +106,23 @@ function activeArticle() {
 
 function metadataPayload(art) {
     return Object.fromEntries(METADATA_FIELDS.map(field => [field.id, art?.[field.id] || '']));
+}
+
+function selectedEditorTextPayload() {
+    const quill = getQuillInstance();
+    if (!quill) throw new Error('Chưa mở trình soạn thảo nội dung.');
+    const range = quill.getSelection() || savedQuillRange;
+    if (!range || !range.length) {
+        throw new Error('Vui lòng bôi đen một đoạn trong khung soạn thảo trước khi kiểm.');
+    }
+    const text = quill.getText(range.index, range.length);
+    if (!text.trim()) {
+        throw new Error('Đoạn đang chọn chưa có nội dung chữ để kiểm.');
+    }
+    if (text.length > 7000) {
+        throw new Error('Đoạn chọn hơi dài; vui lòng chọn tối đa khoảng 7.000 ký tự cho mỗi lượt kiểm.');
+    }
+    return { index: range.index, length: range.length, text };
 }
 
 export function renderAiReviewPanel(art) {
@@ -128,7 +150,7 @@ export function renderAiReviewPanel(art) {
     syncAiModeControls(suggestions.mode || 'spelling');
     setAiStatusBadge(
         statusBadge,
-        suggestions.mode === 'spelling' ? 'Đã kiểm' : suggestions.mode === 'full' ? 'Đã review' : 'Đã gợi ý',
+        suggestions.mode === 'spelling' || suggestions.mode === 'selection-spelling' ? 'Đã kiểm' : suggestions.mode === 'full' ? 'Đã review' : 'Đã gợi ý',
         'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 animate-pulse'
     );
     applyBtn.disabled = false;
@@ -137,9 +159,13 @@ export function renderAiReviewPanel(art) {
     if (suggestions.mode === 'full') {
         applyBtn.disabled = true;
         renderFullReview(container, suggestions);
-    } else if (suggestions.mode === 'spelling') {
+    } else if (suggestions.mode === 'spelling' || suggestions.mode === 'selection-spelling') {
         if (!suggestions.corrections?.length) {
-            container.innerHTML = '<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300">AI chưa phát hiện lỗi chính tả trong metadata.</div>';
+            container.innerHTML = `<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300">${
+                suggestions.mode === 'selection-spelling'
+                    ? 'AI chưa phát hiện lỗi chính tả trong đoạn đã chọn.'
+                    : 'AI chưa phát hiện lỗi chính tả trong metadata.'
+            }</div>`;
         } else {
             suggestions.corrections.forEach((correction, index) => {
                 container.appendChild(createSpellingCard(correction, index));
@@ -168,10 +194,12 @@ function bindCardHighlight(card, targetDomId) {
 }
 
 export function createSpellingCard(correction, index) {
-    const field = METADATA_FIELDS.find(item => item.id === correction.field) || METADATA_FIELDS[0];
+    const field = correction.field === 'selection'
+        ? { label: 'Đoạn đang chọn', target: '' }
+        : METADATA_FIELDS.find(item => item.id === correction.field) || METADATA_FIELDS[0];
     const card = document.createElement('div');
     card.className = 'border border-amber-300 dark:border-amber-900/60 rounded-xl bg-amber-50/50 dark:bg-amber-950/15 p-3 space-y-2.5 transition-all';
-    bindCardHighlight(card, field.target);
+    if (field.target) bindCardHighlight(card, field.target);
 
     const name = `spell-${index}`;
     correction.selected = correction.selected || 'suggestion';
@@ -399,6 +427,27 @@ function renderFullReview(container, suggestions) {
     `;
 }
 
+function buildSelectionSpellingPrompt(selectedText) {
+    return `Bạn là biên tập viên kiểm chính tả cho tạp chí khoa học. Chỉ kiểm đoạn văn người dùng đang chọn. Giữ nguyên văn bản, không viết lại câu, không đổi thuật ngữ học thuật nếu không chắc chắn. Chỉ trả JSON hợp lệ, không Markdown.
+
+Schema bắt buộc:
+{"mode":"selection-spelling","corrections":[{"original":"từ/cụm từ sai","suggestion":"từ/cụm từ đúng","context":"câu hoặc đoạn ngắn chứa lỗi"}]}
+
+Nếu không có lỗi, corrections là mảng rỗng.
+
+Strict token-level rules:
+- Report obvious spelling-token problems: abbreviation/informal shortened word, missing Vietnamese diacritics on one word, wrong keyboard typo, missing/extra/swapped letter inside a word, wrong casing inside a word, or clearly misspelled English word.
+- A token that is a valid word by itself can still be wrong if the full sentence makes the intended word obvious.
+- Do not report phrase-level rewrites, style improvements, grammar suggestions, terminology changes, capitalization preferences, punctuation preferences, or semantic improvements.
+- Do not replace a whole phrase if only one word is wrong. The "original" value must be the exact suspicious token from the selected text, usually one word.
+- The "suggestion" value must preserve the surrounding text style/casing when obvious.
+- Use a short phrase only when the typo itself spans a fixed compound term.
+- If the intended token is not clear from context, ignore it.
+
+SELECTED_TEXT:
+${selectedText}`;
+}
+
 export function buildReviewPrompt(art, mode = currentAiMode()) {
     const metadata = metadataPayload(art);
     if (mode === 'spelling') {
@@ -454,6 +503,19 @@ function isTokenLevelCorrection(item) {
 
 export function parseAiReviewResult(raw, mode = currentAiMode()) {
     const parsed = parseJsonObject(raw);
+    if (mode === 'selection-spelling') {
+        return {
+            mode: 'selection-spelling',
+            corrections: Array.isArray(parsed.corrections) ? parsed.corrections.filter(isTokenLevelCorrection).map(item => ({
+                field: 'selection',
+                original: String(item.original || '').trim(),
+                suggestion: String(item.suggestion || '').trim(),
+                context: String(item.context || '').trim(),
+                selected: 'suggestion',
+                custom: ''
+            })).filter(item => item.original && item.suggestion) : []
+        };
+    }
     if (mode === 'spelling') {
         return {
             mode: 'spelling',
@@ -490,12 +552,21 @@ export async function runAiReview(usageReservation = null) {
 
     const mode = currentAiMode();
     art.aiReviewMode = mode;
+    let selectedTextPayload = null;
+    if (mode === 'selection-spelling') {
+        try {
+            selectedTextPayload = selectedEditorTextPayload();
+        } catch (error) {
+            showToast(error.message || 'Vui lòng bôi đen một đoạn trong khung soạn thảo trước khi kiểm.');
+            return false;
+        }
+    }
     const statusBadge = document.getElementById('ai-status-badge');
     if (statusBadge) {
         setAiStatusBadge(statusBadge, 'Đang chạy...', 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-bounce');
     }
-    setAiReviewBusy(true, mode === 'full' ? 'Đang đọc và lập hồ sơ toàn bài...' : 'AI đang phân tích metadata...');
-    showToast(mode === 'spelling' ? 'Đang kiểm chính tả metadata...' : mode === 'full' ? 'Đang tạo hồ sơ toàn bài...' : 'Đang gợi ý metadata...');
+    setAiReviewBusy(true, mode === 'full' ? 'Đang đọc và lập hồ sơ toàn bài...' : mode === 'selection-spelling' ? 'AI đang kiểm đoạn đã chọn...' : 'AI đang phân tích metadata...');
+    showToast(mode === 'spelling' ? 'Đang kiểm chính tả metadata...' : mode === 'selection-spelling' ? 'Đang kiểm chính tả đoạn đã chọn...' : mode === 'full' ? 'Đang tạo hồ sơ toàn bài...' : 'Đang gợi ý metadata...');
 
     try {
         if (mode === 'full') {
@@ -503,13 +574,23 @@ export async function runAiReview(usageReservation = null) {
                 if (statusBadge) setAiStatusBadge(statusBadge, text, 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 animate-pulse');
                 updateAiLoadingMessage(text);
             }, usageReservation?.reservation_id);
+        } else if (mode === 'selection-spelling') {
+            const rawResult = await callLlamaAI(buildSelectionSpellingPrompt(selectedTextPayload.text), 75000, usageReservation?.reservation_id);
+            art.aiReviewSuggestions = {
+                ...parseAiReviewResult(rawResult, mode),
+                selection: {
+                    index: selectedTextPayload.index,
+                    length: selectedTextPayload.length,
+                    text: selectedTextPayload.text
+                }
+            };
         } else {
             const rawResult = await callLlamaAI(buildReviewPrompt(art, mode), 75000, usageReservation?.reservation_id);
             art.aiReviewSuggestions = parseAiReviewResult(rawResult, mode);
         }
         saveToLocalStorage();
         renderAiReviewPanel(art);
-        showToast(mode === 'spelling' ? 'Đã kiểm chính tả metadata.' : mode === 'full' ? 'Đã review toàn bài.' : 'Đã tạo gợi ý metadata.');
+        showToast(mode === 'spelling' ? 'Đã kiểm chính tả metadata.' : mode === 'selection-spelling' ? 'Đã kiểm chính tả đoạn đã chọn.' : mode === 'full' ? 'Đã review toàn bài.' : 'Đã tạo gợi ý metadata.');
         return true;
     } catch (error) {
         console.error(error);
@@ -536,6 +617,42 @@ function setArticleField(art, fieldId, value) {
     if (input) input.value = value;
 }
 
+function applySelectionSpellingSuggestions(suggestions) {
+    const quill = getQuillInstance();
+    const selection = suggestions?.selection;
+    if (!quill || !selection) return { changesMadeCount: 0, missingCustomCount: 0 };
+
+    let startIndex = Math.max(0, Math.min(selection.index, quill.getLength() - 1));
+    let currentLength = Math.max(0, Math.min(selection.length, quill.getLength() - startIndex));
+    let changesMadeCount = 0;
+    let missingCustomCount = 0;
+
+    suggestions.corrections?.forEach(correction => {
+        if (correction.selected === 'keep') return;
+        const replacement = correction.selected === 'custom'
+            ? String(correction.custom || '').trim()
+            : correction.suggestion;
+        if (!replacement) {
+            missingCustomCount += 1;
+            return;
+        }
+
+        const currentText = quill.getText(startIndex, currentLength);
+        const offset = currentText.indexOf(correction.original);
+        if (offset < 0) return;
+
+        const replaceIndex = startIndex + offset;
+        quill.deleteText(replaceIndex, correction.original.length, 'user');
+        quill.insertText(replaceIndex, replacement, 'user');
+        currentLength += replacement.length - correction.original.length;
+        changesMadeCount += 1;
+    });
+
+    quill.setSelection(startIndex, Math.max(0, currentLength), 'silent');
+    syncRichEditorToState();
+    return { changesMadeCount, missingCustomCount };
+}
+
 export function applySelectedSuggestions() {
     const art = activeArticle();
     const suggestions = art?.aiReviewSuggestions;
@@ -544,7 +661,11 @@ export function applySelectedSuggestions() {
     let changesMadeCount = 0;
     let missingCustomCount = 0;
 
-    if (suggestions.mode === 'spelling') {
+    if (suggestions.mode === 'selection-spelling') {
+        const result = applySelectionSpellingSuggestions(suggestions);
+        changesMadeCount += result.changesMadeCount;
+        missingCustomCount += result.missingCustomCount;
+    } else if (suggestions.mode === 'spelling') {
         suggestions.corrections?.forEach(correction => {
             if (correction.selected === 'keep') return;
             const replacement = correction.selected === 'custom'
@@ -582,7 +703,7 @@ export function applySelectedSuggestions() {
 
 export function clearSelectedRadioState(suggestions) {
     if (!suggestions) return;
-    if (suggestions.mode === 'spelling') {
+    if (suggestions.mode === 'spelling' || suggestions.mode === 'selection-spelling') {
         suggestions.corrections?.forEach(item => {
             item.selected = 'keep';
         });

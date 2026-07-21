@@ -707,8 +707,14 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                     val = data.authors;
                     shouldRenderAuthorMarkers = true;
                 }
-                else if (ph === 'address_vi') val = data.address_vi;
-                else if (ph === 'address_en') val = data.address_en;
+                else if (ph === 'address_vi') {
+                    val = data.address_vi;
+                    shouldRenderAuthorMarkers = true;
+                }
+                else if (ph === 'address_en') {
+                    val = data.address_en;
+                    shouldRenderAuthorMarkers = true;
+                }
                 else if (ph === 'contact') val = data.contact;
                 else if (ph === 'abstract') val = data.abstract;
                 else if (ph === 'abstract_en') val = data.abstract_en;

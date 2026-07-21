@@ -16,6 +16,19 @@ export function articleAddressEn(art) {
     return art?.addressEn || DEFAULT_ADDRESS_EN;
 }
 
+export function insertSuperscriptMarker(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const marker = '^{x}';
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.setRangeText(marker, start, end, 'end');
+    input.focus();
+    const xIndex = start + 2;
+    input.setSelectionRange?.(xIndex, xIndex + 1);
+    syncFormToPreview();
+}
+
 export function getSingleArticlePreviewTemplate() {
     if (!singleArticlePreviewTemplate) {
         const container = document.getElementById('a4-container');
@@ -873,8 +886,8 @@ export function renderSingleArticlePreview(art) {
     if (pvTitleEn) pvTitleEn.textContent = art.titleEn || 'ARTICLE TITLE IN ENGLISH';
     if (pvAuthorsVn) pvAuthorsVn.innerHTML = authorTextToHtml(art.authors, 'Tên các tác giả');
     if (pvAuthorsEn) pvAuthorsEn.innerHTML = authorTextToHtml(removeVietnameseDiacritics(art.authors), 'Authors Name');
-    if (pvAddressVi) pvAddressVi.textContent = articleAddressVi(art);
-    if (pvAddressEn) pvAddressEn.textContent = articleAddressEn(art);
+    if (pvAddressVi) pvAddressVi.innerHTML = authorTextToHtml(articleAddressVi(art));
+    if (pvAddressEn) pvAddressEn.innerHTML = authorTextToHtml(articleAddressEn(art));
     if (pvContactEmail) pvContactEmail.textContent = art.email || 'email@domain.com';
     if (pvContactEmailEn) pvContactEmailEn.textContent = art.email || 'email@domain.com';
 

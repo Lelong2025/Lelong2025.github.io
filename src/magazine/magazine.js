@@ -8,7 +8,7 @@ import {
     createArticlePage, pageHasOverflow, appendTextBlockAcrossPages, paginateContent,
     renderSingleArticlePreview, togglePreviewMode, renderLivePreview,
     createNewArticle, deleteCurrentArticle, createNewIssue, zoomPreview,
-    activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale, applyHeaderTitleCase,
+    activeArticle, toggleDarkMode, switchMobileTab, adjustPreviewScale, applyHeaderTitleCase, insertSuperscriptMarker,
     toggleAiPanel, switchReviewTab, openAuthorDialog, closeAuthorDialog, addAuthorProfile,
     renderAuthorProfiles, removeAuthorProfile, setAdminPageMode, updateAdminArticleStartPage
 } from './modules/ui.js';
@@ -123,6 +123,7 @@ Object.assign(window, {
     switchMobileTab,
     adjustPreviewScale,
     applyHeaderTitleCase,
+    insertSuperscriptMarker,
     toggleAiPanel,
     switchReviewTab,
     openAuthorDialog,
