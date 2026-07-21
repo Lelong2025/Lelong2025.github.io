@@ -6,7 +6,8 @@ import {
 } from './utils.js';
 import {
     activeArticle, footerDateText, headerMetaText, articleIssueYear,
-    articleIssueNumber, articlePageRangeText, preparePreviewForOutput, formatKeywords
+    articleIssueNumber, articlePageRangeText, preparePreviewForOutput, formatKeywords,
+    articleAddressVi, articleAddressEn
 } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
 
@@ -133,6 +134,7 @@ export function currentExportData() {
         title: art.titleVn || '', title_en: art.titleEn || '',
         headerTitle: art.headerTitle || toTitleCase(selectedTitle || 'TIÊU ĐỀ BÀI BÁO'),
         authors: art.authors || '', authors_en: removeVietnameseDiacritics(art.authors),
+        address_vi: articleAddressVi(art), address_en: articleAddressEn(art),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
         doi: art.doi || '', link_doi: art.linkDoi || '',
@@ -657,7 +659,8 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
 
     const placeholders = [
         'title', 'headerTitle', 'title_en', 'authors_vi', 'authors_en', 'authors',
-        'contact', 'abstract', 'abstract_en', 'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'content'
+        'address_vi', 'address_en', 'contact', 'abstract', 'abstract_en',
+        'keywords', 'keywords_en', 'doi', 'link_doi', 'date', 'content'
     ];
     let dateReplacementUsed = false;
 
@@ -704,6 +707,8 @@ export function normalizeAndReplaceDocxXml(xml, data, options = {}) {
                     val = data.authors;
                     shouldRenderAuthorMarkers = true;
                 }
+                else if (ph === 'address_vi') val = data.address_vi;
+                else if (ph === 'address_en') val = data.address_en;
                 else if (ph === 'contact') val = data.contact;
                 else if (ph === 'abstract') val = data.abstract;
                 else if (ph === 'abstract_en') val = data.abstract_en;
@@ -860,6 +865,7 @@ export function getArticleExportData(art) {
         title: art.titleVn || '', title_en: art.titleEn || '',
         headerTitle: art.headerTitle || toTitleCase(selectedTitle || 'TIÊU ĐỀ BÀI BÁO'),
         authors: art.authors || '', authors_en: removeVietnameseDiacritics(art.authors),
+        address_vi: articleAddressVi(art), address_en: articleAddressEn(art),
         contact: art.email || '', abstract: art.abstractVn || '', abstract_en: art.abstractEn || '',
         keywords: art.keywordsVn || '', keywords_en: art.keywordsEn || '',
         doi: art.doi || '', link_doi: art.linkDoi || '',

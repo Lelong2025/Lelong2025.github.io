@@ -5,6 +5,17 @@ import { getQuillInstance, getQuillArticleId, setQuillArticleId, getLoadingQuill
 import { isClient, normalizeClientPages, applyRoleUi, escapeHtml } from './cloud.js';
 
 let singleArticlePreviewTemplate = '';
+const DEFAULT_ADDRESS_VI = 'Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng Nai, Vietnam';
+const DEFAULT_ADDRESS_EN = 'Lac Hong University, No. 10 Huynh Van Nghe Street, Buu Long Ward, Bien Hoa, Dong Nai Province, Vietnam';
+
+export function articleAddressVi(art) {
+    return art?.addressVi || DEFAULT_ADDRESS_VI;
+}
+
+export function articleAddressEn(art) {
+    return art?.addressEn || DEFAULT_ADDRESS_EN;
+}
+
 export function getSingleArticlePreviewTemplate() {
     if (!singleArticlePreviewTemplate) {
         const container = document.getElementById('a4-container');
@@ -464,6 +475,10 @@ export function loadArticleIntoEditor(id) {
     if (headerTitle) headerTitle.value = art.headerTitle || '';
     document.getElementById('input-authors').value = art.authors || '';
     document.getElementById('input-email').value = art.email || '';
+    const addressViInput = document.getElementById('input-address-vi');
+    const addressEnInput = document.getElementById('input-address-en');
+    if (addressViInput) addressViInput.value = art.addressVi || '';
+    if (addressEnInput) addressEnInput.value = art.addressEn || '';
     document.getElementById('input-date-received').value = art.dateReceived || '';
     document.getElementById('input-date-revised').value = art.dateRevised || '';
     document.getElementById('input-date-accepted').value = art.dateAccepted || '';
@@ -498,6 +513,10 @@ export function clearEditorForm() {
     if (headerTitle) headerTitle.value = '';
     document.getElementById('input-authors').value = '';
     document.getElementById('input-email').value = '';
+    const addressViInput = document.getElementById('input-address-vi');
+    const addressEnInput = document.getElementById('input-address-en');
+    if (addressViInput) addressViInput.value = '';
+    if (addressEnInput) addressEnInput.value = '';
     document.getElementById('input-date-received').value = '';
     document.getElementById('input-date-revised').value = '';
     document.getElementById('input-date-accepted').value = '';
@@ -538,6 +557,10 @@ export function syncFormToPreview() {
     if (headerTitle) art.headerTitle = headerTitle.value;
     art.authors = document.getElementById('input-authors').value;
     art.email = document.getElementById('input-email').value;
+    const addressViInput = document.getElementById('input-address-vi');
+    const addressEnInput = document.getElementById('input-address-en');
+    art.addressVi = addressViInput ? addressViInput.value : (art.addressVi || '');
+    art.addressEn = addressEnInput ? addressEnInput.value : (art.addressEn || '');
     art.dateReceived = document.getElementById('input-date-received').value;
     art.dateRevised = document.getElementById('input-date-revised').value;
     art.dateAccepted = document.getElementById('input-date-accepted').value;
@@ -827,6 +850,8 @@ export function renderSingleArticlePreview(art) {
     const pvTitleEn = document.getElementById('pv-title-en');
     const pvAuthorsVn = document.getElementById('pv-authors-vn');
     const pvAuthorsEn = document.getElementById('pv-authors-en');
+    const pvAddressVi = document.getElementById('pv-address-vi');
+    const pvAddressEn = document.getElementById('pv-address-en');
     const pvContactEmail = document.getElementById('pv-contact-email');
     const pvContactEmailEn = document.getElementById('pv-contact-email-en');
     const pvDateReceived = document.getElementById('pv-date-received');
@@ -848,6 +873,8 @@ export function renderSingleArticlePreview(art) {
     if (pvTitleEn) pvTitleEn.textContent = art.titleEn || 'ARTICLE TITLE IN ENGLISH';
     if (pvAuthorsVn) pvAuthorsVn.innerHTML = authorTextToHtml(art.authors, 'Tên các tác giả');
     if (pvAuthorsEn) pvAuthorsEn.innerHTML = authorTextToHtml(removeVietnameseDiacritics(art.authors), 'Authors Name');
+    if (pvAddressVi) pvAddressVi.textContent = articleAddressVi(art);
+    if (pvAddressEn) pvAddressEn.textContent = articleAddressEn(art);
     if (pvContactEmail) pvContactEmail.textContent = art.email || 'email@domain.com';
     if (pvContactEmailEn) pvContactEmailEn.textContent = art.email || 'email@domain.com';
 
@@ -999,6 +1026,8 @@ export function createNewArticle() {
         titleEn: "",
         authors: "",
         email: "",
+        addressVi: "",
+        addressEn: "",
         dateReceived: "",
         dateRevised: "",
         dateAccepted: "",

@@ -289,9 +289,7 @@
 
                                     <p
                                         class="text-right text-[10px] text-slate-700 font-sans italic max-w-xl ml-auto leading-normal">
-                                        Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng
-                                        Nai,
-                                        Vietnam<br>
+                                        <span id="pv-address-vi">Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ, phường Bửu Long, Biên Hòa, Đồng Nai, Vietnam</span><br>
                                         <span class="font-semibold text-blue-900">*Tác giả liên hệ:</span> <span
                                             id="pv-contact-email" class="underline">email@domain.com</span>
                                     </p>
@@ -356,9 +354,7 @@
 
                                     <p
                                         class="text-right text-[9px] text-slate-700 font-sans italic max-w-xl ml-auto leading-normal">
-                                        Lac Hong University, No. 10 Huynh Van Nghe Street, Buu Long Ward, Bien Hoa, Dong
-                                        Nai
-                                        Province, Vietnam<br>
+                                        <span id="pv-address-en">Lac Hong University, No. 10 Huynh Van Nghe Street, Buu Long Ward, Bien Hoa, Dong Nai Province, Vietnam</span><br>
                                         <span class="font-semibold text-blue-900">*Corresponding Author:</span> <span
                                             id="pv-contact-email-en" class="underline">email@domain.com</span>
                                     </p>
@@ -665,6 +661,27 @@
                             <input type="email" id="input-email"
                                 class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
                                 placeholder="email@domain.com" oninput="syncFormToPreview()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Địa
+                                chỉ (Tiếng Việt):</label>
+                            <textarea id="input-address-vi" rows="2"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Trường Đại học Lạc Hồng, Số 10 Huỳnh Văn Nghệ..."
+                                oninput="syncFormToPreview()"></textarea>
+                        </div>
+                        <div class="space-y-1">
+                            <label
+                                class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Địa
+                                chỉ (Tiếng Anh):</label>
+                            <textarea id="input-address-en" rows="2"
+                                class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Lac Hong University, No. 10 Huynh Van Nghe Street..."
+                                oninput="syncFormToPreview()"></textarea>
                         </div>
                     </div>
 

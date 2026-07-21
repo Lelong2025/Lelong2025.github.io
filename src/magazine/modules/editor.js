@@ -484,10 +484,64 @@ function isLikelyLayoutClipboardTable(table) {
     return longProseCells > 0 || (maxColumns <= 2 && paragraphLikeCells >= Math.max(1, Math.floor(cells.length / 2)));
 }
 
+function isPasteableClipboardTable(table) {
+    return table?.tagName === 'TABLE' && !isLikelyLayoutClipboardTable(table);
+}
+
 function extractPasteableClipboardTables(root) {
     return Array.from(root.querySelectorAll('table'))
-        .filter(table => !isLikelyLayoutClipboardTable(table))
+        .filter(isPasteableClipboardTable)
         .map(table => normalizeClipboardTable(table, root));
+}
+
+function clipboardNodeHasPasteableTable(node) {
+    if (node.nodeType !== Node.ELEMENT_NODE) return false;
+    if (isPasteableClipboardTable(node)) return true;
+    return Boolean(node.querySelector?.('table') && Array.from(node.querySelectorAll('table')).some(isPasteableClipboardTable));
+}
+
+function clipboardHtmlHasContent(html) {
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    host.querySelectorAll('style,meta,link,title').forEach(node => node.remove());
+    return Boolean(host.textContent.replace(/\s+/g, '').length || host.querySelector('img,video,iframe,svg'));
+}
+
+function createClipboardPasteSegments(root) {
+    const segments = [];
+    const htmlBuffer = document.createElement('div');
+    const flushHtml = () => {
+        if (!clipboardHtmlHasContent(htmlBuffer.innerHTML)) {
+            htmlBuffer.innerHTML = '';
+            return;
+        }
+        segments.push({ type: 'html', value: htmlBuffer.innerHTML });
+        htmlBuffer.innerHTML = '';
+    };
+    const appendNodes = nodes => {
+        Array.from(nodes).forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && isPasteableClipboardTable(node)) {
+                flushHtml();
+                segments.push({ type: 'table', value: normalizeClipboardTable(node, root) });
+                return;
+            }
+            if (clipboardNodeHasPasteableTable(node)) {
+                appendNodes(node.childNodes);
+                return;
+            }
+            htmlBuffer.appendChild(node.cloneNode(true));
+        });
+    };
+    appendNodes(root.childNodes);
+    flushHtml();
+    return segments;
+}
+
+function insertClipboardHtmlAt(index, html) {
+    if (!clipboardHtmlHasContent(html)) return index;
+    const beforeLength = quill.getLength();
+    quill.clipboard.dangerouslyPasteHTML(index, html, 'user');
+    return index + Math.max(0, quill.getLength() - beforeLength);
 }
 
 export function tableFromClipboardText(text) {
@@ -529,6 +583,7 @@ export function pasteClipboardTablesIntoQuill(event) {
     if (html) root.innerHTML = html;
     const clipboardHadHtmlTables = Boolean(html && root.querySelector('table'));
     let tables = html ? extractPasteableClipboardTables(root) : [];
+    const segments = html && tables.length ? createClipboardPasteSegments(root) : [];
     if (!tables.length && !clipboardHadHtmlTables) {
         const textTable = tableFromClipboardText(clipboard.getData('text/plain') || '');
         if (textTable) tables = [textTable];
@@ -539,7 +594,13 @@ export function pasteClipboardTablesIntoQuill(event) {
     const range = quill.getSelection() || savedQuillRange || { index: quill.getLength() - 1, length: 0 };
     let index = Math.max(0, Math.min(range.index, quill.getLength() - 1));
     if (range.length) quill.deleteText(index, range.length, 'user');
-    tables.forEach(table => {
+    const pasteSegments = segments.length ? segments : tables.map(table => ({ type: 'table', value: table }));
+    pasteSegments.forEach(segment => {
+        if (segment.type === 'html') {
+            index = insertClipboardHtmlAt(index, segment.value);
+            return;
+        }
+        const table = segment.value;
         quill.insertEmbed(index, 'scientificTable', table.outerHTML, 'user');
         quill.insertText(index + 1, '\n', 'user');
         index += 2;
