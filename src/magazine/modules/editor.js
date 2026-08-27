@@ -1,5 +1,5 @@
 import { state, saveToLocalStorage } from './state.js';
-import { showToast } from './utils.js';
+import { normalizeBodyParagraphIndents, showToast } from './utils.js';
 import { loadArticleIntoEditor, recalculateContinuousPages, renderArticlesList, renderLivePreview, updateIssueStatusText, syncArticlePageRangeInputs } from './ui.js';
 import { openMediaLibrary } from './cloud.js';
 
@@ -45,7 +45,7 @@ if (window.Quill) {
     });
     const TextIndentStyle = new Parchment.Attributor.Style('textIndent', 'text-indent', {
         scope: Parchment.Scope.BLOCK,
-        whitelist: ['0.36cm', '0.5cm', '1cm', '1.27cm', '1.5cm', '2cm']
+        whitelist: ['0cm', '0.36cm', '0.5cm', '0.75cm', '1cm', '1.27cm', '1.5cm', '2cm']
     });
     window.Quill.register(FontSizeStyle, true);
     window.Quill.register(LineHeightStyle, true);
@@ -711,6 +711,7 @@ export function openRichTextWorkspace() {
     loadingQuillContent = true;
     if (art.bodyContent) quill.clipboard.dangerouslyPasteHTML(art.bodyContent, 'silent');
     else quill.setText('', 'silent');
+    normalizeBodyParagraphIndents(quill.root);
     quillArticleId = art.id;
     loadingQuillContent = false;
     quill.root.querySelectorAll('.scientific-table-embed').forEach(embed => embed.setAttribute('contenteditable', 'false'));
@@ -785,8 +786,8 @@ function normalizeEditorPasteFormatting() {
         if (!quill) return;
         quill.root.querySelectorAll('p, blockquote, li').forEach(node => {
             node.style.lineHeight = '1';
-            if (!node.style.textIndent) node.style.textIndent = '0.36cm';
         });
+        normalizeBodyParagraphIndents(quill.root, { applyDefault: true });
         syncRichEditorToState();
     }, 0);
 }
@@ -2048,7 +2049,6 @@ export function ensureTableResizeHandles(table) {
     table.style.position = table.style.position || 'relative';
     table.closest('.scientific-table-embed')?.setAttribute('contenteditable', 'false');
     Array.from(table.rows).forEach(row => {
-        if (!row.style.height) row.style.height = `${Math.max(34, row.getBoundingClientRect().height || 34)}px`;
         Array.from(row.cells).forEach(cell => {
             cell.style.position = 'relative';
             cell.contentEditable = isDraftTable ? 'true' : 'false';
@@ -2157,6 +2157,7 @@ export function startRowResize(event, _table, row) {
     const startHeight = row.getBoundingClientRect().height;
     const move = (moveEvent) => {
         moveEvent.preventDefault();
+        row.dataset.manualHeight = 'true';
         row.style.height = `${Math.max(24, startHeight + moveEvent.clientY - startY)}px`;
     };
     const up = () => {

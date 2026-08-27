@@ -1,5 +1,5 @@
 import { state, saveToLocalStorage, saveToSupabase } from './state.js';
-import { showToast, removeVietnameseDiacritics, toTitleCase, authorTextToHtml, stripAuthorMarkers } from './utils.js';
+import { showToast, removeVietnameseDiacritics, toTitleCase, authorTextToHtml, stripAuthorMarkers, normalizeBodyParagraphIndents } from './utils.js';
 import { renderAiReviewPanel } from './ai.js';
 import { getQuillInstance, getQuillArticleId, setQuillArticleId, getLoadingQuillContent, setLoadingQuillContent, syncWorkspacePreview, renderMathFormulas } from './editor.js';
 import { isClient, normalizeClientPages, applyRoleUi, escapeHtml } from './cloud.js';
@@ -843,6 +843,7 @@ export function paginateContent(html, art) {
     pages.innerHTML = '';
     const source = document.createElement('div');
     source.innerHTML = html || '';
+    normalizeBodyParagraphIndents(source);
     const stateObj = { pageNumber: 2, content: createArticlePage(2, art) };
     const nodes = Array.from(source.children);
     if (!nodes.some(node => node.textContent.trim() || node.querySelector('img, table'))) {

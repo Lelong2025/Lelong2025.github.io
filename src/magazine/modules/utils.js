@@ -165,7 +165,16 @@ export function cssColorToHex(value) {
 }
 
 const ARTICLE_COLUMN_WIDTH_TWIPS = 4510;
-const DEFAULT_BODY_FIRST_LINE_TWIPS = 204;
+export const DEFAULT_BODY_TEXT_INDENT = '0.75cm';
+const LEGACY_BODY_TEXT_INDENT = '0.36cm';
+const DEFAULT_BODY_FIRST_LINE_TWIPS = Math.round(0.75 * 567);
+
+export function isNumberedHeadingParagraph(node) {
+    if (!/^(P|BLOCKQUOTE)$/i.test(node?.tagName || '')) return false;
+    const text = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!/^\d{1,2}(?:\.\d{1,2})*\.?\s+\S/.test(text)) return false;
+    return text.length <= 160 || Boolean(node.querySelector?.('strong, b'));
+}
 
 export function cssTableWidthToTwips(value, totalWidth = ARTICLE_COLUMN_WIDTH_TWIPS) {
     const raw = String(value || '').trim();
@@ -196,12 +205,17 @@ export function cssFontSizeToHalfPoints(value) {
 export function wordParagraphOptions(node, base = {}) {
     const style = node.style || {};
     const lineHeight = parseFloat(style.lineHeight);
-    const explicitFirstLine = cssLengthToTwips(style.textIndent);
+    const textIndent = String(style.textIndent || '').trim().toLowerCase();
+    const suppressDefaultFirstLine = textIndent === '0cm' || isNumberedHeadingParagraph(node);
+    const explicitFirstLine = textIndent === LEGACY_BODY_TEXT_INDENT
+        ? DEFAULT_BODY_FIRST_LINE_TWIPS
+        : cssLengthToTwips(textIndent);
     const classIndent = Array.from(node.classList || []).map(name => name.match(/^ql-indent-(\d+)$/))
         .find(Boolean);
     const toolbarIndent = classIndent ? Number(classIndent[1]) * 567 : 0;
     const useDefaultFirstLine = base.defaultFirstLine !== false
         && /^(P|BLOCKQUOTE)$/i.test(node.tagName || '')
+        && !suppressDefaultFirstLine
         && !explicitFirstLine
         && !toolbarIndent;
     return {
@@ -215,18 +229,42 @@ export function wordParagraphOptions(node, base = {}) {
     };
 }
 
-function stripLeadingIndentWhitespace(node) {
-    const clone = node.cloneNode(true);
-    if (!cssLengthToTwips(clone.style?.textIndent || '')) return clone;
-    const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+function removeLeadingIndentWhitespace(node) {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     let textNode = walker.nextNode();
     while (textNode) {
-        if (textNode.nodeValue) {
-            textNode.nodeValue = textNode.nodeValue.replace(/^[\t \u00a0]+/, '');
-            break;
-        }
+        const original = textNode.nodeValue || '';
+        textNode.nodeValue = original.replace(/^[\t \u00a0]+/, '');
+        if (textNode.nodeValue || !/^[\t \u00a0]*$/.test(original)) break;
         textNode = walker.nextNode();
     }
+}
+
+export function normalizeBodyParagraphIndents(root, options = {}) {
+    if (!root?.querySelectorAll) return root;
+    const applyDefault = options.applyDefault === true;
+    root.querySelectorAll('p, blockquote, li').forEach(node => {
+        const currentIndent = String(node.style.textIndent || '').trim().toLowerCase();
+        const usesBodyDefault = !currentIndent
+            || currentIndent === LEGACY_BODY_TEXT_INDENT
+            || currentIndent === DEFAULT_BODY_TEXT_INDENT;
+        if (isNumberedHeadingParagraph(node) && usesBodyDefault) {
+            node.style.textIndent = '0cm';
+        } else if (currentIndent === LEGACY_BODY_TEXT_INDENT || (applyDefault && !currentIndent)) {
+            node.style.textIndent = DEFAULT_BODY_TEXT_INDENT;
+        }
+        if (/^(P|BLOCKQUOTE)$/i.test(node.tagName) || cssLengthToTwips(node.style.textIndent || '')) {
+            removeLeadingIndentWhitespace(node);
+        }
+    });
+    return root;
+}
+
+function stripLeadingIndentWhitespace(node) {
+    const clone = node.cloneNode(true);
+    const hasDefaultIndent = /^(P|BLOCKQUOTE)$/i.test(clone.tagName || '');
+    if (!hasDefaultIndent && !cssLengthToTwips(clone.style?.textIndent || '')) return clone;
+    removeLeadingIndentWhitespace(clone);
     return clone;
 }
 
@@ -440,8 +478,9 @@ export function wordTable(rows, widths, options = {}) {
     const grid = widths.map(width => `<w:gridCol w:w="${width}"/>`).join('');
     const body = rows.map((row, rowIndex) => {
         const rowHeight = row.rowHeight || options.rowHeight || 0;
+        const rowHeightRule = row.rowHeightRule || options.rowHeightRule || 'exact';
         const rowProperties = rowHeight
-            ? `<w:trPr><w:trHeight w:val="${rowHeight}" w:hRule="exact"/></w:trPr>` : '';
+            ? `<w:trPr><w:trHeight w:val="${rowHeight}" w:hRule="${rowHeightRule}"/></w:trPr>` : '';
         return `<w:tr>${rowProperties}${row.map((cell, index) => {
             const value = typeof cell === 'object' ? cell : { content: cell };
             const shading = value.shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${value.shading}"/>` : '';
@@ -592,7 +631,10 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                     cell || { content: wordParagraph('', {}), width: widths[columnIndex] }
                 ).filter(cell => !cell.skip);
                 const height = cssLengthToTwips(htmlRows[rowIndex]?.style.height || '');
-                if (height) wordRow.rowHeight = height;
+                if (height) {
+                    wordRow.rowHeight = height;
+                    wordRow.rowHeightRule = 'atLeast';
+                }
                 return wordRow;
             });
             const hasCustomBorders = ['top', 'bottom', 'left', 'right', 'insideH', 'insideV', 'header']
@@ -602,6 +644,21 @@ export function quillHtmlToWordXml(html, imageMap = new Map()) {
                 left: node.dataset.left === 'true', right: node.dataset.right === 'true',
                 insideH: node.dataset.insideH === 'true', insideV: node.dataset.insideV === 'true'
             } : undefined;
+            // Word gives cell borders precedence over table borders. The HTML table keeps
+            // APA top/bottom rules on the table itself, while its cells explicitly have
+            // the other borders disabled, so repeat the two outer rules on the edge cells.
+            const applyOuterWordBorder = (row, side) => row?.forEach(cell => {
+                cell.borders ||= {};
+                const current = typeof cell.borders[side] === 'object' ? cell.borders[side] : {};
+                cell.borders[side] = {
+                    ...current,
+                    enabled: true,
+                    size: current.size || 6,
+                    color: current.color || '000000'
+                };
+            });
+            if (borderConfig?.top) applyOuterWordBorder(rows[0], 'top');
+            if (borderConfig?.bottom) applyOuterWordBorder(rows[rows.length - 1], 'bottom');
             blocks.push(wordTable(rows, widths, {
                 borderConfig,
                 headerBorder: node.dataset.header === 'true',

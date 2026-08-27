@@ -155,7 +155,7 @@
 
 .article-page-content p {
     margin: 0 0 8px;
-    text-indent: 0.36cm;
+    text-indent: 0.75cm;
 }
 
 .article-page-content ol,
@@ -245,7 +245,7 @@ body.magazine-auth-required #toast-box {
 }
 
 #rich-editor-field .ql-editor p {
-    text-indent: 0.36cm;
+    text-indent: 0.75cm;
 }
 
 .dark #rich-editor-field,
@@ -1008,7 +1008,7 @@ body.magazine-auth-required #toast-box {
 
 /* Styling inside Rich Text and A4 Content */
 .rich-rendered-text p {
-    text-indent: 24px;
+    text-indent: 0.75cm;
     margin-bottom: 8px;
     text-align: justify;
 }
@@ -1409,6 +1409,11 @@ body.magazine-auth-required #toast-box {
 .ql-picker.ql-textIndent .ql-picker-label[data-value="0.5cm"]::before,
 .ql-picker.ql-textIndent .ql-picker-item[data-value="0.5cm"]::before {
     content: "Thụt 0.5 cm" !important;
+}
+
+.ql-picker.ql-textIndent .ql-picker-label[data-value="0.75cm"]::before,
+.ql-picker.ql-textIndent .ql-picker-item[data-value="0.75cm"]::before {
+    content: "Thụt 0.75 cm" !important;
 }
 
 .ql-picker.ql-textIndent .ql-picker-label[data-value="1cm"]::before,
