@@ -1,4 +1,5 @@
 import { showToast } from './utils.js';
+import { LOCAL_STATE_KEY, writeWorkspaceCache } from './workspace-cache.js';
 
 export const state = {
     appState: {
@@ -11,13 +12,14 @@ export const state = {
         adminPageMode: "issue",
         mobileTab: "editor"
     },
-    LOCAL_STATE_KEY: 'lhu_journal_manager_state_v4',
+    LOCAL_STATE_KEY,
     CLOUD_WORKSPACE_ID: 'default',
     cloudUser: null,
     cloudProfile: null,
     clientSubmissions: [],
     cloudSyncEnabled: false,
-    cloudSaveTimer: null
+    cloudSaveTimer: null,
+    localBackupAvailable: false
 };
 
 export async function handleLogout() {
@@ -30,8 +32,20 @@ export async function handleLogout() {
     window.location.replace('/');
 }
 
+let cacheWarningShown = false;
+
+export async function cacheWorkspace() {
+    state.localBackupAvailable = await writeWorkspaceCache(state.appState);
+    if (!state.localBackupAvailable && !cacheWarningShown) {
+        cacheWarningShown = true;
+        showToast('Không lưu được bản sao trên máy. Hãy giữ trang mở đến khi lưu lên Supabase thành công.');
+    }
+    if (state.localBackupAvailable) cacheWarningShown = false;
+    return state.localBackupAvailable;
+}
+
 export function saveToLocalStorage() {
-    localStorage.setItem(state.LOCAL_STATE_KEY, JSON.stringify(state.appState));
+    void cacheWorkspace();
     if (!state.cloudSyncEnabled || !state.cloudUser) return;
     clearTimeout(state.cloudSaveTimer);
     state.cloudSaveTimer = setTimeout(saveToSupabase, 700);
@@ -48,6 +62,8 @@ export async function saveToSupabase() {
     }, { onConflict: 'user_id,workspace_id' });
     if (error) {
         console.error('Lỗi lưu workspace lên Supabase:', error);
-        showToast('Không thể lưu lên Supabase. Bản local vẫn được giữ.');
+        showToast(state.localBackupAvailable
+            ? 'Không thể lưu lên Supabase. Bản lưu trên máy vẫn được giữ.'
+            : 'Không thể lưu lên Supabase. Hãy giữ trang mở và xuất JSON để giữ dữ liệu.');
     }
 }

@@ -3,13 +3,13 @@ import { initMixingShell } from '../shared/shell.js'
 import { auth } from '../shared/utils/auth.js'
 import { supabase } from '../shared/utils/supabase.js'
 import { FEATURES } from '../shared/features.js'
+import { writeWorkspaceCache } from './modules/workspace-cache.js'
 
 if (!FEATURES.EDITORIAL_PUBLISHING) {
   window.location.replace('/magazine/editor.html')
 }
 
 const WORKSPACE_ID = 'default'
-const LOCAL_STATE_KEY = 'lhu_journal_manager_state_v4'
 const UNASSIGNED_ID = '__editorial_unassigned__'
 const state = { user: null, profile: null, workspace: null, submissions: [], activeTab: 'issues', filter: 'all' }
 
@@ -63,11 +63,13 @@ function normalizeWorkspace(input) {
 }
 
 async function saveWorkspace(message = '') {
-  localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state.workspace))
+  const cached = await writeWorkspaceCache(state.workspace)
   const { error } = await supabase.from('magazine_workspaces').upsert({
     user_id: state.user.id, workspace_id: WORKSPACE_ID, state: state.workspace, updated_at: new Date().toISOString()
   }, { onConflict: 'user_id,workspace_id' })
-  if (error) return showToast('Không lưu được thay đổi lên Supabase.')
+  if (error) return showToast(cached
+    ? 'Không lưu được thay đổi lên Supabase. Bản lưu trên máy vẫn được giữ.'
+    : 'Không lưu được thay đổi lên Supabase hoặc trên máy. Hãy giữ trang mở và thử lưu lại.')
   if (message) showToast(message)
   renderAll()
 }

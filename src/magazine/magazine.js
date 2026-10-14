@@ -1,4 +1,5 @@
-import { state, handleLogout, saveToLocalStorage, saveToSupabase } from './modules/state.js';
+import { state, handleLogout, saveToLocalStorage, saveToSupabase, cacheWorkspace } from './modules/state.js';
+import { readWorkspaceCache } from './modules/workspace-cache.js';
 import { showToast, allowDrop, handleAbstractPaste } from './modules/utils.js';
 import {
     initApp, toggleSidebar, populateIssueSelector, recalculateContinuousPages,
@@ -200,10 +201,11 @@ Object.assign(window, {
 });
 
 async function boot() {
-    const savedState = localStorage.getItem(state.LOCAL_STATE_KEY);
+    const savedState = await readWorkspaceCache();
     if (savedState) {
         try {
-            state.appState = JSON.parse(savedState);
+            state.appState = savedState;
+            state.localBackupAvailable = true;
         } catch (e) {
             console.error("Lỗi phục hồi dữ liệu, khởi chạy mặc định", e);
         }
@@ -213,8 +215,12 @@ async function boot() {
     const theme = savedTheme === 'light' ? 'light' : 'dark';
     document.documentElement.dataset.theme = theme;
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('mixing-theme', theme);
-    localStorage.setItem('theme', theme);
+    try {
+        localStorage.setItem('mixing-theme', theme);
+        localStorage.setItem('theme', theme);
+    } catch (error) {
+        console.warn('Không lưu được giao diện trên máy:', error);
+    }
 
     state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
     state.appState.adminPageMode = state.appState.adminPageMode === 'article' ? 'article' : 'issue';
@@ -234,14 +240,16 @@ async function boot() {
             state.appState = data.state;
             state.appState.previewMode = state.appState.previewMode === 'full' ? 'full' : 'single';
             state.appState.adminPageMode = state.appState.adminPageMode === 'article' ? 'article' : 'issue';
-            localStorage.setItem(state.LOCAL_STATE_KEY, JSON.stringify(state.appState));
+            await cacheWorkspace();
         }
         ensureClientWorkspace();
         state.cloudSyncEnabled = true;
         if (!data) await saveToSupabase();
     } catch (error) {
         console.error('Không thể tải workspace từ Supabase:', error);
-        setTimeout(() => showToast('Chưa đồng bộ được Supabase; tạm dùng bản lưu trên máy.'), 300);
+        setTimeout(() => showToast(state.localBackupAvailable
+            ? 'Chưa đồng bộ được Supabase; tạm dùng bản lưu trên máy.'
+            : 'Chưa tải được Supabase và không có bản lưu trên máy. Hãy tải lại khi kết nối ổn định.'), 300);
     }
 
     // Bind pasting abstracts
