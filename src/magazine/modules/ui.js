@@ -778,6 +778,7 @@ export function createArticlePage(pageNumber, art) {
     const displayPageNumber = articleDisplayPageNumber(art, pageNumber);
     const page = document.createElement('section');
     page.className = 'a4-page article-page font-serif text-black';
+    page.classList.toggle('page-even', displayPageNumber % 2 === 0);
     page.setAttribute('aria-label', `Trang ${displayPageNumber}`);
 
     const header = document.createElement('div');
@@ -936,6 +937,8 @@ export function renderSingleArticlePreview(art) {
     if (pvAbstractEn) pvAbstractEn.textContent = art.abstractEn || 'Enter English abstract...';
 
     const firstDisplayPageNumber = articleDisplayPageNumber(art, 1);
+    const firstPage = document.querySelector('#a4-container > .a4-page');
+    firstPage?.classList.toggle('page-even', firstDisplayPageNumber % 2 === 0);
     const firstPageFooter = document.querySelector('#a4-container > .a4-page .preview-page-footer');
     if (firstPageFooter) {
         firstPageFooter.classList.toggle('odd', firstDisplayPageNumber % 2 === 1);

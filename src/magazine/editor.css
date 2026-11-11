@@ -31,6 +31,7 @@
 .a4-page {
     width: 210mm;
     height: 297mm;
+    /* Odd pages: binding edge on the left; even pages mirror it below. */
     padding: 15mm 10mm 15mm 25mm;
     margin: 0 auto 18px;
     background: white;
@@ -40,6 +41,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+.a4-page.page-even {
+    padding-left: 10mm;
+    padding-right: 25mm;
 }
 
 #a4-container {

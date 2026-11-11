@@ -10,6 +10,8 @@ import {
     articleAddressVi, articleAddressEn, articleOnlineUrl, formatEnglishDate, formatVietnameseDate
 } from './ui.js';
 import { getQuillInstance, getQuillArticleId } from './editor.js';
+import { enforceZipDocxMirrorMargins } from './docx-layout.js';
+import { alignZipDocxFooters, alignDocxFooterToMargins, docxFooterParities } from './docx-footer.js';
 
 const CONTENT_IMAGE_MAX_WIDTH_EMU = 2700000;
 const CONTENT_IMAGE_FALLBACK_HEIGHT_EMU = 1800000;
@@ -241,15 +243,15 @@ export function headerXml(text, alignment, options = {}) {
 }
 
 export function footerXml(dateText, even) {
-    const pageCell = `<w:tc><w:tcPr><w:tcW w:w="430" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="666666"/><w:vAlign w:val="center"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcPr>${wordParagraph(pageFieldRun(), { align: 'center', after: 0, line: 200 })}</w:tc>`;
-    const dateCell = `<w:tc><w:tcPr><w:tcW w:w="3500" w:type="dxa"/><w:vAlign w:val="center"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tcPr>${wordParagraph(wordRun(dateText, { italic: true, size: 16 }), { align: even ? 'left' : 'right', after: 0, line: 200 })}</w:tc>`;
-    const spacerCell = '<w:tc><w:tcPr><w:tcW w:w="5708" w:type="dxa"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcPr><w:p/></w:tc>';
+    const pageCell = `<w:tc><w:tcPr><w:tcW w:w="430" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="666666"/><w:vAlign w:val="center"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar></w:tcPr>${wordParagraph(pageFieldRun(), { align: 'center', after: 0, line: 200 })}</w:tc>`;
+    const dateCell = `<w:tc><w:tcPr><w:tcW w:w="3500" w:type="dxa"/><w:vAlign w:val="center"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tcMar></w:tcPr>${wordParagraph(wordRun(dateText, { italic: true, size: 16 }), { align: even ? 'left' : 'right', after: 0, line: 200 })}</w:tc>`;
+    const spacerCell = '<w:tc><w:tcPr><w:tcW w:w="5991" w:type="dxa"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar></w:tcPr><w:p/></w:tc>';
     const cells = even ? pageCell + dateCell + spacerCell : spacerCell + dateCell + pageCell;
     const grid = even
-        ? '<w:gridCol w:w="430"/><w:gridCol w:w="3500"/><w:gridCol w:w="5708"/>'
-        : '<w:gridCol w:w="5708"/><w:gridCol w:w="3500"/><w:gridCol w:w="430"/>';
-    const table = `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="single" w:sz="10" w:color="222222"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${grid}</w:tblGrid><w:tr><w:trPr><w:trHeight w:val="430" w:hRule="exact"/></w:trPr>${cells}</w:tr></w:tbl>`;
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${table}<w:p/></w:hdr>`;
+        ? '<w:gridCol w:w="430"/><w:gridCol w:w="3500"/><w:gridCol w:w="5991"/>'
+        : '<w:gridCol w:w="5991"/><w:gridCol w:w="3500"/><w:gridCol w:w="430"/>';
+    const table = `<w:tbl><w:tblPr><w:tblW w:w="9921" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="single" w:sz="10" w:color="222222"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${grid}</w:tblGrid><w:tr><w:trPr><w:trHeight w:val="430" w:hRule="exact"/></w:trPr>${cells}</w:tr></w:tbl>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${table}<w:p/></w:ftr>`;
 }
 
 export function pageFieldRun() {
@@ -348,7 +350,8 @@ export async function buildDefaultDocx(data) {
     const authorImages = await prepareAuthorProfileImages(zip, data.authorProfiles);
     const content = quillHtmlToWordXml(data.contentHtml, contentImages.map) + authorProfilesToWordXml(data.authorProfiles, authorImages.map);
     const refs = '<w:headerReference w:type="default" r:id="rIdHeaderOdd"/><w:headerReference w:type="even" r:id="rIdHeaderEven"/><w:footerReference w:type="default" r:id="rIdFooterOdd"/><w:footerReference w:type="even" r:id="rIdFooterEven"/>';
-    const coverRefs = '<w:headerReference w:type="first" r:id="rIdHeaderFirst"/><w:footerReference w:type="first" r:id="rIdFooterOdd"/><w:footerReference w:type="default" r:id="rIdFooterOdd"/>';
+    const firstFooter = Number(data.startPage || 1) % 2 === 0 ? 'rIdFooterEven' : 'rIdFooterOdd';
+    const coverRefs = `<w:headerReference w:type="first" r:id="rIdHeaderFirst"/><w:footerReference w:type="first" r:id="${firstFooter}"/><w:footerReference w:type="default" r:id="rIdFooterOdd"/><w:footerReference w:type="even" r:id="rIdFooterEven"/>`;
     const coverSection = `<w:p><w:pPr>${sectionProperties({ columns: 1, nextPage: true, references: coverRefs, titlePage: true, topMargin: 851, startPage: data.startPage || 1 })}</w:pPr></w:p>`;
     const finalSection = sectionProperties({ columns: 2, references: refs });
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${coverXml(data)}${coverSection}${content || wordParagraph(wordRun('Nội dung bài báo bắt đầu từ trang 2.', { italic: true, color: '777777' }), { align: 'center' })}${finalSection}</w:body></w:document>`;
@@ -369,6 +372,7 @@ export async function buildDefaultDocx(data) {
     if (logoLoaded) {
         word.folder('_rels').file('header-first.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image.png"/></Relationships>');
     }
+    enforceZipDocxMirrorMargins(zip);
     enforceZipDocxFonts(zip);
     return zip;
 }
@@ -490,6 +494,8 @@ export async function exportCurrentArticleWordFromTemplate() {
             }
         });
 
+        alignZipDocxFooters(zip, data.startPage);
+        enforceZipDocxMirrorMargins(zip);
         enforceZipDocxFonts(zip);
         const blob = zip.generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
         window.saveAs(blob, safeExportName(art, 'docx'));
@@ -1040,6 +1046,7 @@ export async function exportIssueWord() {
             const artZip = new window.PizZip(templateBytes);
             let artDocXml = artZip.file('word/document.xml').asText();
             artDocXml = normalizeAndReplaceDocxXml(artDocXml, data);
+            const footerParities = docxFooterParities(artDocXml, templateRelsXml, data.startPage);
 
             localRelMap.forEach((info, oldId) => {
                 artDocXml = artDocXml.replace(new RegExp(`r:id="${oldId}"`, 'g'), `r:id="${info.uniqueId}"`);
@@ -1133,6 +1140,9 @@ export async function exportIssueWord() {
                         fileXml = info.originalFilename.includes('footer')
                             ? replaceFooterDatePlaceholdersXml(fileXml, data.date)
                             : normalizeAndReplaceDocxXml(fileXml, partData);
+                        if (info.originalFilename.includes('footer')) {
+                            fileXml = alignDocxFooterToMargins(fileXml, footerParities.get(info.originalFilename) || false);
+                        }
                         localRelMap.forEach((mInfo, mOldId) => {
                             fileXml = fileXml.replace(new RegExp(`r:id="${mOldId}"`, 'g'), `r:id="${mInfo.uniqueId}"`);
                             fileXml = fileXml.replace(new RegExp(`r:embed="${mOldId}"`, 'g'), `r:embed="${mInfo.uniqueId}"`);
@@ -1189,6 +1199,7 @@ export async function exportIssueWord() {
             }
         });
 
+        enforceZipDocxMirrorMargins(baseZip);
         enforceZipDocxFonts(baseZip);
         const blob = baseZip.generate({
             type: 'blob',
