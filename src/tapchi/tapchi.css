@@ -3002,6 +3002,51 @@ body.portal-open .lightbulb-container {
     padding: 8px 24px 24px;
 }
 
+.service-access-panel {
+    grid-column: 1 / -1;
+}
+
+.service-access-policies {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 18px;
+}
+
+.service-access-policy {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 14px;
+}
+
+.service-access-policy label[for] {
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.service-access-policy p {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.service-access-policy .trial-policy-switch {
+    flex-shrink: 0;
+}
+
+.trial-policy-switch input:focus-visible + span {
+    outline: 3px solid #2f6df6;
+    outline-offset: 3px;
+}
+
+.trial-policy-switch input:disabled + span {
+    opacity: .5;
+    cursor: wait;
+}
+
 .trial-policy-form {
     gap: 18px;
 }

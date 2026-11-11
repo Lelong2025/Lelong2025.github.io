@@ -44,6 +44,8 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     let currentAuthMode = 'login';
     let accountRefreshPromise = null;
     let adminDashboardPromise = null;
+    let serviceAccessDirty = false;
+    let serviceAccessSaving = false;
     let adminPlanVisible = 8;
     let adminPlanSearch = '';
     let adminPlanProduct = 'all';
@@ -580,7 +582,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         return `<article class="portal-panel" style="padding:18px;">
           <h3 style="margin:0 0 6px;"><i class="fas ${serviceIcons[product.code] || 'fa-circle'}" style="color:#2f6df6;"></i> ${escapeHTML(product.name)}</h3>
           <p style="margin:0 0 14px;color:#64748b;">${escapeHTML(status)}${monthlyActive ? ` · hết hạn ${escapeHTML(formatPortalDate(entitlement.monthly_ends_at))}` : ''}</p>
-          ${product.unlimited ? '<span class="portal-pill green">Admin vô hạn</span>' : `
+          ${product.unlimited ? `<span class="portal-pill green">${services.is_admin ? 'Admin vô hạn' : 'Miễn phí · Không cần gói'}</span>` : `
             <select class="publishing-select" data-service-plan-select="${product.code}" style="width:100%;margin-bottom:10px;">
               ${plans.map(plan => `<option value="${escapeHTML(plan.id)}" ${renewal.plan_id === plan.id ? 'selected' : ''}>${escapeHTML(plan.name)} · ${plan.credits} ${plan.billing_type === 'monthly' ? 'lượt/ngày' : 'lượt'} · ${formatVnd(plan.price_vnd)}</option>`).join('') || '<option value="">Chưa có gói đang bán</option>'}
             </select>
@@ -1106,6 +1108,7 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
     }
 
     function syncTrialPolicyForm(products = adminDashboardData?.products || []) {
+      syncServiceAccessForm(products);
       const chatProduct = products.find(item => item.code === 'chatbox_ai');
       const reviewProduct = products.find(item => item.code === 'magazine_ai_review');
       const trialDays = Number(chatProduct?.trial_days ?? 14);
@@ -1129,6 +1132,56 @@ const initialPasswordRecovery = initialAuthUrl.searchParams.get('recovery') === 
         reviewLimitInput.disabled = !trialEnabled;
       }
       if (preview) preview.textContent = trialEnabled ? trialDays : 0;
+    }
+
+    function syncServiceAccessForm(products = []) {
+      if (serviceAccessDirty || serviceAccessSaving) return;
+      for (const [id, code] of [
+        ['adminExportRequiresPlan', 'magazine_export'],
+        ['adminReviewRequiresPlan', 'magazine_ai_review']
+      ]) {
+        const input = document.getElementById(id);
+        const product = products.find(item => item.code === code);
+        if (input) {
+          input.checked = product?.requires_plan !== false;
+          input.disabled = !product;
+        }
+      }
+      const save = document.querySelector('[data-action="save-service-access"]');
+      if (save) save.disabled = !['magazine_export', 'magazine_ai_review'].every(code => products.some(product => product.code === code));
+    }
+
+    async function saveServiceAccessPolicy() {
+      if (serviceAccessSaving) return;
+      const message = document.getElementById('serviceAccessPolicyMessage');
+      const inputs = [...document.querySelectorAll('#adminExportRequiresPlan, #adminReviewRequiresPlan')];
+      const button = document.querySelector('[data-action="save-service-access"]');
+      serviceAccessSaving = true;
+      inputs.forEach(input => { input.disabled = true; });
+      if (button) button.disabled = true;
+      message.textContent = 'Đang lưu yêu cầu gói...';
+      message.className = 'vip-message';
+      try {
+        const result = await apiFetch('/api/admin/settings', {
+          method: 'PATCH',
+          body: JSON.stringify({ service_access: {
+            magazine_export: document.getElementById('adminExportRequiresPlan').checked,
+            magazine_ai_review: document.getElementById('adminReviewRequiresPlan').checked
+          } })
+        });
+        adminDashboardData.products = result.products || adminDashboardData.products || [];
+        serviceAccessDirty = false;
+        message.textContent = 'Đã lưu. Chức năng tắt yêu cầu gói được dùng miễn phí và không trừ lượt.';
+        message.className = 'vip-message success';
+      } catch (error) {
+        message.textContent = error.message || 'Chưa lưu được yêu cầu gói. Vui lòng thử lại.';
+        message.className = 'vip-message error';
+      } finally {
+        serviceAccessSaving = false;
+        inputs.forEach(input => { input.disabled = false; });
+        if (button) button.disabled = false;
+        syncServiceAccessForm(adminDashboardData?.products || []);
+      }
     }
 
     function handleTrialPolicyToggle() {
@@ -2387,6 +2440,9 @@ export function initAccountEvents() {
   on('[data-action="export-admin-invoices"]', 'click', exportAdminInvoices)
   on('[data-action="export-admin-invoices-pdf"]', 'click', exportAdminInvoicesPDF)
   on('[data-action="save-admin-settings"]', 'click', saveAdminSettings)
+  on('[data-action="save-service-access"]', 'click', saveServiceAccessPolicy)
+  on('#adminExportRequiresPlan', 'change', () => { serviceAccessDirty = true })
+  on('#adminReviewRequiresPlan', 'change', () => { serviceAccessDirty = true })
   on('#trialPolicyEnabled', 'change', handleTrialPolicyToggle)
   on('#adminTrialDays', 'input', handleTrialPolicyToggle)
   on('#lookupSourceForm', 'submit', submitLookupSource)

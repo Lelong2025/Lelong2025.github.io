@@ -51,7 +51,7 @@ export async function withServiceUsage({ productCode, action, metadata = {}, onD
   try {
     result = await operation(reservation)
   } catch (error) {
-    await apiFetch('/api/usage/finalize', {
+    if (reservation?.reservation_id) await apiFetch('/api/usage/finalize', {
       method: 'POST',
       body: JSON.stringify({ reservation_id: reservation.reservation_id, success: false }),
     }).catch(() => {})
@@ -59,7 +59,7 @@ export async function withServiceUsage({ productCode, action, metadata = {}, onD
   }
   const success = result !== false
   try {
-    await apiFetch('/api/usage/finalize', {
+    if (reservation?.reservation_id) await apiFetch('/api/usage/finalize', {
       method: 'POST',
       body: JSON.stringify({ reservation_id: reservation.reservation_id, success }),
     })

@@ -556,6 +556,42 @@
 
       <section id="adminSettings" class="portal-page">
         <div class="portal-settings">
+          <section class="portal-panel service-access-panel">
+            <div class="portal-panel-head">
+              <div>
+                <h3><i class="fas fa-unlock-keyhole" style="color:#2f6df6;"></i> Yêu cầu gói khi soạn báo</h3>
+                <p>Bật để áp dụng gói và hạn mức hiện có. Tắt để người dùng đã đăng nhập sử dụng miễn phí, không trừ lượt.</p>
+              </div>
+            </div>
+            <form id="serviceAccessPolicyForm" class="portal-form">
+              <div class="service-access-policies">
+                <div class="service-access-policy">
+                  <div>
+                    <label for="adminExportRequiresPlan">Xuất báo Word/PDF cần gói</label>
+                    <p>Áp dụng khi xuất bài báo hoặc toàn bộ số báo.</p>
+                  </div>
+                  <label class="trial-policy-switch">
+                    <input id="adminExportRequiresPlan" type="checkbox" aria-label="Xuất báo Word/PDF cần gói" checked disabled>
+                    <span></span>
+                  </label>
+                </div>
+                <div class="service-access-policy">
+                  <div>
+                    <label for="adminReviewRequiresPlan">AI Review cần gói</label>
+                    <p>Áp dụng cho kiểm chính tả, gợi ý metadata và review toàn bài.</p>
+                  </div>
+                  <label class="trial-policy-switch">
+                    <input id="adminReviewRequiresPlan" type="checkbox" aria-label="AI Review cần gói" checked disabled>
+                    <span></span>
+                  </label>
+                </div>
+              </div>
+              <button class="portal-btn primary" type="button" data-action="save-service-access" disabled>
+                <i class="fas fa-floppy-disk"></i> Lưu yêu cầu gói
+              </button>
+              <p id="serviceAccessPolicyMessage" class="vip-message" role="status" aria-live="polite" style="margin:0;"></p>
+            </form>
+          </section>
           <div class="portal-grid">
             <section class="portal-panel">
               <div class="portal-panel-head">

@@ -277,7 +277,8 @@ Lelong2025.github.io/
 │   ├── migrate_lookup_sources.sql          # Bảng lookup_sources
 │   ├── migrate_magazine_to_tapchi.sql      # Schema magazine (profiles, workspaces, submissions, storage)
 │   ├── migrate_editorial_management.sql    # Cập nhật article_submissions
-│   └── migrate_monthly_daily_limits.sql    # Cập nhật hệ thống daily limits
+│   ├── migrate_monthly_daily_limits.sql    # Cập nhật hệ thống daily limits
+│   └── migrate_service_access_policy.sql   # Bật/tắt yêu cầu gói cho soạn báo
 │
 ├── src/                          # Frontend source code
 │   ├── shared/                   # Code dùng chung giữa các trang
@@ -464,7 +465,12 @@ Bước 2: migrate_magazine_to_tapchi.sql      ← Schema magazine, profiles, st
 Bước 3: migrate_lookup_sources.sql          ← Bảng lookup_sources (nguồn tra cứu)
 Bước 4: migrate_editorial_management.sql    ← Cập nhật article_submissions
 Bước 5: migrate_monthly_daily_limits.sql    ← Cập nhật daily limits
+Bước 6: migrate_service_access_policy.sql   ← Cấu hình yêu cầu gói cho xuất báo và AI Review
 ```
+
+Trong **Admin → Cài đặt → Yêu cầu gói khi soạn báo**, bật/tắt riêng yêu cầu gói cho xuất Word/PDF và AI Review, sau đó chọn **Lưu yêu cầu gói**. Tắt yêu cầu gói cho phép tài khoản đã đăng nhập dùng dịch vụ không trừ lượt; bật lại áp dụng quyền dùng thử/gói hiện có. Hai công tắc mặc định bật. Thay đổi này không sửa số dư hay thời hạn gói đã mua.
+
+Với database đang sử dụng, chỉ cần chạy migration mới `migrate_service_access_policy.sql` một lần trước khi lưu công tắc; không chạy lại các migration billing cũ.
 
 #### Cách chạy
 

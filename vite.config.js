@@ -25,6 +25,15 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:10000',
         changeOrigin: true,
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyRequest, request) => {
+            // Same-origin browser GETs omit Origin. Keep the frontend origin
+            // for the backend's CORS check even though the target Host changes.
+            if (!request.headers.origin && request.headers.host) {
+              proxyRequest.setHeader('Origin', `http://${request.headers.host}`)
+            }
+          })
+        },
       },
     },
   },

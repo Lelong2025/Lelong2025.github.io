@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { hasFreeMagazineAccess, isPolicyColumnMissing, loadServiceProducts, validServiceAccessInput } from "./service-access-policy.js";
 
 export default {
   async fetch(request, env, context) {
@@ -400,7 +401,7 @@ HƯỚNG DẪN XỬ LÝ THÔNG TIN:
   }
 }
 
-async function handleMagazineReview(request, env, ctx, cors) {
+export async function handleMagazineReview(request, env, ctx, cors) {
   let reservationId = null;
   let externallyManagedReservation = false;
   try {
@@ -411,7 +412,11 @@ async function handleMagazineReview(request, env, ctx, cors) {
     }
 
     const suppliedReservationId = typeof body.usage_reservation_id === "string" ? body.usage_reservation_id.trim() : "";
-    if (suppliedReservationId) {
+    const freeAccess = ctx.userClaims.role !== "admin"
+      && await hasFreeMagazineAccess(ctx.supabaseAdmin, "magazine_ai_review");
+    if (freeAccess) {
+      externallyManagedReservation = true;
+    } else if (suppliedReservationId) {
       const { data, error } = await ctx.supabaseAdmin.from("service_usage")
         .select("id")
         .eq("id", suppliedReservationId)
@@ -729,9 +734,7 @@ async function loadServiceAccount(ctx) {
   const userId = ctx.userClaims.id;
   const todayUtc = new Date().toISOString().slice(0, 10);
   const [productsRes, plansRes, entitlementsRes, walletRes, renewalsRes, dailyUsageRes] = await Promise.all([
-    ctx.supabaseAdmin.from("service_products")
-      .select("code, name, description, trial_days, trial_daily_limit, active")
-      .eq("active", true).order("created_at"),
+    loadServiceProducts(ctx.supabaseAdmin, true),
     ctx.supabaseAdmin.from("service_plans")
       .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, active, sort_order")
       .eq("active", true).order("product_code").order("sort_order"),
@@ -771,7 +774,7 @@ async function loadServiceAccount(ctx) {
       ...product,
       entitlement: entitlements.get(product.code) || null,
       auto_renew: renewals.get(product.code) || null,
-      unlimited: ctx.userClaims.role === "admin"
+      unlimited: ctx.userClaims.role === "admin" || (['magazine_export', 'magazine_ai_review'].includes(product.code) && !product.requires_plan)
     })),
     plans: plansRes.data || []
   };
@@ -787,7 +790,7 @@ async function handleServices(request, env, ctx, cors) {
   }
 }
 
-async function handleReserveUsage(request, env, ctx, cors) {
+export async function handleReserveUsage(request, env, ctx, cors) {
   try {
     const body = await request.json().catch(() => ({}));
     const productCode = String(body.product_code || "");
@@ -809,6 +812,9 @@ async function handleReserveUsage(request, env, ctx, cors) {
       }).select("id").single();
       if (error) throw error;
       return jsonResponse({ allowed: true, unlimited: true, reservation_id: data.id, source: "admin" }, 200, cors.headers);
+    }
+    if (await hasFreeMagazineAccess(ctx.supabaseAdmin, productCode)) {
+      return jsonResponse({ allowed: true, unlimited: true, source: "free" }, 200, cors.headers);
     }
     const { data, error } = await ctx.supabaseAdmin.rpc("reserve_service_usage", {
       p_user_id: ctx.userClaims.id,
@@ -1142,9 +1148,7 @@ async function handleCleanAdminDashboard(request, env, ctx, cors) {
       ctx.supabaseAdmin.from("service_plans")
         .select("id, product_code, name, billing_type, price_vnd, credits, duration_days, payment_prefix, active, sort_order")
         .order("product_code").order("sort_order"),
-      ctx.supabaseAdmin.from("service_products")
-        .select("code, name, description, trial_days, trial_daily_limit, active")
-        .order("created_at")
+      loadServiceProducts(ctx.supabaseAdmin)
     ]);
     for (const result of [paymentsRes, profilesRes, entitlementsRes, usageRes, plansRes, productsRes]) {
       if (result.error) throw result.error;
@@ -1325,11 +1329,19 @@ async function handleAdminDashboard(request, env, ctx, cors) {
   }
 }
 
-async function handleAdminSettings(request, env, ctx, cors) {
+export async function handleAdminSettings(request, env, ctx, cors) {
   const denied = requireAdmin(ctx, cors);
   if (denied) return denied;
   try {
     const body = await request.json().catch(() => ({}));
+    const hasPolicy = Object.hasOwn(body, 'service_access');
+    const hasTrial = ['trial_enabled', 'trial_days', 'chat_daily_limit', 'review_daily_limit'].some(key => Object.hasOwn(body, key));
+    if ((!hasPolicy && !hasTrial) || (hasPolicy && !validServiceAccessInput(body.service_access))) {
+      return jsonResponse({ error: "Cấu hình quyền sử dụng chưa hợp lệ" }, 400, cors.headers);
+    }
+    if (hasTrial && !['trial_enabled', 'trial_days', 'chat_daily_limit', 'review_daily_limit'].every(key => Object.hasOwn(body, key))) {
+      return jsonResponse({ error: "Cần cung cấp đầy đủ cấu hình dùng thử" }, 400, cors.headers);
+    }
     const trialEnabled = body.trial_enabled !== false;
     const trialDays = trialEnabled ? Number(body.trial_days) : 0;
     const chatDailyLimit = trialEnabled ? Number(body.chat_daily_limit) : 0;
@@ -1337,29 +1349,40 @@ async function handleAdminSettings(request, env, ctx, cors) {
     const validDays = Number.isSafeInteger(trialDays) && trialDays >= 0 && trialDays <= 365;
     const validChatLimit = Number.isSafeInteger(chatDailyLimit) && chatDailyLimit >= 0 && chatDailyLimit <= 9999;
     const validReviewLimit = Number.isSafeInteger(reviewDailyLimit) && reviewDailyLimit >= 0 && reviewDailyLimit <= 9999;
-    if (!validDays || !validChatLimit || !validReviewLimit
-      || (trialEnabled && (trialDays < 1 || chatDailyLimit < 1 || reviewDailyLimit < 1))) {
+    if (hasTrial && (!validDays || !validChatLimit || !validReviewLimit
+      || (trialEnabled && (trialDays < 1 || chatDailyLimit < 1 || reviewDailyLimit < 1)))) {
       return jsonResponse({ error: "Giá trị dùng thử chưa hợp lệ" }, 400, cors.headers);
     }
 
-    const updates = [
+    // Probe before any updates so an unapplied migration cannot reset trials.
+    if (hasPolicy) {
+      const { error } = await ctx.supabaseAdmin.from('service_products').select('requires_plan').limit(1);
+      if (error) throw error;
+      for (const [code, requiresPlan] of Object.entries(body.service_access)) {
+        const { error: updateError } = await ctx.supabaseAdmin.from('service_products')
+          .update({ requires_plan: requiresPlan, updated_at: new Date().toISOString() }).eq('code', code);
+        if (updateError) throw updateError;
+      }
+    }
+
+    const updates = hasTrial ? [
       ctx.supabaseAdmin.from("service_products")
         .update({ trial_days: trialDays, trial_daily_limit: chatDailyLimit })
         .eq("code", "chatbox_ai"),
       ctx.supabaseAdmin.from("service_products")
         .update({ trial_days: trialDays, trial_daily_limit: reviewDailyLimit })
         .eq("code", "magazine_ai_review")
-    ];
+    ] : [];
     const updateResults = await Promise.all(updates);
     for (const result of updateResults) {
       if (result.error) throw result.error;
     }
 
     let syncedTrials = 0;
-    const productLimits = [
+    const productLimits = hasTrial ? [
       ["chatbox_ai", chatDailyLimit],
       ["magazine_ai_review", reviewDailyLimit]
-    ];
+    ] : [];
     for (const [productCode, dailyLimit] of productLimits) {
       let query = ctx.supabaseAdmin.from("user_entitlements")
         .update({
@@ -1373,13 +1396,15 @@ async function handleAdminSettings(request, env, ctx, cors) {
       syncedTrials += data?.length || 0;
     }
 
-    const { data: products, error: productError } = await ctx.supabaseAdmin.from("service_products")
-      .select("code, name, description, trial_days, trial_daily_limit, active")
-      .order("created_at");
+    const { data: products, error: productError } = await loadServiceProducts(ctx.supabaseAdmin);
     if (productError) throw productError;
     return jsonResponse({ products: products || [], synced_trials: syncedTrials }, 200, cors.headers);
   } catch (error) {
     console.error("Admin settings error", error.message);
+    if (isPolicyColumnMissing(error)) return jsonResponse({
+      error: "Database chưa cập nhật. Hãy chạy Database/migrate_service_access_policy.sql trên Supabase.",
+      code: "migration_required"
+    }, 503, cors.headers);
     return jsonResponse({ error: "Unable to save admin settings" }, 500, cors.headers);
   }
 }
